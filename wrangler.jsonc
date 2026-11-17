@@ -1,0 +1,38 @@
+{
+  // Thebes: one Worker serves the app (public/), the API, the game pages and the cron that closes contests.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "thebes",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/play/*", "/files/*", "/auth/*"]
+  },
+  // wrangler d1 create thebes → put its id here
+  "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "REPLACE_WITH_YOUR_D1_ID", "migrations_dir": "db/migrations" }],
+  // wrangler r2 bucket create thebes-files
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "thebes-files" }],
+  "ai": { "binding": "AI" },
+  // every five minutes: open scheduled contests, close ended ones and pick their winners
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
+  "observability": { "enabled": true },
+  "vars": {
+    "APP_URL": "https://thebes.YOUR-SUBDOMAIN.workers.dev",
+    "EMAIL_MODE": "resend",               // "resend" sends sign-in links (secret RESEND_API_KEY); "show" returns them (local only)
+    "EMAIL_FROM": "Thebes <hello@YOUR-DOMAIN>",
+    "ADMIN_EMAILS": "",                   // comma-separated: these accounts become admins when they sign in
+    "AI_MODE": "live"                     // "live" uses Workers AI to word and colour designs; "off" uses the template defaults
+  },
+  "env": {
+    // npm run dev: everything local (D1, R2 on disk), sign-in links shown on screen, no AI
+    "local": {
+      "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "local", "migrations_dir": "db/migrations" }],
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "thebes-files" }],
+      "vars": { "APP_URL": "http://localhost:8787", "EMAIL_MODE": "show", "EMAIL_FROM": "Thebes <hello@localhost>", "ADMIN_EMAILS": "admin@thebes.local", "AI_MODE": "off" }
+    }
+  }
+}

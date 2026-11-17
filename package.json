@@ -1,0 +1,23 @@
+{
+  "name": "thebes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-runtime.mjs",
+    "db:local": "wrangler d1 migrations apply thebes --local --env local && wrangler d1 execute thebes --local --env local --file db/seed/0001_plans_games.sql",
+    "dev": "npm run build && wrangler dev --env local",
+    "check:db": "python3 db/check.py",
+    "test": "node test/smoke.mjs",
+    "deploy": "npm run build && wrangler d1 migrations apply thebes --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "buffer": "^6.0.3",
+    "esbuild": "^0.24.0",
+    "path-browserify": "^1.0.1",
+    "sha.js": "^2.4.11",
+    "wrangler": "^4.0.0"
+  }
+}

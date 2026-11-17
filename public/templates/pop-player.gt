@@ -1,0 +1,94 @@
+-- Thebes template · Pop Player v1. Flat, full colour; the sponsor's name round all four edges.
+-- Slots ($…) are filled by the app (docs/wizard.md). $word is "kept by the server" for published contests.
+Let the word be $word.
+Let the tries be $tries.
+Let the time be $time s.
+Let the series be $series.
+Let ink be $ink.
+Let field be $field.
+Let band be $band.
+Let sponsor be $sponsor.
+Let glass be $glass.
+Let deck be $deck.
+
+Let there be a flat canvas called $id, 1080 by 1920.
+Set the bench to $field.
+Let text be in Big Shoulders Display bold, size 40.
+
+-- the field
+Let there be a rectangle called field, 1080 by 1920, at 540 960.
+Make the field field.
+
+-- the sponsor's name, round all four edges
+Let there be a rectangle called band-top, 1080 by 84, at 540 42.
+Let there be a rectangle called band-bottom, 1080 by 84, at 540 1878.
+Let there be a rectangle called band-left, 84 by 1920, at 42 960.
+Let there be a rectangle called band-right, 84 by 1920, at 1038 960.
+Make the band-top, the band-bottom, the band-left and the band-right band.
+Give the band-top, the band-bottom, the band-left and the band-right an outline in ink, 6 wide.
+Write $brandrow called name-top, size 44, tracking 4, in the band-top.
+Write $brandrow called name-bottom, size 44, tracking 4, in the band-bottom.
+Write $brandcol called name-left, size 44, tracking 4, turned -90, in the band-left.
+Write $brandcol called name-right, size 44, tracking 4, turned 90, in the band-right.
+Make the name-top, the name-bottom, the name-left and the name-right ink.
+
+-- the sponsor's panel
+Let there be a rectangle called sponsor-panel, 860 by 184, at 540 188.
+Make the sponsor-panel sponsor.
+Give the sponsor-panel an outline in ink, 6 wide.
+Let there be a rectangle called sponsor-bar, 860 by 40, in the sponsor-panel, at the top.
+Make the sponsor-bar ink.
+Write "PRESENTED BY" called presented in Martian Mono, size 20, tracking 8, in the sponsor-bar.
+Make the presented band.
+Write $brand called brand, size 106, tracking 6, in the sponsor-panel, at the bottom, 20 in.
+Make the brand glass.
+
+-- the title
+Write $title called title, size 92, tracking 4, at 540 378.
+Make the title white.
+Write $subtitle called subtitle in Martian Mono, size 22, tracking 5, under the title, 14 apart.
+Make the subtitle band.
+
+-- the readouts
+Let there be a rectangle called time-box, 270 by 76, at 236 528.
+Let there be a rectangle called best-box, 270 by 76, at 540 528.
+Let there be a rectangle called streak-box, 270 by 76, at 844 528.
+Make the time-box, the best-box and the streak-box glass.
+Give the time-box, the best-box and the streak-box an outline in ink, 5 wide.
+Write "TIME" called time-label in Martian Mono, size 18, tracking 6, above the time-box, 10 apart.
+Write "BEST" called best-label in Martian Mono, size 18, tracking 6, above the best-box, 10 apart.
+Write "STREAK" called streak-label in Martian Mono, size 18, tracking 6, above the streak-box, 10 apart.
+Make the time-label, the best-label and the streak-label white.
+
+-- the screen
+Let there be a rectangle called screen, 860 by 864, at 540 1022.
+Make the screen glass.
+Give the screen an outline in ink, 6 wide.
+Let there be a rectangle called screen-bar, 860 by 40, in the screen, at the top.
+Make the screen-bar ink.
+Let there be a rectangle called glass, 840 by 810, at 540 1041.
+Make the glass glass.
+
+-- the key deck
+Let there be a rectangle called deck, 900 by 320, at 540 1648.
+Make the deck deck.
+Give the deck an outline in ink, 6 wide.
+
+-- the game
+Play wordle on the glass, with the keyboard on the deck.
+Every tile is white, with ink letters, in Big Shoulders Display, flat, outlined in ink, 5 wide, corners 4.
+A correct tile is $correct.
+A present tile is $present.
+An absent tile is #9aa3c2, with white letters.
+Every key is white, with ink letters, in Big Shoulders Display, raised, outlined in ink, 3 wide, corners 8.
+A correct key is $correct.
+A present key is $present.
+An absent key is #9aa3c2, with white letters.
+Every readout is ink, in Big Shoulders Display.
+An urgent readout is #ff3b30.
+Show the timer on the time-box.
+Show the best on the best-box.
+Show the streak on the streak-box.
+When the game is won, say $win.
+When the game is lost, say $lose.
+When the time runs out, say $timeout.

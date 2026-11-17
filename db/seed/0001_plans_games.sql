@@ -42,7 +42,7 @@ INSERT INTO templates (id, game_type_id, family, name, description, status, min_
  'A lit walnut and brushed-metal player: speaker grille, gold badge, glowing screen, light dial and power switch.', 'live', 'pro', 1, 20, 1763337600000);
 
 INSERT INTO template_versions (template_id, version, source_key, slots, engine, notes, created_at) VALUES
-('pop-player', 1, 'templates/pop-player/v1.gt', json('{
+('pop-player', 1, 'templates/pop-player.gt', json('{
   "slots": {
     "word":     { "type": "word",    "from": "secret.word" },
     "tries":    { "type": "integer", "from": "settings.tries" },
@@ -69,7 +69,7 @@ INSERT INTO template_versions (template_id, version, source_key, slots, engine, 
     { "contrast": ["field", "band"],  "min": 1.5 }
   ]
 }'), 'game@1', 'from godtongue/examples/games/pop-player.gt', 1763337600000),
-('analog-player', 1, 'templates/analog-player/v1.gt', json('{
+('analog-player', 1, 'templates/analog-player.gt', json('{
   "slots": {
     "word":    { "type": "word",    "from": "secret.word" },
     "id":      { "type": "slug",    "from": "contest.slug" },
