@@ -4,269 +4,110 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gorilla Squad · Put your product in your customers' hands</title>
-<meta name="description" content="Gorilla Squad connects products with people who share them in their local network. Sellers list a product and a snippet. Marketers share it and get paid on proven clicks, sign-ups or posts.">
-<meta name="theme-color" content="#050515">
+<meta name="description" content="List a product. People in your city share it. You pay only for results that are checked.">
+<meta name="theme-color" content="#26331F">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/libre-baskerville-latin-700-normal.woff2" crossorigin>
 <style>
 @font-face{font-family:Inter;font-weight:400;font-display:swap;src:url(/fonts/inter-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(/fonts/inter-latin-600-normal.woff2) format("woff2")}
 @font-face{font-family:Inter;font-weight:700;font-display:swap;src:url(/fonts/inter-latin-700-normal.woff2) format("woff2")}
-@font-face{font-family:Inter;font-weight:800;font-display:swap;src:url(/fonts/inter-latin-800-normal.woff2) format("woff2")}
-@font-face{font-family:"Libre Baskerville";font-weight:400;font-display:swap;src:url(/fonts/libre-baskerville-latin-400-normal.woff2) format("woff2")}
 @font-face{font-family:"Libre Baskerville";font-weight:700;font-display:swap;src:url(/fonts/libre-baskerville-latin-700-normal.woff2) format("woff2")}
-:root{--brown:#050515;--primary:#D0BCFF;--purple:#836CBB;--white:#fff;--g100:#E6E6E6;--g200:#939197;--body:#5a585e;--pad:5%}
+:root{--army:#26331F;--sage:#CBD6A8;--cream:#F1F0E4;--ink:#26331F;--muted:#6b6e60}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:#fff;color:var(--brown);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-h1,h2,h3,h4,p{margin:0}
+body{margin:0;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--cream)}
+h1,h2,p{margin:0}
 a{color:inherit;text-decoration:none}
-.serif{font-family:"Libre Baskerville",Georgia,serif}
-.word{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
-.eyebrow{font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
-.pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid currentColor;border-radius:999px;background:transparent;color:inherit;font:600 16px Inter,sans-serif;padding:14px 34px;cursor:pointer;transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
-.pill.solid{background:var(--brown);border-color:var(--brown);color:#fff}
-.pill.solid:hover{background:#fff;border-color:#fff;color:var(--brown)}
-.pill.ghost:hover{background:var(--brown);border-color:var(--brown);color:#fff}
-.pill:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
 
-/* split hero */
-.split{display:grid;grid-template-columns:1fr;min-height:100vh}
-.half{padding:clamp(40px,6vw,88px) var(--pad);display:flex;flex-direction:column;justify-content:space-between;gap:40px}
-.sell{background:var(--brown);color:#fff}
-.join{background:var(--primary);color:var(--brown)}
-.half .eyebrow{color:var(--primary)}
-.join .eyebrow{color:var(--purple)}
-.half h1{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:clamp(34px,4.6vw,64px);line-height:1.12;margin-top:14px;max-width:14ch}
-.half p{font-size:clamp(16px,1.4vw,19px);line-height:1.65;margin-top:20px;max-width:46ch}
-.sell p{color:var(--g100)}
-.join p{color:var(--body)}
-.half .cta{margin-top:32px}
-.top{display:flex;justify-content:space-between;align-items:center;padding:24px var(--pad);background:var(--brown);color:#fff}
-.top a.signin{font-weight:600;font-size:15px;color:var(--primary)}
-.top a.signin:hover{color:#fff}
-@media(min-width:900px){.split{grid-template-columns:1fr 1fr}}
+nav{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:22px 5%}
+.word{font:700 18px "Libre Baskerville",Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+nav a.in{font-weight:600;font-size:15px;color:var(--sage)}
 
-/* a bar of facts */
-.strip{background:var(--g100);padding:28px var(--pad);display:flex;flex-wrap:wrap;gap:12px 36px;justify-content:center;font-weight:600;font-size:16px}
-.strip span{display:flex;align-items:center;gap:10px}
-.strip span:before{content:"";width:8px;height:8px;border-radius:99px;background:var(--purple)}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font:600 16px Inter,sans-serif;padding:15px 30px;border:2px solid transparent;transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
+.btn:focus-visible,nav a:focus-visible{outline:3px solid var(--sage);outline-offset:3px}
+.on-army .btn.solid{background:var(--sage);color:var(--army)}
+.on-army .btn.solid:hover{background:#fff}
+.on-army .btn.line{border-color:rgba(255,255,255,.45);color:#fff}
+.on-army .btn.line:hover{border-color:#fff}
+.on-cream .btn.solid{background:var(--army);color:#fff}
+.on-cream .btn.solid:hover{background:#3b4d30}
+.on-cream .btn.line{border-color:var(--army);color:var(--army)}
+.on-cream .btn.line:hover{background:var(--army);color:#fff}
 
-/* sections */
-section.block{padding:clamp(48px,7vw,96px) var(--pad)}
-section.block h2{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:clamp(30px,4vw,54px);line-height:1.15;max-width:16ch;margin-top:10px}
-section.block .lead{color:var(--body);font-size:clamp(16px,1.4vw,19px);line-height:1.65;max-width:56ch;margin-top:16px}
-.eyebrow.purple{color:var(--purple)}
+section{display:flex;flex-direction:column;align-items:center;text-align:center;padding:clamp(72px,9vw,120px) 6% 0;overflow:hidden}
+.on-army{background:var(--army);color:#fff}
+.on-cream{background:var(--cream);color:var(--ink)}
+section.hero{padding-top:clamp(100px,11vw,130px)}
+h1,h2,.line1{text-wrap:balance}
+h1,h2{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;line-height:1.14}
+h1{font-size:clamp(34px,5vw,62px);max-width:18ch}
+h2{font-size:clamp(30px,4.4vw,56px);max-width:16ch}
+.line1{font-size:clamp(16px,1.5vw,20px);line-height:1.6;max-width:36ch;margin-top:18px;color:var(--muted)}
+.on-army .line1{color:rgba(255,255,255,.72)}
+.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:30px}
 
-.steps{display:grid;grid-template-columns:1fr;gap:20px;margin-top:40px;max-width:1152px}
-.step{border-top:2px solid var(--brown);padding-top:20px}
-.step .n{font-weight:700;font-size:14px;color:var(--purple)}
-.step h3{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:22px;line-height:1.25;margin:10px 0 10px}
-.step p{color:var(--body);font-size:15px;line-height:1.6}
-@media(min-width:800px){.steps{grid-template-columns:repeat(4,1fr)}}
-
-/* the feed demo: a flyer card like the board */
-.demo{display:grid;grid-template-columns:1fr;gap:40px;align-items:center;margin-top:40px;max-width:1152px}
-.phone{width:min(330px,100%);margin:0 auto;aspect-ratio:9/16.5;border-radius:30px;border:8px solid #1d1d33;background:var(--brown);color:#fff;overflow:hidden;position:relative;display:flex;flex-direction:column}
-.phone .tabs{display:flex;gap:6px;justify-content:center;padding:14px 0 6px;font-size:12px;font-weight:700}
-.phone .tabs b{padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.12)}
-.phone .tabs b.on{background:var(--primary);color:var(--brown)}
-.flyer{margin:auto 18px;background:var(--primary);color:var(--brown);border-radius:18px;padding:24px 20px 22px;position:relative;box-shadow:0 18px 40px rgba(0,0,0,.45)}
-.flyer .k{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--purple)}
-.flyer h4{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:26px;line-height:1.15;margin:10px 0 12px}
-.flyer p{font-size:14px;line-height:1.5}
-.flyer .rw{margin-top:16px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px}
-.flyer .rw span{background:var(--brown);color:var(--primary);padding:8px 12px;border-radius:999px}
-.phone .foot{padding:14px 18px 20px;font-size:13px;color:var(--g100)}
-.phone .foot .btns{display:flex;gap:8px;margin-top:12px}
-.phone .foot .btns span{flex:1;text-align:center;padding:12px 0;border-radius:12px;background:rgba(255,255,255,.14);font-weight:700;font-size:13px}
-.phone .foot .btns span.p{background:#fff;color:var(--brown)}
-.cards{display:grid;grid-template-columns:1fr;gap:20px;margin-top:40px;max-width:1152px}
-.card{border-radius:24px;padding:36px 28px}
-.card h3{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:clamp(24px,2.6vw,32px);line-height:1.2;margin-bottom:14px}
-.card p{font-size:16px;line-height:1.6}
-.c-gray{background:var(--g100)}
-.c-dark{background:var(--brown);color:#fff}
-.c-dark p{color:var(--g100)}
-.c-primary{background:var(--primary)}
-.c-primary p{color:var(--body)}
-.radio{display:flex;flex-direction:column;gap:10px;margin:18px 0 0}
-.radio div{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:14px 16px;font-weight:600;font-size:15px}
-.radio i{width:20px;height:20px;border-radius:99px;border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;flex:none}
-.radio div.on i:after{content:"";width:10px;height:10px;border-radius:99px;background:var(--purple)}
-.radio small{margin-left:auto;color:var(--g200);font-weight:600;font-size:13px}
-.scope{display:flex;gap:8px;margin-top:18px}
-.scope span{padding:10px 16px;border-radius:999px;border:2px solid var(--primary);font-weight:700;font-size:14px}
-.scope span.on{background:var(--primary);color:var(--brown)}
-.snip{background:#fff;color:var(--brown);border-radius:16px;padding:18px;margin-top:18px;font-size:15px;line-height:1.55}
-.snip b{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--purple);margin-bottom:8px}
-@media(min-width:900px){
- .demo{grid-template-columns:1fr 1fr;gap:72px}
- .cards{grid-template-columns:1fr 1fr}
- .card{padding:44px 40px}
-}
-
-/* faq */
-.faq ul{list-style:none;margin:32px 0 0;padding:0;max-width:820px}
-.faq li{border-bottom:1px solid var(--g100)}
-.faq button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:left;border:0;background:none;padding:22px 4px;cursor:pointer;color:inherit;font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:17px;line-height:1.4}
-.faq button svg{width:22px;height:22px;flex:none;stroke:var(--purple);fill:none;stroke-width:2;transition:transform .3s}
-.faq li.open button svg{transform:rotate(45deg)}
-.faq .a{max-height:0;overflow:hidden;transition:max-height .3s}
-.faq .a p{padding:0 4px 22px;color:var(--body);line-height:1.7;font-size:16px}
-.faq button:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
-
-/* footer */
-footer{background:var(--brown);color:#fff;padding:48px var(--pad);display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px}
-footer .word{color:var(--primary)}
-footer nav{display:flex;gap:24px;flex-wrap:wrap}
-footer nav a{color:var(--primary);font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase}
-footer nav a:hover{color:#fff}
-footer small{color:var(--g200);font-size:13px;display:block;margin-top:12px}
+/* one phone per section: only the app, nothing else */
+.phone{margin-top:clamp(40px,6vw,64px);width:min(330px,78vw);height:clamp(420px,56vw,560px);border-radius:38px 38px 0 0;border:9px solid #0f170c;border-bottom:0;overflow:hidden;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.28)}
+.on-cream .phone{border-color:#26331F}
+.phone img{display:block;width:100%;height:auto}
+.end{padding-bottom:clamp(72px,9vw,120px)}
+footer{background:var(--army);color:rgba(255,255,255,.6);padding:36px 5%;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:14px}
+footer .word{font-size:16px}
+footer a{color:var(--sage);font-weight:600}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 
-<header class="top">
-  <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
-  <a class="signin" href="/app/#signin">Sign in</a>
-</header>
+<section class="on-army hero">
+  <nav>
+    <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
+    <a class="in" href="/app/#signin">Sign in</a>
+  </nav>
+  <h1>Put your product in your customers' hands</h1>
+  <p class="line1">Local people share it. You pay only for results that are checked.</p>
+  <div class="cta">
+    <a class="btn solid" href="/app/#sell">List a product</a>
+    <a class="btn line" href="/app/#board">Join the squad</a>
+  </div>
+  <div class="phone"><img src="/img/squad-board.jpg" width="780" height="1688" alt="The Gorilla Squad board: a local campaign with its reward and a button to copy the snippet and link"></div>
+</section>
 
-<main>
-<div class="split">
-  <section class="half sell" id="sell">
-    <div>
-      <div class="eyebrow">Sell your work</div>
-      <h1>Put your product in your customers' hands</h1>
-      <p>Find people who will share your products to their local network. Add your link, a short pitch and a flyer. Choose the reward. You only pay for results you can check.</p>
-      <div class="cta"><a class="pill solid" href="/app/#sell">List a product</a></div>
-    </div>
-    <p style="margin:0;font-size:14px;color:var(--g200)">Every click is checked before it counts. Duplicate visits and bot traffic are not paid.</p>
-  </section>
+<section class="on-cream">
+  <h2>List it in two minutes</h2>
+  <p class="line1">A link, a pitch, a flyer, and the reward.</p>
+  <div class="phone"><img src="/img/squad-list.jpg" width="780" height="1688" loading="lazy" alt="The new campaign form: product name, link, pitch, flyer upload and reward rule"></div>
+</section>
 
-  <section class="half join" id="join">
-    <div>
-      <div class="eyebrow">Become a marketer</div>
-      <h1>You don't have to be a social media guru</h1>
-      <p>Pick a product from your city or from anywhere. Copy the snippet, download the flyer, post it to your own network, and get paid when it works. Your record of results grows with every verified sale.</p>
-      <div class="cta"><a class="pill solid" href="/app/#join">Join the squad</a></div>
-    </div>
-    <p style="margin:0;font-size:14px;color:var(--body)">You post in your own channels only. No spam, no fake accounts.</p>
-  </section>
-</div>
-</main>
+<section class="on-army">
+  <h2>Every share gets its own link and QR</h2>
+  <p class="line1">One tap to copy. Or let them scan it.</p>
+  <div class="phone"><img src="/img/squad-link.jpg" width="780" height="1688" loading="lazy" alt="A campaign page with the marketer's personal link and QR code"></div>
+</section>
 
-<div class="strip" aria-label="Why Gorilla Squad">
-  <span>Cheaper and easier than digital ads</span>
-  <span>Share your custom snippet</span>
-  <span>Customize the reward</span>
-  <span>Local and global campaigns</span>
-</div>
+<section class="on-cream">
+  <h2>Watch the clicks come in</h2>
+  <p class="line1">Live counts. Repeat visits and bots are not counted.</p>
+  <div class="phone"><img src="/img/squad-live.jpg" width="780" height="1688" loading="lazy" alt="The links dashboard with verified clicks and earnings for each campaign"></div>
+</section>
 
-<section class="block" id="how">
-  <div class="eyebrow purple">How it works</div>
-  <h2>From product to paid in four steps</h2>
-  <div class="steps">
-    <div class="step"><span class="n">01</span><h3>List the product</h3><p>Paste your link, name the product and pick where it can be shared: a country, a city, or everywhere.</p></div>
-    <div class="step"><span class="n">02</span><h3>Write the snippet</h3><p>A short pitch and one flyer. Marketers copy the text and download the image in one tap.</p></div>
-    <div class="step"><span class="n">03</span><h3>Set the reward</h3><p>Pay per click, per sign-up or per snippet. You decide how much a result is worth.</p></div>
-    <div class="step"><span class="n">04</span><h3>Pay on proof</h3><p>Every result comes from a unique link or a post you can check. Nothing is paid on promises.</p></div>
+<section class="on-army">
+  <h2>Paid for what's checked</h2>
+  <p class="line1">Cleared earnings, withdrawn to your bank, PayPal or USDT.</p>
+  <div class="phone"><img src="/img/squad-wallet.jpg" width="780" height="1688" loading="lazy" alt="The wallet with available and pending earnings and a payout request form"></div>
+</section>
+
+<section class="on-cream end">
+  <h2>Start with one product</h2>
+  <div class="cta">
+    <a class="btn solid" href="/app/#sell">List a product</a>
+    <a class="btn line" href="/app/#board">Join the squad</a>
   </div>
 </section>
-
-<section class="block" id="board" style="background:#fff">
-  <div class="demo">
-    <div>
-      <div class="eyebrow purple">The squad board</div>
-      <h2 style="margin-top:10px">Campaigns near you, one swipe away</h2>
-      <p class="lead">Marketers see what is live in their city or country, with the exact reward. Local shows what is close. Global shows everything open.</p>
-      <div class="scope"><span class="on">Local</span><span>Global</span></div>
-      <div class="snip"><b>Your preference</b>Local first, and the categories you care about. Change it any time in your profile.</div>
-    </div>
-    <div class="phone" aria-hidden="true">
-      <div class="tabs"><b class="on">Local</b><b>Global</b></div>
-      <div class="flyer">
-        <div class="k">Lagos · Per click</div>
-        <h4>Fresh bakery, delivered by 9am</h4>
-        <p>Order by 8pm, get warm bread at the door. Share this with your street.</p>
-        <div class="rw"><span>$0.50 per click</span><em style="font-style:normal">$180 left</em></div>
-      </div>
-      <div class="foot">
-        <div>Your link is ready after one tap.</div>
-        <div class="btns"><span>Copy snippet</span><span>Get link</span><span class="p">Post proof</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="block" style="background:var(--g100)">
-  <div class="eyebrow purple">Built for both sides</div>
-  <h2>Share it your way. Get paid the way you agreed.</h2>
-  <div class="cards">
-    <article class="card c-primary">
-      <div class="eyebrow">Customize reward</div>
-      <h3 style="margin-top:12px">Choose what a result is worth</h3>
-      <p>Sellers pick the rule. Marketers see the exact amount before they share.</p>
-      <div class="radio">
-        <div class="on"><i></i>Per click <small>a verified visit</small></div>
-        <div><i></i>Per sign-up <small>a customer signs up</small></div>
-        <div><i></i>Per snippet <small>a checked post</small></div>
-      </div>
-    </article>
-    <article class="card c-dark">
-      <div class="eyebrow" style="color:var(--primary)">Proof is the product</div>
-      <h3 style="margin-top:12px;color:#fff">Every result can be checked</h3>
-      <p>Each marketer gets a unique link and a QR code. Repeat visits from the same device in 24 hours do not count. Bots and datacenter traffic do not count. Payouts go out in batches.</p>
-    </article>
-    <article class="card c-gray">
-      <div class="eyebrow purple">Your wallet</div>
-      <h3 style="margin-top:12px">See pending and cleared earnings</h3>
-      <p>Earnings are pending for a week, so bad clicks can be reversed before they are paid. Then they clear, and you can request a payout to your bank, PayPal or USDT address.</p>
-    </article>
-    <article class="card c-gray">
-      <div class="eyebrow purple">For sellers</div>
-      <h3 style="margin-top:12px">Your numbers, live</h3>
-      <p>See clicks, sign-ups, posts and budget left as they happen. Each marketer's link shows its own results.</p>
-    </article>
-  </div>
-</section>
-
-<section class="block faq" id="faq">
-  <div class="eyebrow purple">FAQ</div>
-  <h2>Questions, answered</h2>
-  <ul>
-    <li><button type="button" aria-expanded="false"><span>Who can join the squad?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Anyone with an email address. Add your city, country and a phone number so we can show you local campaigns and reach you about payouts.</p></div></li>
-    <li><button type="button" aria-expanded="false"><span>What counts as a verified click?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>A visit through your link from a real browser. Repeat visits from the same device within 24 hours, bot traffic and datacenter traffic are not paid. The shopper still reaches the seller's page.</p></div></li>
-    <li><button type="button" aria-expanded="false"><span>When do I get paid?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Earnings clear after a week. You request a payout from your cleared balance. Payouts are sent by hand in weekly batches for now. Payouts over $50 need an ID check first.</p></div></li>
-    <li><button type="button" aria-expanded="false"><span>Who pays the reward?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>The seller. They fund a campaign budget. Each result is paid from that budget and stops when it runs out.</p></div></li>
-    <li><button type="button" aria-expanded="false"><span>Where can I share?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Only in your own channels: your status, your groups you belong to, your own posts. Spamming groups or people who did not ask gets your account closed.</p></div></li>
-  </ul>
-</section>
-</main>
 
 <footer>
-  <div>
-    <span class="word">Gorilla Squad</span>
-    <small>gorillasquad.co</small>
-  </div>
-  <nav>
-    <a href="#sell">Sell</a>
-    <a href="#join">Join</a>
-    <a href="#faq">FAQ</a>
-    <a href="/app/#signin">Sign in</a>
-  </nav>
+  <span class="word">Gorilla Squad</span>
+  <a href="/app/#signin">Sign in</a>
 </footer>
-
-<script>
-  // FAQ: one open at a time
-  document.querySelectorAll('.faq li').forEach(function (li) {
-    var b = li.querySelector('button'), a = li.querySelector('.a');
-    b.addEventListener('click', function () {
-      var open = li.classList.toggle('open');
-      b.setAttribute('aria-expanded', open ? 'true' : 'false');
-      a.style.maxHeight = open ? a.scrollHeight + 'px' : '0';
-    });
-  });
-</script>
 </body>
 </html>

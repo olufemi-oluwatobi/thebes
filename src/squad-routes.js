@@ -236,7 +236,7 @@ export function squadRoutes(app, h) {
         (SELECT COUNT(*) FROM clicks x WHERE x.code = l.code) total, (SELECT COUNT(*) FROM clicks x WHERE x.code = l.code AND x.verified = 1) verified,
         (SELECT COUNT(*) FROM clicks x WHERE x.code = l.code AND x.created_at > ?) today,
         (SELECT COALESCE(SUM(amount_cents), 0) FROM ledger g WHERE g.user_id = l.marketer_id AND g.campaign_id = k.id AND g.amount_cents > 0) earned
-      FROM campaign_links l JOIN campaigns k ON k.id = l.campaign_id WHERE l.marketer_id = ? ORDER BY l.created_at DESC`).bind(now() - DAY, u.id).all()).results;
+      FROM campaign_links l JOIN campaigns k ON k.id = l.campaign_id WHERE l.marketer_id = ? ORDER BY verified DESC, l.created_at DESC`).bind(now() - DAY, u.id).all()).results;
     return c.json({ links: rows.map((r) => ({ ...r, url: linkUrl(c, r.code), left_cents: Math.max(0, r.budget_cents - r.spent_cents) })) });
   });
 
