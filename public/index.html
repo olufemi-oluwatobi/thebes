@@ -3,12 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#141414">
+<meta name="theme-color" content="#050515">
 <title>Thebes</title>
 <meta name="description" content="Play branded word games from small businesses. Win prizes, climb the leaderboard.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-700-normal.woff2" crossorigin>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -42,7 +40,7 @@
   window.__bootFail = function (msg) {
     var b = document.getElementById('boot'); if (!b) return;
     b.style.pointerEvents = 'auto';
-    b.innerHTML = '<div><p style="margin:0 0 14px">' + msg + '</p><button onclick="location.reload()" style="height:44px;padding:0 20px;border-radius:999px;border:0;background:#e65078;color:#141414;font:700 15px system-ui">Try again</button></div>';
+    b.innerHTML = '<div><p style="margin:0 0 14px">' + msg + '</p><button onclick="location.reload()" style="height:44px;padding:0 20px;border-radius:999px;border:0;background:#D0BCFF;color:#050515;font:700 15px system-ui">Try again</button></div>';
   };
   window.__bootTimer = setTimeout(function () { window.__bootFail('Thebes is taking too long to load. Check your connection and try again.'); }, 15000);
   window.addEventListener('error', function (e) { if (document.getElementById('boot')) window.__bootFail('Something went wrong loading Thebes: ' + (e.message || 'script error')); });

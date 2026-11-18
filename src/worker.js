@@ -378,7 +378,7 @@ async function cards(c, rows) {
       id: k.id, title: k.title, type: k.type, status: closed ? 'ended' : k.status, closed, featured: !!k.featured, ends_at: k.ends_at, starts_at: k.starts_at,
       tries: s.tries || 6, time: s.time || null, prize: k.prize_summary, contact_fields: json(k.contact_fields, []), consent_text: k.consent_text,
       leaderboard: hasBoard(k),
-      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#e65078', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id) },
+      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#D0BCFF', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id) },
       counts: { views: k.views || 0, plays: k.plays || 0, wins: k.wins || 0, likes: k.likes || 0, comments: k.comments || 0, shares: k.shares || 0, players: counts.results.find((r) => r.contest_id === k.id)?.players || 0 },
       liked: liked.has(k.id), play: `/play/${k.id}`, poster: posterOf(k.template_id),
       participants: people.results.filter((r) => r.contest_id === k.id).map((r) => ({ name: shown(r), status: r.status })),
