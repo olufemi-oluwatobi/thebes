@@ -205,18 +205,19 @@ app.get('/api/companies/:id/dashboard', async (c) => {
   const DB = c.env.DB;
   const co = await DB.prepare(`SELECT co.*, s.plan_id, a.r2_key logo_key, (SELECT COUNT(*) FROM company_members WHERE company_id = co.id) members,
     (SELECT COUNT(*) FROM follows WHERE company_id = co.id) followers FROM companies co LEFT JOIN subscriptions s ON s.company_id = co.id LEFT JOIN assets a ON a.id = co.logo_asset_id WHERE co.id = ?`).bind(id).first();
-  const contests = (await DB.prepare(`SELECT k.id, k.title, k.type, k.status, k.ends_at, k.starts_at, k.updated_at, b.template_id, cc.views, cc.plays, cc.wins, cc.entries, cc.likes
+  const contests = (await DB.prepare(`SELECT k.id, k.title, k.type, k.status, k.ends_at, k.starts_at, k.updated_at, b.template_id, cc.views, cc.plays, cc.wins, cc.entries, cc.likes,
+    (SELECT COUNT(*) FROM entries e WHERE e.contest_id = k.id AND e.mailing_opt_in = 1 AND e.withdrawn_at IS NULL AND e.mailing_unsubscribed_at IS NULL) mailing
     FROM contests k LEFT JOIN contest_counters cc ON cc.contest_id = k.id LEFT JOIN contest_builds b ON b.id = k.current_build_id
     WHERE k.company_id = ? AND k.deleted_at IS NULL ORDER BY k.created_at DESC LIMIT 100`).bind(id).all()).results;
   const totals = contests.reduce((a, k) => ({ views: a.views + (k.views || 0), plays: a.plays + (k.plays || 0), wins: a.wins + (k.wins || 0), entries: a.entries + (k.entries || 0) }), { views: 0, plays: 0, wins: 0, entries: 0 });
-  const mailing = (await c.env.DB.prepare('SELECT COUNT(*) n FROM entries WHERE company_id = ? AND mailing_opt_in = 1 AND withdrawn_at IS NULL').bind(id).first())?.n || 0;
+  const mailing = (await c.env.DB.prepare('SELECT COUNT(*) n FROM entries WHERE company_id = ? AND mailing_opt_in = 1 AND withdrawn_at IS NULL AND mailing_unsubscribed_at IS NULL').bind(id).first())?.n || 0;
   return c.json({ company: { ...co, brand: json(co.brand), logo: co.logo_key ? '/files/' + co.logo_key : null }, totals: { ...totals, mailing },
     contests: contests.map((k) => ({ ...k, status: isClosed(k) ? 'ended' : k.status, poster: posterOf(k.template_id) })) });
 });
 
 const csvOf = (rows) => { const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`; return ['date,contest,email,name,phone,draw,mailing_list,agreed_to', ...rows.map((r) => [new Date(r.created_at).toISOString(), r.contest, r.email, r.name, r.phone, r.consent ? 'yes' : 'no', r.mailing_opt_in ? 'yes' : 'no', r.consent_text].map(q).join(','))].join('\n'); };
 const entryRows = (DB, company, onlyMailing) => DB.prepare(`SELECT e.created_at, k.title contest, e.email, e.name, e.phone, e.consent, e.mailing_opt_in, e.consent_text FROM entries e JOIN contests k ON k.id = e.contest_id
-  WHERE e.company_id = ? AND e.withdrawn_at IS NULL ${onlyMailing ? 'AND e.mailing_opt_in = 1' : ''} ORDER BY e.created_at DESC`).bind(company).all().then((r) => r.results);
+  WHERE e.company_id = ? AND e.withdrawn_at IS NULL ${onlyMailing ? 'AND e.mailing_opt_in = 1 AND e.mailing_unsubscribed_at IS NULL' : ''} ORDER BY e.created_at DESC`).bind(company).all().then((r) => r.results);
 const csvRes = (csv, name) => new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${name}"` } });
 // everyone who entered a draw, with what each agreed to
 app.get('/api/companies/:id/entries.csv', async (c) => { const id = c.req.param('id'); await needMember(c, id, 'analyst'); return csvRes(csvOf(await entryRows(c.env.DB, id, false)), 'entries.csv'); });
@@ -401,6 +402,17 @@ app.post('/api/contests/:id/publish', async (c) => {
   return c.json({ status, url: `${c.env.APP_URL || new URL(c.req.url).origin}/c/${id}` });
 });
 
+// the ids of the companies whose mailing list this person is on (by their player, or by their signed-in email)
+async function mailingCompanies(c) {
+  const DB = c.env.DB, u = user(c);
+  let pid = '';
+  if (u) pid = (await DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first())?.id || '';
+  else { const dev = getCookie(c, 'td'); if (dev) pid = (await DB.prepare('SELECT id FROM players WHERE device_hash = ?').bind(await sha('device:' + dev)).first())?.id || ''; }
+  const rows = (await DB.prepare(`SELECT DISTINCT e.company_id FROM entries e WHERE e.mailing_opt_in = 1 AND e.mailing_unsubscribed_at IS NULL AND e.withdrawn_at IS NULL AND (e.player_id = ? OR e.email = ?)`)
+    .bind(pid, u?.email || '').all()).results;
+  return new Set(rows.map((r) => r.company_id));
+}
+
 // a contest as the feed shows it
 async function cards(c, rows) {
   if (!rows.length) return [];
@@ -415,14 +427,14 @@ async function cards(c, rows) {
     DB.prepare(`SELECT w.contest_id, w.rank, w.prize_title, p.tries, p.ms, p.player_id, u.handle FROM contest_winners w JOIN plays p ON p.id = w.play_id JOIN players pl ON pl.id = w.player_id
       LEFT JOIN users u ON u.id = pl.user_id WHERE w.contest_id IN (${marks}) ORDER BY w.rank`).bind(...ids),
   ]);
-  const liked = new Set(likes.results.map((r) => r.contest_id)), followed = new Set(follows.results.map((r) => r.company_id));
+  const liked = new Set(likes.results.map((r) => r.contest_id)), followed = new Set(follows.results.map((r) => r.company_id)), joined = await mailingCompanies(c);
   return rows.map((k) => {
     const closed = isClosed(k), s = json(k.settings), brand = json(k.brand);
     return {
       id: k.id, title: k.title, type: k.type, status: closed ? 'ended' : k.status, closed, featured: !!k.featured, ends_at: k.ends_at, starts_at: k.starts_at,
       tries: s.tries || 6, time: s.time || null, prize: k.prize_summary, contact_fields: json(k.contact_fields, []), consent_text: k.consent_text,
       leaderboard: hasBoard(k),
-      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#D0BCFF', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id) },
+      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#D0BCFF', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id), mailing_joined: joined.has(k.company_id) },
       counts: { views: k.views || 0, plays: k.plays || 0, wins: k.wins || 0, likes: k.likes || 0, comments: k.comments || 0, shares: k.shares || 0, players: counts.results.find((r) => r.contest_id === k.id)?.players || 0 },
       liked: liked.has(k.id), play: `/play/${k.id}`, poster: posterOf(k.template_id),
       participants: people.results.filter((r) => r.contest_id === k.id).map((r) => ({ name: shown(r), status: r.status })),
@@ -686,10 +698,43 @@ app.post('/api/contests/:id/entry', async (c) => {
   const words = [draw && entryWords(k.company, k.prize_summary), mail && mailWords(k.company)].filter(Boolean).join(' ');
   await DB.prepare(`INSERT INTO entries (id, contest_id, company_id, player_id, play_id, email, name, phone, consent, consent_text, mailing_opt_in, mailing_opt_in_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT (contest_id, player_id) DO UPDATE SET email = excluded.email, name = excluded.name, phone = excluded.phone, consent = excluded.consent, consent_text = excluded.consent_text,
-      mailing_opt_in = excluded.mailing_opt_in, mailing_opt_in_at = CASE WHEN excluded.mailing_opt_in = 1 THEN COALESCE(entries.mailing_opt_in_at, excluded.mailing_opt_in_at) END`)
+      mailing_opt_in = excluded.mailing_opt_in, mailing_opt_in_at = CASE WHEN excluded.mailing_opt_in = 1 THEN COALESCE(entries.mailing_opt_in_at, excluded.mailing_opt_in_at) END,
+      mailing_unsubscribed_at = CASE WHEN excluded.mailing_opt_in = 1 THEN NULL ELSE entries.mailing_unsubscribed_at END`)
     .bind(uid('e'), id, k.company_id, p.id, play?.id || null, email, String(b.name || '').slice(0, 80) || null, String(b.phone || '').slice(0, 30) || null, draw ? 1 : 0, words, mail ? 1 : 0, mail ? t : null, t).run();
   if (!had) await DB.batch([DB.prepare('UPDATE contest_counters SET entries = entries + 1, updated_at = ? WHERE contest_id = ?').bind(t, id),
     DB.prepare('UPDATE company_counters SET entries = entries + 1, updated_at = ? WHERE company_id = ?').bind(t, k.company_id)]);
+  return c.json({ ok: true });
+});
+
+// a player's own mailing lists, for the profile page
+app.get('/api/me/mailing', async (c) => {
+  const u = needUser(c), DB = c.env.DB;
+  const pid = (await DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first())?.id || '';
+  const lists = (await DB.prepare(`SELECT e.company_id, co.name company, MIN(e.mailing_opt_in_at) joined_at FROM entries e JOIN companies co ON co.id = e.company_id
+    WHERE e.mailing_opt_in = 1 AND e.mailing_unsubscribed_at IS NULL AND e.withdrawn_at IS NULL AND (e.player_id = ? OR e.email = ?)
+    GROUP BY e.company_id ORDER BY joined_at DESC`).bind(pid, u.email).all()).results;
+  return c.json({ lists });
+});
+// a player leaves a sponsor's mailing list: the opt-in is cleared and the time kept
+app.post('/api/mailing/unsubscribe', async (c) => {
+  const u = needUser(c), DB = c.env.DB, t = now(), b = await c.req.json().catch(() => ({}));
+  const co = String(b.company_id || '');
+  if (!co) return fail(c, 400, 'unsubscribe from which company?');
+  const pid = (await DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first())?.id || '';
+  const r = await DB.prepare(`UPDATE entries SET mailing_opt_in = 0, mailing_unsubscribed_at = ? WHERE company_id = ? AND mailing_opt_in = 1 AND (player_id = ? OR email = ?)`)
+    .bind(t, co, pid, u.email).run();
+  return c.json({ ok: true, removed: r.meta?.changes || 0 });
+});
+
+// a player reports a game: each player reports a game once; guests can report too
+app.post('/api/contests/:id/report', async (c) => {
+  const id = c.req.param('id'), DB = c.env.DB, t = now(), b = await c.req.json().catch(() => ({}));
+  const k = await DB.prepare('SELECT id FROM contests WHERE id = ? AND deleted_at IS NULL').bind(id).first();
+  if (!k) return fail(c, 404, 'no such contest');
+  const reason = { offensive: 'offensive', misleading: 'scam', spam: 'spam', other: 'other' }[b.reason] || 'other';
+  const p = await player(c), u = user(c);
+  await DB.prepare('INSERT OR IGNORE INTO reports (id, target_type, target_id, reporter_id, player_id, reason, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(uid('r'), 'contest', id, u?.id || null, p.id, reason, String(b.note || '').trim().slice(0, 500) || null, t).run();
   return c.json({ ok: true });
 });
 

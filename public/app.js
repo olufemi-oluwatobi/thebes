@@ -111,6 +111,7 @@ function slideHTML(k, i) {
         ${k.leaderboard ? `<div class="it"><button type="button" aria-label="Leaderboard" data-act="board">${I.trophy}</button><span>Ranks</span></div>` : ''}
         <div class="it"><button type="button" aria-label="Players" data-act="players" class="people">${faces ? `<span class="faces">${faces}</span>` : I.people}</button><span data-n="players">${fmt(k.counts.players)}</span></div>
         <div class="it"><button type="button" aria-label="Share" data-act="share">${I.share}</button><span>Share</span></div>
+        <button type="button" class="reportbtn" data-act="report">Report</button>
       </div>
       <div class="cap">
         <div class="who"><span class="av" style="background:${esc(k.company.color)}">${k.company.logo ? `<img src="${esc(k.company.logo)}" alt="">` : esc(initials(k.company.name))}</span><b>${esc(k.company.name)}</b>
@@ -161,7 +162,7 @@ addEventListener('message', (e) => {
   if (d.type === 'started') { k.counts.players = Math.max(k.counts.players, 1); }
   if (d.type === 'won' || d.type === 'lost') {
     setTimeout(() => {
-      if (k.contact_fields?.length && k.prize && !F.entered.has(k.id)) entrySheet(k, d.type === 'won');
+      if (k.contact_fields?.length && !k.company.mailing_joined && !F.entered.has(k.id)) entrySheet(k, d.type === 'won');
       else if (k.leaderboard && d.type === 'won') boardSheet(k);
     }, 1800);
   }
@@ -208,9 +209,16 @@ async function commentsSheet(k) {
   });
 }
 
+// a company's list: everyone in the feed for it now shows as joined, so the prompt does not come back this session
+const markJoined = (companyId, joined = true) => F.items.filter((x) => x.company.id === companyId).forEach((x) => { x.company.mailing_joined = joined; });
 function entrySheet(k, won) {
   const f = k.contact_fields || ['email'], co = k.company.name, draw = !!k.prize;
+  const oneTap = ME.user?.email ? `<div class="oneTap">
+      ${draw ? `<label class="check" style="margin-bottom:12px"><input type="checkbox" id="eq"><span>Enter me in the draw. ${esc(co)} can use my details to contact me about the prize.</span></label>` : ''}
+      <button class="cta" type="button" id="joinone">Join ${esc(co)} mailing list</button>
+      <p class="note" style="margin:8px 0 0">As ${esc(ME.user.email)}. You can unsubscribe any time from your profile.</p></div>` : '';
   const s = openSheet(`${sheetHead(won ? 'You solved it' : 'Thanks for playing', esc(draw ? `${co} is giving away ${k.prize}. Enter the draw, and join their mailing list if you like.` : `Hear from ${co} about new contests and offers.`))}
+    ${oneTap}
     <form class="form" id="entryf">
       <div class="fld"><label for="ee">Email</label><input class="in" id="ee" type="email" autocomplete="email" required value="${esc(ME.user?.email || '')}"></div>
       ${f.includes('name') ? '<div class="fld"><label for="en">Name</label><input class="in" id="en" autocomplete="name"></div>' : ''}
@@ -219,13 +227,34 @@ function entrySheet(k, won) {
       <label class="check"><input type="checkbox" id="em" ${draw ? '' : 'required'}><span>Add me to the ${esc(co)} mailing list. I can unsubscribe any time.${draw ? ' <i style="color:var(--sub);font-style:normal">Optional.</i>' : ''}</span></label>
       <button class="cta" type="submit">${draw ? 'Send' : 'Join mailing list'}</button><button class="cta ghost" type="button" data-act="close">No thanks</button><div id="emsg"></div></form>`);
   F.entered.add(k.id);
+  const done = (mailing) => { closeSheet(); toast(mailing ? `You joined the ${co} mailing list` : `Sent to ${co}`); if (mailing) markJoined(k.company.id); if (k.leaderboard && won) setTimeout(() => boardSheet(k), 600); };
+  $('#joinone', s)?.addEventListener('click', async () => {
+    try { await post(`/api/contests/${k.id}/entry`, { email: ME.user.email, consent: draw ? !!$('#eq', s)?.checked : false, mailing: true }); done(true); }
+    catch (err) { $('#emsg', s).innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+  });
   $('#entryf', s).addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await post(`/api/contests/${k.id}/entry`, { email: $('#ee', s).value, name: $('#en', s)?.value, phone: $('#ep', s)?.value, consent: draw ? $('#ec', s).checked : false, mailing: $('#em', s).checked });
-      closeSheet(); toast(`Sent to ${co}`);
-      if (k.leaderboard && won) setTimeout(() => boardSheet(k), 600);
+      const mail = $('#em', s).checked;
+      await post(`/api/contests/${k.id}/entry`, { email: $('#ee', s).value, name: $('#en', s)?.value, phone: $('#ep', s)?.value, consent: draw ? $('#ec', s).checked : false, mailing: mail });
+      done(mail);
     } catch (err) { $('#emsg', s).innerHTML = `<span class="err">${esc(err.message)}</span>`; }
+  });
+}
+
+// a subtle report: a reason and an optional note; one report per player per game
+function reportSheet(k) {
+  const s = openSheet(`${sheetHead('Report this game', esc(k.title))}
+    <form class="form" id="repf">
+      ${[['offensive', 'Offensive'], ['misleading', 'Misleading prize'], ['spam', 'Spam'], ['other', 'Something else']].map(([v, l], i) => `<label class="check"><input type="radio" name="rr" value="${v}" ${i ? '' : 'checked'}><span>${l}</span></label>`).join('')}
+      <div class="fld"><label for="rn">Note (optional)</label><input class="in" id="rn" maxlength="500"></div>
+      <button class="cta" type="submit">Send report</button><div id="remsg"></div></form>`);
+  $('#repf', s).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await post(`/api/contests/${k.id}/report`, { reason: $('input[name="rr"]:checked', s)?.value || 'other', note: $('#rn', s).value });
+      closeSheet(); toast("Thanks, we'll take a look.");
+    } catch (err) { $('#remsg', s).innerHTML = `<span class="err">${esc(err.message)}</span>`; }
   });
 }
 
@@ -239,6 +268,7 @@ $('#feed').addEventListener('click', async (e) => {
   if (a === 'stop') app.classList.remove('playing');
   if (a === 'board') boardSheet(k);
   if (a === 'players') playersSheet(k);
+  if (a === 'report') reportSheet(k);
   if (a === 'comments') commentsSheet(k);
   if (a === 'like') {
     if (needSignIn('Sign in to like games.')) return;
@@ -503,7 +533,10 @@ async function renderProfile() {
     </div>`;
   const box = $('#ptab', v);
   if (P.tab === 'player') {
-    box.innerHTML = `<div class="stats"><div class="stat"><b>${s.played || 0}</b><span>Played</span></div><div class="stat"><b>${s.wins || 0}</b><span>Solved</span></div><div class="stat"><b>${s.best ? s.best : '–'}</b><span>Best tries</span></div></div><div class="fld"><div class="h3">Played</div><div class="played" id="pl"><span style="color:var(--sub)">Loading…</span></div></div>`;
+    box.innerHTML = `<div class="stats"><div class="stat"><b>${s.played || 0}</b><span>Played</span></div><div class="stat"><b>${s.wins || 0}</b><span>Solved</span></div><div class="stat"><b>${s.best ? s.best : '–'}</b><span>Best tries</span></div></div><div class="fld"><div class="h3">Played</div><div class="played" id="pl"><span style="color:var(--sub)">Loading…</span></div></div>
+      <div class="fld" style="gap:2px"><div class="h3">Mailing lists</div><div id="ml"><span style="color:var(--sub)">Loading…</span></div></div>`;
+    api('/api/me/mailing').then(({ lists }) => { $('#ml', box).innerHTML = lists.length ? lists.map((l) => `<div class="cl" style="align-items:center"><span class="tx"><b>${esc(l.company)}</b><span>Joined ${new Date(l.joined_at).toLocaleDateString()}</span></span><button type="button" class="mbtn" data-act="unsub" data-v="${esc(l.company_id)}">Unsubscribe</button></div>`).join('') : '<span style="color:var(--sub)">You are not on any mailing lists.</span>'; })
+      .catch((e) => { $('#ml', box).innerHTML = `<span class="err">${esc(e.message)}</span>`; });
     try {
       const { plays } = await api('/api/me/plays');
       $('#pl', box).innerHTML = plays.length ? plays.map((p) => { const won = p.status === 'won'; return `<a href="/c/${esc(p.contest_id)}#feed" title="${esc(p.title)}"><img src="${esc(p.poster)}" alt="${esc(p.company)}: ${esc(p.title)}" loading="lazy"><span style="background:${won ? 'var(--pink)' : 'var(--ink)'};color:${won ? 'var(--ink)' : '#fff'}">${won ? `Solved ${p.tries}/${p.of}` : p.status === 'playing' ? 'Playing' : 'Missed'}</span></a>`; }).join('') : '<span style="color:var(--sub);grid-column:1/-1">No games yet. Find one in the feed.</span>';
@@ -515,9 +548,9 @@ async function renderProfile() {
     const d = await api(`/api/companies/${P.tab}/dashboard`), co = d.company;
     const chip = { live: 'live', scheduled: 'blue', draft: '', ended: 'dark', removed: 'red' };
     box.innerHTML = `<div class="co"><span class="lg">${co.logo ? `<img src="${esc(co.logo)}" alt="">` : esc(initials(co.name))}</span><div style="flex:1;min-width:0"><b style="font-size:16px">${esc(co.name)}</b><div style="font-size:12px;color:var(--sub);margin-top:2px">${esc((co.plan_id || 'free').replace(/^./, (c) => c.toUpperCase()))} · ${co.members} member${co.members === 1 ? '' : 's'} · ${co.followers} follower${co.followers === 1 ? '' : 's'}</div></div></div>
-      <div class="kpis"><div class="kpi"><span>Views</span><b>${fmt(d.totals.views)}</b></div><div class="kpi"><span>Plays</span><b>${fmt(d.totals.plays)}</b></div><div class="kpi"><span>Solved</span><b>${fmt(d.totals.wins)}</b></div><div class="kpi"><span>Mailing list</span><b>${fmt(d.totals.mailing)}</b></div></div>
+      <div class="kpis"><div class="kpi"><span>Views</span><b>${fmt(d.totals.views)}</b></div><div class="kpi"><span>Plays</span><b>${fmt(d.totals.plays)}</b></div><div class="kpi"><span>Solved</span><b>${fmt(d.totals.wins)}</b></div><div class="kpi"><span>Mailing list</span><b>${fmt(d.totals.mailing)}</b></div><div class="kpi"><span>Opt-in rate</span><b>${d.totals.plays ? Math.round((d.totals.mailing / d.totals.plays) * 100) : 0}%</b></div></div>
       <div class="fld" style="gap:2px"><div class="h3" style="height:34px">Contests<a href="#create">New contest</a></div>
-      ${d.contests.length ? d.contests.map((k) => `<a class="cl" href="/c/${esc(k.id)}#feed"><img src="${esc(k.poster)}" alt=""><span class="tx"><b>${esc(k.title)}</b><span>${k.type} · ${k.plays || 0} plays · ${k.entries || 0} entries${k.ends_at ? ` · ${k.status === 'ended' ? 'ended' : 'ends'} ${new Date(k.ends_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</span></span><span class="tag ${chip[k.status] ?? ''}">${k.status}</span></a>`).join('') : '<span style="color:var(--sub)">No contests yet.</span>'}</div>
+      ${d.contests.length ? d.contests.map((k) => `<a class="cl" href="/c/${esc(k.id)}#feed"><img src="${esc(k.poster)}" alt=""><span class="tx"><b>${esc(k.title)}</b><span>${k.type} · ${k.plays || 0} plays · ${k.entries || 0} entries · ${k.mailing || 0} joined list${k.ends_at ? ` · ${k.status === 'ended' ? 'ended' : 'ends'} ${new Date(k.ends_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</span></span><span class="tag ${chip[k.status] ?? ''}">${k.status}</span></a>`).join('') : '<span style="color:var(--sub)">No contests yet.</span>'}</div>
       <a class="linkbtn" href="/api/companies/${esc(co.id)}/mailing-list.csv" download>${I.down}Export mailing list · ${fmt(d.totals.mailing)} opted in (CSV)</a>
       <a class="linkbtn" href="/api/companies/${esc(co.id)}/entries.csv" download>${I.down}Export draw entries · ${fmt(d.totals.entries)} (CSV)</a>`;
   } catch (e) { box.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
@@ -527,6 +560,11 @@ $('#profile').addEventListener('click', async (e) => {
   const a = b.dataset.act;
   if (a === 'signin') signIn();
   if (a === 'ptab') { P.tab = b.dataset.v; renderProfile(); }
+  if (a === 'unsub') {
+    b.disabled = true;
+    try { await post('/api/mailing/unsubscribe', { company_id: b.dataset.v }); markJoined(b.dataset.v, false); toast('Unsubscribed'); renderProfile(); }
+    catch (err) { b.disabled = false; toast(err.message); }
+  }
   if (a === 'signout') { await post('/api/auth/signout').catch(() => { }); await loadMe(); renderProfile(); toast('Signed out'); }
   if (a === 'edit') {
     const s = openSheet(`${sheetHead('Edit profile')}<form class="form" id="mef"><div class="fld"><label for="mh">Handle</label><input class="in" id="mh" value="${esc(ME.user.handle)}" maxlength="20" autocapitalize="none"></div><div class="fld"><label for="mn">Name</label><input class="in" id="mn" value="${esc(ME.user.display_name || '')}" maxlength="60"></div><button class="cta" type="submit">Save</button><div id="mem"></div></form>`);

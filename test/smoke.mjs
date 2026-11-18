@@ -122,6 +122,23 @@ ok('card shows counts and participants', card2.liked && card2.counts.likes === 1
 const dash = (await owner.j(`/api/companies/${coId}/dashboard`)).body;
 ok('business dashboard', dash.totals.plays === 3 && dash.totals.entries === 1 && dash.contests[0].id === kid, JSON.stringify(dash.totals));
 
+// mailing list: the feed knows who has joined, the dashboard counts it per game, unsubscribing takes them off
+ok('feed says not joined before joining', card.company.mailing_joined === false);
+ok('feed item reports the list as joined after joining', card2.company.mailing_joined === true, JSON.stringify(card2.company));
+ok('dashboard counts the opt-in for the game', dash.totals.mailing === 1 && dash.contests[0].mailing === 1, JSON.stringify(dash.totals));
+ok('unsubscribe needs a company', (await p1.post('/api/mailing/unsubscribe', {})).status === 400);
+ok('a guest cannot unsubscribe', (await anon.post('/api/mailing/unsubscribe', { company_id: coId })).status === 401);
+const myLists = (await p1.j('/api/me/mailing')).body.lists;
+ok('profile lists the company joined', myLists.length === 1 && myLists[0].company_id === coId && myLists[0].company === "Mama's Diner", JSON.stringify(myLists));
+ok('player unsubscribes', (await p1.post('/api/mailing/unsubscribe', { company_id: coId })).body.removed === 1);
+ml = await (await owner.req(`/api/companies/${coId}/mailing-list.csv`)).text();
+ok('unsubscribed player is out of the mailing-list CSV', !ml.includes('kofi@example.com'));
+ok('unsubscribed player is out of the dashboard count', (await owner.j(`/api/companies/${coId}/dashboard`)).body.totals.mailing === 0);
+ok('unsubscribed player is off their profile list', (await p1.j('/api/me/mailing')).body.lists.length === 0);
+ok('feed says not joined after unsubscribing', (await p1.j(`/api/contests/${kid}`)).body.item.company.mailing_joined === false);
+ok('joining again puts them back on the list', (await p1.post(`/api/contests/${kid}/entry`, { email: 'kofi@example.com', consent: true, mailing: true })).status === 200 && (await owner.j(`/api/companies/${coId}/dashboard`)).body.totals.mailing === 1);
+await p1.post('/api/mailing/unsubscribe', { company_id: coId });
+
 // admin closes it: winners are picked, play stops, the feed shows it closed
 ok('non-admin cannot end', (await owner.post(`/api/admin/contests/${kid}`, { action: 'end' })).status === 403);
 ok('admin ends it', (await admin.post(`/api/admin/contests/${kid}`, { action: 'end' })).status === 200);
@@ -132,6 +149,14 @@ const p3 = person(); const late = await p3.post(`/api/contests/${kid}/play/start
 ok('a newcomer sees it closed', late.body.closed === true);
 const ov = (await admin.j('/api/admin/overview')).body;
 ok('admin overview', ov.users.n >= 4 && ov.contests.ended >= 1, JSON.stringify(ov));
+
+// reports: each player reports a game once; guests can too; all of them land in the admin list
+ok('a player reports a game', (await p2.post(`/api/contests/${kid}/report`, { reason: 'misleading', note: 'the prize is not real' })).body.ok === true);
+ok('a second report from the same player is ignored', (await p2.post(`/api/contests/${kid}/report`, { reason: 'spam' })).status === 200);
+ok('a guest can report too', (await anon.post(`/api/contests/${kid}/report`, { reason: 'other' })).status === 200);
+ok('reporting an unknown game is refused', (await anon.post('/api/contests/nope/report', { reason: 'spam' })).status === 404);
+const rps = (await admin.j('/api/admin/reports')).body.reports.filter((r) => r.target_id === kid);
+ok('admin reports list has one report per player', rps.length === 2 && rps.some((r) => r.reason === 'scam' && r.note === 'the prize is not real'), JSON.stringify(rps));
 
 // dailies belong to a series and are numbered
 const d1 = await owner.post('/api/contests', { company_id: coId, brand: "Mama's Diner", type: 'daily', title: 'The Daily Word', word: 'crane' });
@@ -190,6 +215,9 @@ ok('trivia resume returns the answers given', tr.body.status === 'won' && tr.bod
 await p2.post(`/api/contests/${tid}/play/start`);
 for (let n = 0; n < 3; n++) await p2.post(`/api/contests/${tid}/play/guess`, { n, pick: rightIx(n) });
 const tlb = (await anon.j(`/api/contests/${tid}/leaderboard`)).body;
+await p1.post(`/api/contests/${tid}/entry`, { email: 'kofi@example.com', consent: false, mailing: true });
+const dash2 = (await owner.j(`/api/companies/${coId}/dashboard`)).body;
+ok('mailing count is per game', dash2.contests.find((x) => x.id === tid)?.mailing === 1 && dash2.contests.find((x) => x.id === kid)?.mailing === 0 && dash2.totals.mailing === 1, JSON.stringify(dash2.totals));
 ok('trivia leaderboard: most right first', tlb.rows.length === 2 && tlb.rows[0].tries === 3 && tlb.rows[1].tries === 2, JSON.stringify(tlb.rows));
 const tpl = (await anon.j('/api/templates')).body.templates;
 ok('templates say which game', tpl.some((x) => x.id === 'trivia-classic' && x.game === 'trivia') && tpl.some((x) => x.id === 'pop-player' && x.game === 'wordle'));

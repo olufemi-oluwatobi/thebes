@@ -60,6 +60,7 @@ nav .plus{width:50px;height:34px;border-radius:11px;background:var(--pink);color
 .faces span{width:22px;height:22px;border-radius:999px;border:2px solid var(--ink);margin-left:-7px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;color:var(--ink)}
 .faces span:first-child{margin-left:0}
 .rail .people{width:auto;min-width:48px;padding:0 8px;border-radius:999px}
+.rail .reportbtn{width:auto;height:auto;padding:4px 6px;background:none;color:var(--white);font-size:12px;font-weight:700;opacity:.8;text-shadow:0 1px 3px #000,0 0 8px #000c}
 .cap{position:absolute;left:16px;right:78px;bottom:18px;display:flex;flex-direction:column;gap:8px;text-shadow:0 1px 3px #000c}
 .who{display:flex;align-items:center;gap:10px;min-width:0}
 .av{width:38px;height:38px;border-radius:999px;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:none;overflow:hidden;background:var(--pink);color:var(--ink);text-shadow:none}
