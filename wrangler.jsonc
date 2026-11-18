@@ -1,7 +1,7 @@
 {
-  // Thebes: one Worker serves the app (public/), the API, the game pages and the cron that closes contests.
+  // Gorilla Squad (formerly Thebes): one Worker serves the site and app (public/), the API, tracked links (/s/…) and the games engine pages (/play/…).
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "thebes",
+  "name": "gorilla-squad",
   "main": "src/worker.js",
   "compatibility_date": "2026-09-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -9,7 +9,7 @@
     "directory": "public",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/play/*", "/files/*", "/auth/*"]
+    "run_worker_first": ["/api/*", "/s/*", "/play/*", "/files/*", "/auth/*"]
   },
   "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "518aab82-fa35-4f59-8734-8d80be609848", "migrations_dir": "db/migrations" }],
   // wrangler r2 bucket create thebes-files
@@ -21,9 +21,9 @@
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "observability": { "enabled": true },
   "vars": {
-    "APP_URL": "",                        // empty: links use the address the request came in on
+    "APP_URL": "https://gorillasquad.co",   // tracked links are built from this (empty: the address the request came in on)
     "EMAIL_MODE": "resend",               // "resend" sends sign-in links (secret RESEND_API_KEY); "show" returns them (local only)
-    "EMAIL_FROM": "Thebes <hello@YOUR-DOMAIN>",
+    "EMAIL_FROM": "Gorilla Squad <hello@gorillasquad.co>",
     "ADMIN_EMAILS": "",                   // comma-separated: these accounts become admins when they sign in
     "AI_MODE": "live"                     // "live" uses Workers AI to word and colour designs; "off" uses the template defaults
   },

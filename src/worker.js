@@ -3,6 +3,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import WORDS_TXT from '../vendor/godtongue/web/games/words5.txt';
+import { squadRoutes } from './squad-routes.js';
 
 const WORDS = new Set(WORDS_TXT.split('\n').map((w) => w.trim()).filter(Boolean));
 const app = new Hono();
@@ -76,7 +77,7 @@ app.post('/api/auth/start', async (c) => {
   if (!c.env.RESEND_API_KEY) return fail(c, 503, 'email sign-in is not set up yet (RESEND_API_KEY)');
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { authorization: `Bearer ${c.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ from: c.env.EMAIL_FROM, to: e, subject: 'Your Thebes sign-in link', text: `Sign in to Thebes:\n\n${link}\n\nThe link works once, for 20 minutes.` }),
+    body: JSON.stringify({ from: c.env.EMAIL_FROM, to: e, subject: 'Your Gorilla Squad sign-in link', text: `Sign in to Gorilla Squad:\n\n${link}\n\nThe link works once, for 20 minutes.` }),
   });
   if (!r.ok) return fail(c, 502, 'the email could not be sent');
   return c.json({ sent: true });
@@ -85,7 +86,7 @@ app.post('/api/auth/start', async (c) => {
 app.get('/auth/verify', async (c) => {
   const DB = c.env.DB, t = now(), token = c.req.query('t') || '';
   const row = await DB.prepare('SELECT * FROM login_tokens WHERE token_hash = ?').bind(await sha(token)).first();
-  if (!row || row.used_at || row.expires_at < t) return c.redirect('/#signin-expired');
+  if (!row || row.used_at || row.expires_at < t) return c.redirect('/app/#signin');
   await DB.prepare('UPDATE login_tokens SET used_at = ? WHERE token_hash = ?').bind(t, row.token_hash).run();
   let u = await DB.prepare('SELECT * FROM users WHERE email = ?').bind(row.email).first();
   const admins = String(c.env.ADMIN_EMAILS || '').toLowerCase().split(',').map((s) => s.trim()).filter(Boolean);
@@ -104,7 +105,7 @@ app.get('/auth/verify', async (c) => {
   await DB.prepare('INSERT INTO sessions (id_hash, user_id, created_at, expires_at, user_agent) VALUES (?, ?, ?, ?, ?)')
     .bind(await sha(sid), u.id, t, t + 30 * DAY, (c.req.header('user-agent') || '').slice(0, 200)).run();
   setCookie(c, 'ts', sid, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 30 * 86400 });
-  return c.redirect('/#profile');
+  return c.redirect('/app/#board');
 });
 
 app.post('/api/auth/signout', async (c) => {
@@ -123,7 +124,7 @@ app.get('/api/me', async (c) => {
     .map((r) => ({ ...r, brand: json(r.brand), logo: r.logo_key ? '/files/' + r.logo_key : null }));
   const p = await c.env.DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first();
   const stats = p ? await c.env.DB.prepare("SELECT COUNT(*) played, SUM(status = 'won') wins, MIN(CASE WHEN status = 'won' THEN tries END) best FROM plays WHERE player_id = ?").bind(p.id).first() : {};
-  return c.json({ user: { id: u.id, email: u.email, handle: u.handle, display_name: u.display_name, role: u.role }, companies, stats });
+  return c.json({ user: { id: u.id, email: u.email, handle: u.handle, display_name: u.display_name, role: u.role, city: u.city, country: u.country, phone: u.phone, prefs: json(u.prefs) }, companies, stats });
 });
 
 app.patch('/api/me', async (c) => {
@@ -815,6 +816,9 @@ app.post('/api/admin/reports/:id', async (c) => {
   await DB.prepare('UPDATE reports SET status = ?, handled_by = ?, handled_at = ? WHERE id = ?').bind(b.action === 'dismiss' ? 'dismissed' : 'actioned', me.id, t, r.id).run();
   return c.json({ ok: true });
 });
+
+// Gorilla Squad: campaigns, tracked links, proof, wallet and payouts (see src/squad-routes.js)
+squadRoutes(app, { needUser, needAdmin, needMember, memberRole, fail, uid, now, rand, sha, json });
 
 app.all('/api/*', (c) => fail(c, 404, 'no such endpoint'));
 

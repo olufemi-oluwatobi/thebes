@@ -1,0 +1,125 @@
+/* Gorilla Squad app. Same palette and fonts as the Thebes look: navy, lavender, purple, Inter and Libre Baskerville. */
+@font-face{font-family:Inter;font-weight:400;font-display:swap;src:url(/fonts/inter-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(/fonts/inter-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:700;font-display:swap;src:url(/fonts/inter-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:800;font-display:swap;src:url(/fonts/inter-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"Libre Baskerville";font-weight:400;font-display:swap;src:url(/fonts/libre-baskerville-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Libre Baskerville";font-weight:700;font-display:swap;src:url(/fonts/libre-baskerville-latin-700-normal.woff2) format("woff2")}
+
+:root{--brown:#050515;--primary:#D0BCFF;--purple:#836CBB;--white:#fff;--g100:#E6E6E6;--g200:#939197;--body:#5a585e;--line:#1d1d33;--nav:64px;--red:#b3261e}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--brown);color:#fff;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+h1,h2,h3,p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.wrap{word-break:break-all}
+
+/* the app frame: one scrolling column; the board is full screen, forms are light pages */
+#app{position:fixed;inset:0 0 var(--nav) 0;overflow:hidden}
+.boot{display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;color:var(--g100)}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav) + 16px);transform:translateX(-50%);background:var(--primary);color:var(--brown);font-weight:700;font-size:14px;padding:12px 18px;border-radius:999px;z-index:20;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+
+/* bottom navigation */
+.nav{position:fixed;left:0;right:0;bottom:0;height:var(--nav);background:var(--brown);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+.nav a{color:var(--g200);text-decoration:none;font-size:12px;font-weight:700;padding:8px 6px;border-radius:999px;min-width:0;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav a.on{color:var(--brown);background:var(--primary)}
+.nav a:focus-visible,.pill:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+
+/* the board: vertical snap, one campaign per screen */
+.board{position:relative;height:100%}
+.bh{position:absolute;top:0;left:0;right:0;z-index:5;display:flex;justify-content:center;align-items:center;gap:12px;padding:16px;pointer-events:none}
+.bh>*{pointer-events:auto}
+.seg{display:inline-flex;background:rgba(255,255,255,.12);border-radius:999px;padding:4px}
+.seg button{border:0;background:none;color:var(--g100);padding:8px 18px;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--brown)}
+.where{font-size:12px;color:var(--primary);font-weight:700}
+.note{color:var(--g200);font-size:14px;line-height:1.5;padding:0 16px}
+.note a{color:var(--primary)}
+.feed{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.slide{height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.slide .art{flex:1 1 55%;min-height:0;background:var(--line);position:relative}
+.slide .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fallback{position:absolute;inset:0;background:linear-gradient(160deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;padding:32px;text-align:center}
+.fallback b{font-family:"Libre Baskerville",Georgia,serif;font-size:30px;line-height:1.2;color:var(--brown)}
+.slide .info{flex:0 0 auto;background:var(--brown);padding:18px 18px calc(18px + 8px);display:flex;flex-direction:column;gap:10px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chip{background:var(--primary);color:var(--brown);font-weight:800;font-size:13px;padding:6px 12px;border-radius:999px}
+.left{color:var(--g200);font-size:13px;font-weight:700}
+.slide h2{font-family:"Libre Baskerville",Georgia,serif;font-size:22px;line-height:1.2;font-weight:700}
+.by{color:var(--primary);font-size:13px;font-weight:700}
+.snip{color:var(--g100);font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.empty{padding:48px 24px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;height:100%}
+.empty h2{font-family:"Libre Baskerville",Georgia,serif;font-size:24px}
+.empty p{color:var(--g200);line-height:1.6;max-width:36ch}
+
+/* pills and buttons */
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:2px solid var(--primary);border-radius:999px;background:transparent;color:var(--primary);font-weight:700;font-size:14px;padding:11px 18px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.pill.solid{background:var(--primary);color:var(--brown)}
+.pill:disabled{opacity:.5;cursor:default}
+.slide .pill{border-color:rgba(255,255,255,.35);color:#fff}
+.slide .pill.solid{background:var(--primary);border-color:var(--primary);color:var(--brown)}
+.pill.solid:hover{background:#fff;border-color:#fff;color:var(--brown)}
+
+/* light pages: forms, lists, wallet, admin */
+.page{position:absolute;inset:0;overflow-y:auto;background:#fff;color:var(--brown);padding:20px 18px 40px}
+.page h1{font-family:"Libre Baskerville",Georgia,serif;font-size:28px;line-height:1.2;margin:6px 0 14px}
+.page h2{font-family:"Libre Baskerville",Georgia,serif;font-size:20px;margin:26px 0 10px}
+.page .lead{color:var(--body);line-height:1.6;margin-bottom:14px}
+.page .note{color:var(--body);padding:0}
+.page .note a{color:var(--purple);font-weight:700}
+.page .by{color:var(--purple)}
+.page .snip,.page .snip-big{color:var(--body)}
+.page .snip-big{font-size:17px;line-height:1.6;margin:12px 0 18px}
+.back{display:inline-block;color:var(--purple);font-weight:700;font-size:14px;text-decoration:none;margin-bottom:6px}
+.stack{display:flex;flex-direction:column;gap:14px;margin-top:6px}
+label{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:14px;color:var(--brown)}
+input,select,textarea{border:1px solid var(--g100);border-radius:12px;padding:12px 14px;font-weight:400;font-size:16px;color:var(--brown);background:#fff;width:100%}
+textarea{resize:vertical}
+input[type=file]{padding:10px;font-size:14px}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{font-weight:700;font-size:14px;margin-bottom:6px}
+.radio-row{flex-direction:row;align-items:center;gap:10px;font-weight:600;font-size:15px;padding:10px 12px;border:1px solid var(--g100);border-radius:12px}
+.radio-row input{width:auto}
+.err{color:var(--red)}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px;padding:14px 0;border-bottom:1px solid var(--g100);font-size:15px}
+.list li small{color:var(--body);width:100%}
+.list .neg{color:var(--red);font-weight:700}
+.card-l{display:block;border:1px solid var(--g100);border-radius:18px;padding:16px;margin:12px 0;text-decoration:none;color:var(--brown);display:flex;flex-direction:column;gap:10px}
+.card-l h3{font-family:"Libre Baskerville",Georgia,serif;font-size:18px}
+.card-l b{font-size:16px}
+.card-l p{color:var(--body);font-size:14px;line-height:1.5}
+.card-l .note{padding:0}
+.counters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.counters div{background:var(--g100);border-radius:12px;padding:10px 4px;font-size:12px;color:var(--body);font-weight:700}
+.counters span{display:block;font-family:"Libre Baskerville",Georgia,serif;font-size:20px;color:var(--brown)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.stats div{background:var(--g100);border-radius:14px;padding:14px;font-size:13px;color:var(--body);font-weight:700}
+.stats span{display:block;font-family:"Libre Baskerville",Georgia,serif;font-size:24px;color:var(--brown)}
+.stats.big span{font-size:28px}
+.budget{height:10px;background:var(--g100);border-radius:999px;overflow:hidden;margin-top:8px}
+.budget div{height:100%;background:var(--purple)}
+.status{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;background:var(--g100);color:var(--body);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.s-live{background:var(--primary);color:var(--brown)}
+.s-review,.s-requested{background:#f4e9c7;color:#5a4300}
+.s-paused,.s-rejected{background:#f5d7d4;color:var(--red)}
+.s-approved,.s-paid,.s-ended{background:var(--g100);color:var(--body)}
+.detail-art{width:100%;aspect-ratio:4/5;border-radius:18px;overflow:hidden;position:relative;background:var(--g100)}
+.detail-art img{width:100%;height:100%;object-fit:cover;display:block}
+.detail-art .fallback{position:absolute}
+.linkbox{border:1px solid var(--g100);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;align-items:stretch;background:#fbfafd}
+.linkbox code{background:#fff;border:1px solid var(--g100);border-radius:10px;padding:10px;word-break:break-all}
+.qr{display:flex;justify-content:center;background:#fff;padding:10px;border-radius:14px}
+.qr svg{width:220px;height:220px;max-width:70vw;height:auto}
+.signin{padding-top:48px}
+.note-box{background:var(--g100);border-radius:12px;padding:12px;font-size:14px}
+
+@media(min-width:720px){
+  #app{left:50%;transform:translateX(-50%);width:440px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  .nav{left:50%;transform:translateX(-50%);width:440px}
+  .toast{transform:translateX(-50%)}
+}
+@media(prefers-reduced-motion:reduce){.feed{scroll-behavior:auto}}

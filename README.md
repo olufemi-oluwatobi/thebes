@@ -1,10 +1,49 @@
-# Thebes
+# Gorilla Squad
 
-A contest network for small businesses: branded word games in a vertical feed, with leaderboards, winners, social, and
-contacts for the business. One Cloudflare Worker serves everything. Games are made with godtongue, in the creator's
-browser; nothing is built on a server.
+Put your product in your customers' hands. Sellers list a product with a link, a short pitch and a flyer, and choose a
+reward (per click, per sign-up or per snippet). Marketers see campaigns in their city or country, copy the snippet, get a
+unique link and QR code, and are paid from the seller's budget on checked results. One Cloudflare Worker serves
+everything: the site (`/`), the app (`/app/`), tracked links (`/s/<code>`) and the API.
 
-## What is in the MVP
+The games engine (godtongue, the Thebes contests and `/play/:id`) is still in this repo and still works. The Gorilla
+Squad home page and app do not link to it.
+
+## Gorilla Squad MVP
+
+- **Home** (`/`): split screen, sell on one side, become a marketer on the other.
+- **Sign-in** (`/app/#signin`): email link, no password. Marketers add city, country and phone (`/app/#me`).
+- **Sell** (`/app/#sell`): a business, then a campaign: product link, pitch, flyer, reward rule and reward, where it can
+  be shared (`Lagos, NG`, `NG`, or `*`). Fund it, send it for review, and see live stats. Sign-up campaigns get a
+  postback URL for the seller's thank-you page.
+- **Board** (`/app/#board`): full-screen cards, local or global, with the exact reward and budget left. One tap copies
+  the snippet and the marketer's link together. The details page has the QR code.
+- **Links** (`/app/#links`): live counters per link (today, verified, not counted, earned), refreshed every 15 seconds.
+- **Clicks** (`/s/<code>`): each visit is logged and the shopper goes on to the product with `gs_ref`. A click pays only
+  if it comes from a real browser (not a bot or a datacenter) and the same device has not clicked the same link in the
+  last 24 hours. Budgets are never overspent.
+- **Wallet** (`/app/#wallet`): available vs pending (earnings are pending for 7 days), the ledger, and payout requests
+  (bank, PayPal or USDT; minimum $10; above $50 an ID check is flagged).
+- **Admin** (`/app/#admin`, admins only): review and approve campaigns, add funds after a confirmed transfer, approve
+  posts for per-snippet rewards, mark payouts paid or reject them, and see fraud flags.
+
+**Not built yet:** card and local-payment funding (Stripe, Paystack, Flutterwave), instant WhatsApp, SMS or push alerts,
+automated phone verification, automated ID checks, and automated payouts. Funding and payouts are done by hand from the
+admin page for now.
+
+## Run it locally
+
+```
+npm install
+npm run db:local        # create the local database and seed it
+npm run dev             # builds the browser runtime, starts the Worker on http://localhost:8787
+npm test                # the games engine: 91 end-to-end checks
+node test/squad.mjs     # Gorilla Squad: 65 end-to-end checks, against the same running Worker
+```
+
+Locally, sign-in links are shown on screen instead of emailed, and `admin@thebes.local` is an admin.
+
+## Thebes games (kept in the repo)
+
 
 - **Feed** (`/`): swipe through games; the visible one is live in a frame. Like, comments, leaderboard, players, share,
   follow. Closed contests show "Closed" with their winners.
@@ -20,18 +59,6 @@ browser; nothing is built on a server.
 - **Admin** (`/#admin`, admins only): overview; pin, end, remove, restore contests; user roles; suspend businesses and
   change plans; reports.
 - **Contacts**: after a game, players can leave details; each entry stores the exact consent text they agreed to.
-
-## Run it locally
-
-```
-npm install
-npm run db:local        # create the local database and seed it
-npm run dev             # builds the browser runtime, starts the Worker on http://localhost:8787
-npm test                # in another terminal: 47 end-to-end checks against the running Worker
-```
-
-Locally, sign-in links are shown on screen instead of emailed, and `admin@thebes.local` is an admin.
-
 ## Deploy to Cloudflare
 
 ```
@@ -52,7 +79,6 @@ npx wrangler d1 execute thebes --remote --file db/seed/0001_plans_games.sql   # 
 Sign in with an email from `ADMIN_EMAILS` and you are an admin. Scheduled contests open, and ended ones close (with
 their winners picked), whenever the feed loads or someone plays. On Workers Paid you can add a cron for this too (see
 the note in `wrangler.jsonc`).
-
 ## Layout
 
 | Path | What |
@@ -64,7 +90,6 @@ the note in `wrangler.jsonc`).
 | `db/` | D1 migrations, seed, `check.py` |
 | `docs/wizard.md` | how the design step works |
 | `test/smoke.mjs` | end-to-end checks |
-
 ## Not in the MVP
 
 Payments, push notifications, more games, the landing page, rate limiting beyond Cloudflare's defaults, image
