@@ -49,8 +49,9 @@ npm run deploy                                 # builds, applies migrations to t
 npx wrangler d1 execute thebes --remote --file db/seed/0001_plans_games.sql   # once: tiers, game, templates
 ```
 
-Sign in with an email from `ADMIN_EMAILS` and you are an admin. The cron (every 5 minutes) opens scheduled contests and
-closes ended ones; the feed also closes due contests when it loads.
+Sign in with an email from `ADMIN_EMAILS` and you are an admin. Scheduled contests open, and ended ones close (with
+their winners picked), whenever the feed loads or someone plays. On Workers Paid you can add a cron for this too (see
+the note in `wrangler.jsonc`).
 
 ## Layout
 

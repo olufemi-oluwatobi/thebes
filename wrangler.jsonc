@@ -15,8 +15,9 @@
   // wrangler r2 bucket create thebes-files
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "thebes-files" }],
   "ai": { "binding": "AI" },
-  // every five minutes: open scheduled contests, close ended ones and pick their winners
-  "triggers": { "crons": ["*/5 * * * *"] },
+  // No cron: the free plan allows 5 per account. Contests open and close (and winners are picked) when the feed loads
+  // or someone plays. On Workers Paid, add  "triggers": { "crons": ["*/5 * * * *"] }  to also do it on a timer.
+  "workers_dev": true,
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "observability": { "enabled": true },
   "vars": {
