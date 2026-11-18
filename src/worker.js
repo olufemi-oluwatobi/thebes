@@ -408,9 +408,12 @@ async function mailingCompanies(c) {
   let pid = '';
   if (u) pid = (await DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first())?.id || '';
   else { const dev = getCookie(c, 'td'); if (dev) pid = (await DB.prepare('SELECT id FROM players WHERE device_hash = ?').bind(await sha('device:' + dev)).first())?.id || ''; }
-  const rows = (await DB.prepare(`SELECT DISTINCT e.company_id FROM entries e WHERE e.mailing_opt_in = 1 AND e.mailing_unsubscribed_at IS NULL AND e.withdrawn_at IS NULL AND (e.player_id = ? OR e.email = ?)`)
-    .bind(pid, u?.email || '').all()).results;
-  return new Set(rows.map((r) => r.company_id));
+  // joined: on the list now; left: unsubscribed and not back since (we stop asking them)
+  const rows = (await DB.prepare(`SELECT e.company_id, MAX(e.mailing_opt_in = 1 AND e.mailing_unsubscribed_at IS NULL) joined, MAX(e.mailing_unsubscribed_at IS NOT NULL) left_ FROM entries e
+    WHERE e.withdrawn_at IS NULL AND (e.player_id = ? OR e.email = ?) GROUP BY e.company_id`).bind(pid, u?.email || '').all()).results;
+  const set = new Set(rows.filter((r) => r.joined).map((r) => r.company_id));
+  set.left = new Set(rows.filter((r) => !r.joined && r.left_).map((r) => r.company_id));
+  return set;
 }
 
 // a contest as the feed shows it
@@ -434,7 +437,7 @@ async function cards(c, rows) {
       id: k.id, title: k.title, type: k.type, status: closed ? 'ended' : k.status, closed, featured: !!k.featured, ends_at: k.ends_at, starts_at: k.starts_at,
       tries: s.tries || 6, time: s.time || null, prize: k.prize_summary, contact_fields: json(k.contact_fields, []), consent_text: k.consent_text,
       leaderboard: hasBoard(k),
-      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#D0BCFF', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id), mailing_joined: joined.has(k.company_id) },
+      company: { id: k.company_id, name: k.company, slug: k.company_slug, color: brand.colors?.primary || '#D0BCFF', logo: k.logo_key ? '/files/' + k.logo_key : null, followed: followed.has(k.company_id), mailing_joined: joined.has(k.company_id), mailing_left: !!joined.left?.has(k.company_id) },
       counts: { views: k.views || 0, plays: k.plays || 0, wins: k.wins || 0, likes: k.likes || 0, comments: k.comments || 0, shares: k.shares || 0, players: counts.results.find((r) => r.contest_id === k.id)?.players || 0 },
       liked: liked.has(k.id), play: `/play/${k.id}`, poster: posterOf(k.template_id),
       participants: people.results.filter((r) => r.contest_id === k.id).map((r) => ({ name: shown(r), status: r.status })),

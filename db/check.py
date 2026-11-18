@@ -1,7 +1,9 @@
 # Runs every migration and seed in an in-memory SQLite (what D1 is), inserts sample rows and checks that bad rows are refused.
 import sqlite3, glob, json, sys
 db = sqlite3.connect(':memory:'); db.execute('PRAGMA foreign_keys=ON')
-for f in sorted(glob.glob('db/migrations/*.sql')) + sorted(glob.glob('db/seed/*.sql')):
+# the seed went in after 0005; later migrations add rows that refer to it (0007 adds the trivia game)
+mig = sorted(glob.glob('db/migrations/*.sql'))
+for f in [m for m in mig if m.split('/')[-1] <= '0005'] + sorted(glob.glob('db/seed/*.sql')) + [m for m in mig if m.split('/')[-1] > '0005']:
     db.executescript(open(f).read()); print('ok', f)
 t = 1763337600000
 q = lambda s, *a: db.execute(s, a)

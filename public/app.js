@@ -162,7 +162,7 @@ addEventListener('message', (e) => {
   if (d.type === 'started') { k.counts.players = Math.max(k.counts.players, 1); }
   if (d.type === 'won' || d.type === 'lost') {
     setTimeout(() => {
-      if (k.contact_fields?.length && !k.company.mailing_joined && !F.entered.has(k.id)) entrySheet(k, d.type === 'won');
+      if (k.contact_fields?.length && !F.entered.has(k.id) && (k.prize || (!k.company.mailing_joined && !k.company.mailing_left))) entrySheet(k, d.type === 'won');
       else if (k.leaderboard && d.type === 'won') boardSheet(k);
     }, 1800);
   }
@@ -213,18 +213,19 @@ async function commentsSheet(k) {
 const markJoined = (companyId, joined = true) => F.items.filter((x) => x.company.id === companyId).forEach((x) => { x.company.mailing_joined = joined; });
 function entrySheet(k, won) {
   const f = k.contact_fields || ['email'], co = k.company.name, draw = !!k.prize;
-  const oneTap = ME.user?.email ? `<div class="oneTap">
+  const ask = !k.company.mailing_joined && !k.company.mailing_left;   // on the list already, or left it: only the draw
+  const oneTap = ME.user?.email && ask ? `<div class="oneTap">
       ${draw ? `<label class="check" style="margin-bottom:12px"><input type="checkbox" id="eq"><span>Enter me in the draw. ${esc(co)} can use my details to contact me about the prize.</span></label>` : ''}
       <button class="cta" type="button" id="joinone">Join ${esc(co)} mailing list</button>
       <p class="note" style="margin:8px 0 0">As ${esc(ME.user.email)}. You can unsubscribe any time from your profile.</p></div>` : '';
-  const s = openSheet(`${sheetHead(won ? 'You solved it' : 'Thanks for playing', esc(draw ? `${co} is giving away ${k.prize}. Enter the draw, and join their mailing list if you like.` : `Hear from ${co} about new contests and offers.`))}
+  const s = openSheet(`${sheetHead(won ? 'You solved it' : 'Thanks for playing', esc(draw ? `${co} is giving away ${k.prize}. Enter the draw${ask ? ', and join their mailing list if you like' : ''}.` : `Hear from ${co} about new contests and offers.`))}
     ${oneTap}
     <form class="form" id="entryf">
       <div class="fld"><label for="ee">Email</label><input class="in" id="ee" type="email" autocomplete="email" required value="${esc(ME.user?.email || '')}"></div>
       ${f.includes('name') ? '<div class="fld"><label for="en">Name</label><input class="in" id="en" autocomplete="name"></div>' : ''}
       ${f.includes('phone') ? '<div class="fld"><label for="ep">Phone</label><input class="in" id="ep" type="tel" autocomplete="tel"></div>' : ''}
       ${draw ? `<label class="check"><input type="checkbox" id="ec" required><span>Enter me in the draw. ${esc(co)} can use my details to contact me about the prize.</span></label>` : ''}
-      <label class="check"><input type="checkbox" id="em" ${draw ? '' : 'required'}><span>Add me to the ${esc(co)} mailing list. I can unsubscribe any time.${draw ? ' <i style="color:var(--sub);font-style:normal">Optional.</i>' : ''}</span></label>
+      ${ask ? '' : '<!--'}<label class="check"><input type="checkbox" id="em" ${draw ? '' : 'required'}><span>Add me to the ${esc(co)} mailing list. I can unsubscribe any time.${draw ? ' <i style="color:var(--sub);font-style:normal">Optional.</i>' : ''}</span></label>${ask ? '' : '-->'}
       <button class="cta" type="submit">${draw ? 'Send' : 'Join mailing list'}</button><button class="cta ghost" type="button" data-act="close">No thanks</button><div id="emsg"></div></form>`);
   F.entered.add(k.id);
   const done = (mailing) => { closeSheet(); toast(mailing ? `You joined the ${co} mailing list` : `Sent to ${co}`); if (mailing) markJoined(k.company.id); if (k.leaderboard && won) setTimeout(() => boardSheet(k), 600); };
@@ -235,7 +236,7 @@ function entrySheet(k, won) {
   $('#entryf', s).addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      const mail = $('#em', s).checked;
+      const mail = !!$('#em', s)?.checked;
       await post(`/api/contests/${k.id}/entry`, { email: $('#ee', s).value, name: $('#en', s)?.value, phone: $('#ep', s)?.value, consent: draw ? $('#ec', s).checked : false, mailing: mail });
       done(mail);
     } catch (err) { $('#emsg', s).innerHTML = `<span class="err">${esc(err.message)}</span>`; }
