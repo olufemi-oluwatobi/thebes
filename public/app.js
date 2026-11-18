@@ -20,7 +20,13 @@ function endsText(k) {
 }
 
 async function api(path, opts = {}) {
-  const r = await fetch(path, { credentials: 'include', ...opts, headers: { ...(opts.body && !(opts.body instanceof Blob) && !(opts.body instanceof ArrayBuffer) ? { 'content-type': 'application/json' } : {}), ...(opts.headers || {}) } });
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), opts.timeout || 12000);
+  let r;
+  try {
+    r = await fetch(path, { credentials: 'include', signal: ctl.signal, ...opts, headers: { ...(opts.body && !(opts.body instanceof Blob) && !(opts.body instanceof ArrayBuffer) ? { 'content-type': 'application/json' } : {}), ...(opts.headers || {}) } });
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'Thebes is taking too long to answer. Check your connection and try again.' : 'Could not reach Thebes. Check your connection and try again.');
+  } finally { clearTimeout(timer); }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) { const e = new Error(j.error || `request failed (${r.status})`); e.code = j.code; e.status = r.status; throw e; }
   return j;
@@ -84,7 +90,7 @@ async function loadFeed() {
       else if (have < 0) { try { items.unshift((await api('/api/contests/' + deep)).item); } catch { } }
     }
     F.items = items;
-  } catch (e) { F.items = []; slides.innerHTML = `<div class="empty"><h2>Could not load games</h2><p>${esc(e.message)}</p></div>`; return; }
+  } catch (e) { F.items = []; slides.innerHTML = `<div class="empty"><h2>Could not load games</h2><p>${esc(e.message)}</p><button type="button" class="btn pink" data-act="reload">Try again</button></div>`; return; }
   renderFeed();
 }
 function slideHTML(k, i) {
@@ -223,6 +229,7 @@ function entrySheet(k, won) {
 
 $('#feed').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act],[data-feedtab]'); if (!b) return;
+  if (b.dataset.act === 'reload') return loadFeed();
   if (b.dataset.feedtab) { F.tab = b.dataset.feedtab; $$('[data-feedtab]').forEach((x) => x.classList.toggle('on', x === b)); return loadFeed(); }
   const slide = b.closest('.slide'); if (slide && +slide.dataset.i !== F.active) activate(+slide.dataset.i);
   const k = activeItem(), a = b.dataset.act; if (!k && a !== 'stop') return;
@@ -540,6 +547,8 @@ function route() {
   else if (F.items.length && F.active < 0) { const sl = $('#slides'); activate(Math.round(sl.scrollTop / Math.max(1, sl.clientHeight))); }
 }
 addEventListener('hashchange', route);
-await loadMe();
+// start: show the feed at once; who is signed in arrives alongside it
+clearTimeout(window.__bootTimer); document.getElementById('boot')?.remove();
 route();
 loadFeed();
+loadMe().then(() => { const v = location.hash.slice(1); if (v === 'profile' || v === 'create' || v === 'admin') route(); });

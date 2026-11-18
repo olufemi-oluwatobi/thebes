@@ -8,7 +8,7 @@
 <meta name="description" content="Play branded word games from small businesses. Win prizes, climb the leaderboard.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -35,6 +35,19 @@
   <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
+<div id="boot" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:32px;text-align:center;color:#d4d4d4;font:500 15px system-ui,sans-serif;pointer-events:none">Loading Thebes…</div>
+<noscript><p style="color:#fff;padding:24px;font-family:system-ui">Thebes needs JavaScript turned on.</p></noscript>
+<script>
+  // if the app has not started in 15 s, or a script fails, say so instead of loading forever
+  window.__bootFail = function (msg) {
+    var b = document.getElementById('boot'); if (!b) return;
+    b.style.pointerEvents = 'auto';
+    b.innerHTML = '<div><p style="margin:0 0 14px">' + msg + '</p><button onclick="location.reload()" style="height:44px;padding:0 20px;border-radius:999px;border:0;background:#e65078;color:#141414;font:700 15px system-ui">Try again</button></div>';
+  };
+  window.__bootTimer = setTimeout(function () { window.__bootFail('Thebes is taking too long to load. Check your connection and try again.'); }, 15000);
+  window.addEventListener('error', function (e) { if (document.getElementById('boot')) window.__bootFail('Something went wrong loading Thebes: ' + (e.message || 'script error')); });
+</script>
+<script nomodule>window.__bootFail && window.__bootFail('This browser is too old for Thebes. Please update it, or try Chrome or Safari.');</script>
 <script src="/app.js" type="module"></script>
 </body>
 </html>
