@@ -1,5 +1,6 @@
 // Thebes app: feed, create, profile, admin. Plain modules, no build step.
 import { varsFor, DEFAULTS } from '/fill.js';
+import { shareCard } from '/share.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -208,20 +209,21 @@ async function commentsSheet(k) {
 }
 
 function entrySheet(k, won) {
-  const f = k.contact_fields || ['email'];
-  const s = openSheet(`${sheetHead(won ? 'You solved it' : 'Thanks for playing', esc(k.prize ? `${k.company.name} is giving away ${k.prize}. Leave your details to be in with a chance.` : `Stay in touch with ${k.company.name}.`))}
+  const f = k.contact_fields || ['email'], co = k.company.name, draw = !!k.prize;
+  const s = openSheet(`${sheetHead(won ? 'You solved it' : 'Thanks for playing', esc(draw ? `${co} is giving away ${k.prize}. Enter the draw, and join their mailing list if you like.` : `Hear from ${co} about new contests and offers.`))}
     <form class="form" id="entryf">
       <div class="fld"><label for="ee">Email</label><input class="in" id="ee" type="email" autocomplete="email" required value="${esc(ME.user?.email || '')}"></div>
       ${f.includes('name') ? '<div class="fld"><label for="en">Name</label><input class="in" id="en" autocomplete="name"></div>' : ''}
       ${f.includes('phone') ? '<div class="fld"><label for="ep">Phone</label><input class="in" id="ep" type="tel" autocomplete="tel"></div>' : ''}
-      <label class="check"><input type="checkbox" id="ec" required><span>${esc(k.consent_text || `I agree to share these details with ${k.company.name}.`)}</span></label>
-      <button class="cta" type="submit">Send</button><button class="cta ghost" type="button" data-act="close">No thanks</button><div id="emsg"></div></form>`);
+      ${draw ? `<label class="check"><input type="checkbox" id="ec" required><span>Enter me in the draw. ${esc(co)} can use my details to contact me about the prize.</span></label>` : ''}
+      <label class="check"><input type="checkbox" id="em" ${draw ? '' : 'required'}><span>Add me to the ${esc(co)} mailing list. I can unsubscribe any time.${draw ? ' <i style="color:var(--sub);font-style:normal">Optional.</i>' : ''}</span></label>
+      <button class="cta" type="submit">${draw ? 'Send' : 'Join mailing list'}</button><button class="cta ghost" type="button" data-act="close">No thanks</button><div id="emsg"></div></form>`);
   F.entered.add(k.id);
   $('#entryf', s).addEventListener('submit', async (e) => {
     e.preventDefault();
     try {
-      await post(`/api/contests/${k.id}/entry`, { email: $('#ee', s).value, name: $('#en', s)?.value, phone: $('#ep', s)?.value, consent: $('#ec', s).checked });
-      closeSheet(); toast(`Sent to ${k.company.name}`);
+      await post(`/api/contests/${k.id}/entry`, { email: $('#ee', s).value, name: $('#en', s)?.value, phone: $('#ep', s)?.value, consent: draw ? $('#ec', s).checked : false, mailing: $('#em', s).checked });
+      closeSheet(); toast(`Sent to ${co}`);
       if (k.leaderboard && won) setTimeout(() => boardSheet(k), 600);
     } catch (err) { $('#emsg', s).innerHTML = `<span class="err">${esc(err.message)}</span>`; }
   });
@@ -251,11 +253,35 @@ $('#feed').addEventListener('click', async (e) => {
   if (a === 'share') {
     const url = `${location.origin}/c/${k.id}`;
     api(`/api/contests/${k.id}/share`, { method: 'POST' }).catch(() => { });
-    try { if (navigator.share) await navigator.share({ title: k.title, text: `${k.company.name}: ${k.title}`, url }); else { await navigator.clipboard.writeText(url); toast('Link copied'); } }
-    catch { toast(url, 4000); }
+    shareSheet(k, url);
   }
 });
 $('#sheet').addEventListener('click', (e) => { if (e.target.closest('[data-act="close"]')) closeSheet(); });
+
+// the skin as a card to post: the game, the sponsor, the prize and the Thebes logo
+async function shareSheet(k, url) {
+  const line = k.prize ? `Win ${k.prize}` : k.leaderboard ? 'Beat the leaderboard' : 'One word, one go';
+  const s = openSheet(`${sheetHead('Share this contest', 'Post the card, or send the link.')}<div class="sharebox" id="sbox"><span style="color:var(--sub)">Making your card…</span></div>
+    <div class="btns" id="sbtn"><button type="button" class="cta" data-s="send">Share</button><button type="button" class="cta ghost" data-s="copy">Copy link</button></div>`);
+  let blob = null, file = null;
+  try {
+    const cv = await shareCard({ company: k.company.name, title: k.title, line, poster: k.poster, url });
+    blob = await new Promise((r) => cv.toBlob(r, 'image/png'));
+    file = new File([blob], `${(k.company.slug || 'thebes')}-${k.id}.png`, { type: 'image/png' });
+    $('#sbox', s).innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Share card for ${esc(k.title)}">`;
+  } catch { $('#sbox', s).innerHTML = ''; }
+  $('#sbtn', s).addEventListener('click', async (e) => {
+    const w = e.target.closest('[data-s]')?.dataset.s; if (!w) return;
+    const text = `${k.company.name}: ${k.title}`;
+    try {
+      if (w === 'copy') { await navigator.clipboard.writeText(url); toast('Link copied'); return; }
+      if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: k.title, text, url });
+      else if (navigator.share) await navigator.share({ title: k.title, text, url });
+      else if (blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); toast('Card saved'); }
+      else { await navigator.clipboard.writeText(url); toast('Link copied'); }
+    } catch (err) { if (err?.name !== 'AbortError') toast(url, 4000); }
+  });
+}
 
 // ---------- create ----------
 let W, wid = 0, wready; const wpend = new Map();
@@ -462,10 +488,11 @@ async function renderProfile() {
     const d = await api(`/api/companies/${P.tab}/dashboard`), co = d.company;
     const chip = { live: 'live', scheduled: 'blue', draft: '', ended: 'dark', removed: 'red' };
     box.innerHTML = `<div class="co"><span class="lg">${co.logo ? `<img src="${esc(co.logo)}" alt="">` : esc(initials(co.name))}</span><div style="flex:1;min-width:0"><b style="font-size:16px">${esc(co.name)}</b><div style="font-size:12px;color:var(--sub);margin-top:2px">${esc((co.plan_id || 'free').replace(/^./, (c) => c.toUpperCase()))} · ${co.members} member${co.members === 1 ? '' : 's'} · ${co.followers} follower${co.followers === 1 ? '' : 's'}</div></div></div>
-      <div class="kpis"><div class="kpi"><span>Views</span><b>${fmt(d.totals.views)}</b></div><div class="kpi"><span>Plays</span><b>${fmt(d.totals.plays)}</b></div><div class="kpi"><span>Solved</span><b>${fmt(d.totals.wins)}</b></div><div class="kpi"><span>Contacts</span><b>${fmt(d.totals.entries)}</b></div></div>
+      <div class="kpis"><div class="kpi"><span>Views</span><b>${fmt(d.totals.views)}</b></div><div class="kpi"><span>Plays</span><b>${fmt(d.totals.plays)}</b></div><div class="kpi"><span>Solved</span><b>${fmt(d.totals.wins)}</b></div><div class="kpi"><span>Mailing list</span><b>${fmt(d.totals.mailing)}</b></div></div>
       <div class="fld" style="gap:2px"><div class="h3" style="height:34px">Contests<a href="#create">New contest</a></div>
-      ${d.contests.length ? d.contests.map((k) => `<a class="cl" href="/c/${esc(k.id)}#feed"><img src="${esc(k.poster)}" alt=""><span class="tx"><b>${esc(k.title)}</b><span>${k.type} · ${k.plays || 0} plays · ${k.entries || 0} contacts${k.ends_at ? ` · ${k.status === 'ended' ? 'ended' : 'ends'} ${new Date(k.ends_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</span></span><span class="tag ${chip[k.status] ?? ''}">${k.status}</span></a>`).join('') : '<span style="color:var(--sub)">No contests yet.</span>'}</div>
-      <a class="linkbtn" href="/api/companies/${esc(co.id)}/entries.csv" download>${I.down}Export ${fmt(d.totals.entries)} contacts (CSV)</a>`;
+      ${d.contests.length ? d.contests.map((k) => `<a class="cl" href="/c/${esc(k.id)}#feed"><img src="${esc(k.poster)}" alt=""><span class="tx"><b>${esc(k.title)}</b><span>${k.type} · ${k.plays || 0} plays · ${k.entries || 0} entries${k.ends_at ? ` · ${k.status === 'ended' ? 'ended' : 'ends'} ${new Date(k.ends_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</span></span><span class="tag ${chip[k.status] ?? ''}">${k.status}</span></a>`).join('') : '<span style="color:var(--sub)">No contests yet.</span>'}</div>
+      <a class="linkbtn" href="/api/companies/${esc(co.id)}/mailing-list.csv" download>${I.down}Export mailing list · ${fmt(d.totals.mailing)} opted in (CSV)</a>
+      <a class="linkbtn" href="/api/companies/${esc(co.id)}/entries.csv" download>${I.down}Export draw entries · ${fmt(d.totals.entries)} (CSV)</a>`;
   } catch (e) { box.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
 }
 $('#profile').addEventListener('click', async (e) => {
@@ -499,7 +526,7 @@ async function renderAdmin() {
   try {
     if (A.tab === 'contests') {
       const { contests } = await api('/api/admin/contests');
-      L.innerHTML = contests.map((k) => `<div class="adm-row"><span class="tx"><b>${esc(k.title)}${k.featured ? ' · featured' : ''}</b><span>${esc(k.company)} · ${k.type} · ${k.status} · ${k.plays || 0} plays · ${k.entries || 0} contacts</span></span>
+      L.innerHTML = contests.map((k) => `<div class="adm-row"><span class="tx"><b>${esc(k.title)}${k.featured ? ' · featured' : ''}</b><span>${esc(k.company)} · ${k.type} · ${k.status} · ${k.plays || 0} plays · ${k.entries || 0} entries</span></span>
         ${k.status === 'live' ? `<button type="button" class="mbtn" data-aact="${k.featured ? 'unfeature' : 'feature'}" data-id="${k.id}">${k.featured ? 'Unpin' : 'Pin'}</button><button type="button" class="mbtn" data-aact="end" data-id="${k.id}">End</button>` : ''}
         ${k.status === 'removed' ? `<button type="button" class="mbtn" data-aact="restore" data-id="${k.id}">Restore</button>` : `<button type="button" class="mbtn red" data-aact="remove" data-id="${k.id}">Remove</button>`}</div>`).join('') || '<p class="lede">No contests yet.</p>';
     }

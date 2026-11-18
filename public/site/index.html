@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Thebes · Grow your startup by designing contests</title>
-<meta name="description" content="Design a branded game, put your brand on every screen, share the contest page, and get the contact details of everyone who plays.">
+<meta name="description" content="Design a branded game, put your brand on every screen, share the contest page, and grow your mailing list.">
 <meta name="theme-color" content="#050515">
 <link rel="preload" as="font" type="font/woff2" href="fonts/libre-baskerville-latin-700-normal.woff2" crossorigin>
 <style>
@@ -76,6 +76,21 @@ a{color:inherit;text-decoration:none}
 .linkbox{border:2px solid #fff;border-radius:16px;height:130px;margin-bottom:40px;position:relative;display:flex;align-items:center;justify-content:center;font:600 15px Inter;color:var(--primary);padding:0 16px;text-align:center}
 .linkbox span.rec{position:absolute;top:-14px;right:16px;background:var(--brown);border:2px solid #fff;border-radius:999px;padding:4px 14px;font:700 11px Inter;color:#fff;display:flex;align-items:center;gap:6px}
 .linkbox .rec:before{content:"";width:8px;height:8px;border-radius:99px;background:var(--primary)}
+ .fan{position:relative;height:clamp(300px,60vw,340px);margin-bottom:28px}
+.fan img{position:absolute;top:0;width:60%;aspect-ratio:4/5;object-fit:cover;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.5);border:2px solid #1d1d33}
+.fan img:first-child{left:0;transform:rotate(-6deg)}
+.fan img:last-child{right:0;top:34px;transform:rotate(5deg)}
+.asset{width:100%;height:150px;object-fit:cover;object-position:50% 14%;border-radius:14px;display:block;margin-bottom:24px}
+.optin{background:#fff;color:var(--brown);border-radius:18px;padding:20px;box-shadow:0 18px 40px rgba(5,5,21,.35)}
+.optin .f{border:1px solid var(--g100);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--g200);margin-bottom:12px}
+.optin .ck{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;margin-bottom:10px}
+.optin .ck i{flex:none;width:20px;height:20px;border-radius:6px;border:2px solid var(--g200);display:flex;align-items:center;justify-content:center}
+.optin .ck.on i{background:var(--purple);border-color:var(--purple)}
+.optin .ck.on i:after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.optin .ck small{color:var(--g200)}
+.optin .go{margin-top:14px;height:46px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.c-primary .asset.grow{display:none;object-position:50% 8%}
+@media(min-width:900px){.c-primary .asset.grow{display:block;flex:none;height:320px;margin:28px 0 36px}}
 .csv{display:grid;grid-template-columns:1.3fr 1.4fr .7fr;gap:0;font-size:13px;margin:0 0 32px;border-radius:12px;overflow:hidden;background:rgba(255,255,255,.12)}
 .csv b,.csv span{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.18)}
 .csv b{font-weight:700;background:rgba(255,255,255,.18)}
@@ -84,9 +99,9 @@ a{color:inherit;text-decoration:none}
 @media(min-width:900px){
  .cards{display:grid;grid-template-columns:1fr 400px;align-items:start;gap:20px}
  .card{padding:40px 32px 56px}
- .c-primary{grid-row:span 2;padding:80px 32px}
+ .c-primary{grid-row:span 2;align-self:stretch;display:flex;flex-direction:column;justify-content:space-between;padding:80px 32px}
  .c-purple{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;padding:56px 48px}
- .c-purple .csv{margin:0}
+ .c-purple .csv,.c-purple .optin{margin:0}
  .c-purple p{font-size:18px}
  .c-gray p{font-size:14px}
 }
@@ -139,7 +154,7 @@ footer nav a:hover{color:#fff}
   <div class="copy">
     <h4 class="eyebrow" style="font-size:20px">Welcome to Thebes</h4>
     <h2>Grow your startup by designing contests</h2>
-    <p class="sub">People skip ads and stay for games. Design a branded game, put your brand on every screen, share the contest page and collect the contacts of everyone who plays.</p>
+    <p class="sub">People skip ads and stay for games. Design a branded game, put your brand on every screen, share it as a card, and grow your mailing list with the players who opt in.</p>
     <a class="pill solid" href="/#create">Design your contest</a>
   </div>
   <div class="stage" aria-hidden="true">
@@ -155,7 +170,7 @@ footer nav a:hover{color:#fff}
     <h2>Games Hold Attention Better Than Ads</h2>
   </div>
   <div class="r">
-    <p>A startup asking for attention is easy to scroll past. A game that people are trying to win is not. Thebes turns your brand into a contest on a phone screen: one level, one play, one leaderboard, with your name and prize at the top. Players come back to beat their score, and you collect who they are.</p>
+    <p>A startup asking for attention is easy to scroll past. A game that people are trying to win is not. Thebes turns your brand into a contest on a phone screen: one level, one play, one leaderboard, with your name and prize at the top. Players come back to beat their score, and the ones who like you join your mailing list.</p>
   </div>
 </section>
 
@@ -167,29 +182,30 @@ footer nav a:hover{color:#fff}
       <div class="row"><i class="dot"></i><span class="nm">Founders Day</span><span class="st">Level 3</span></div>
       <div class="row"><i class="dot"></i><span class="nm">Grand Opening</span><span class="st">Level 4</span></div>
     </div>
-    <h3>Design beautiful games and levels</h3>
-    <p>Pick a game, tell Thebes your business, and see a finished level in seconds. Change the words, colours and look until it feels like yours.</p>
+    <img class="asset grow" src="img/pop-player.jpg" alt="A finished game level in the Pop skin, filled in with a sponsor's name and colours">
+    <div><h3>Design beautiful games and levels</h3>
+    <p>Pick a game, tell Thebes your business, and see a finished level in seconds. Change the words, colours and look until it feels like yours.</p></div>
   </article>
   <article class="card c-gray">
+    <img class="asset" src="img/analog-player.jpg" alt="A game skin with the sponsor's name on a brass plate">
     <h3>Place your brand assets, own the interface</h3>
-    <p>Your logo, name and colours run across the whole game screen, from the sponsor banner to the buttons.</p>
-    <div class="swatches" aria-hidden="true"><i style="background:#050515"></i><i style="background:#D0BCFF"></i><i style="background:#836CBB"></i><i style="background:#fff"></i></div>
+    <p>Your logo, name and colours run across the whole game screen, from the sponsor plate to the buttons.</p>
   </article>
   <article class="card c-dark">
-    <div class="linkbox" aria-hidden="true">thebes.app/c/your-contest<span class="rec">LIVE</span></div>
+    <div class="fan"><img src="img/share-diner.jpg" alt="Share card for Mama's Diner: the game skin, the prize and the Thebes logo"><img src="img/share-bakery.jpg" alt="A second Mama's Diner share card"></div>
     <h3>Share beautiful content</h3>
-    <p>Every contest gets its own page on the web with the details, the prize, the leaderboard and the winners. Post the link anywhere.</p>
+    <p>Every contest becomes a card made from your game skin, with your name, the prize and the Thebes logo. One tap to post it with the link, and the contest page carries the leaderboard and winners.</p>
   </article>
   <article class="card c-purple">
     <div>
-      <h3>Get contacts of all participants</h3>
-      <p>Players can leave their details when they enter, and say yes to hearing from you. Export your list when the contest closes.</p>
+      <h3>Grow your mailing list</h3>
+      <p>After a game, players can join your mailing list if they care about your brand. It is their choice, it is separate from entering the draw, and you only get the people who say yes.</p>
     </div>
-    <div class="csv" aria-hidden="true">
-      <b>Name</b><b>Email</b><b>Opt-in</b>
-      <span>Ada O.</span><span>ada@example.com</span><span class="ok">Yes</span>
-      <span>Tunde B.</span><span>tunde@example.com</span><span class="ok">Yes</span>
-      <span>Mia L.</span><span>mia@example.com</span><span class="ok">Yes</span>
+    <div class="optin" aria-hidden="true">
+      <div class="f">ada@example.com</div>
+      <div class="ck"><i></i><span>Enter me in the draw. Mama's Diner can use my details to contact me about the prize.</span></div>
+      <div class="ck on"><i></i><span>Add me to the Mama's Diner mailing list. I can unsubscribe any time. <small>Optional.</small></span></div>
+      <div class="go">Send</div>
     </div>
   </article>
 </section>
@@ -205,8 +221,8 @@ footer nav a:hover{color:#fff}
   <div>
     <div class="step"><span class="n">01</span><span class="t">Choose a game</span><span class="x">Word games first, with more on the way.</span><span class="d">Design</span></div>
     <div class="step"><span class="n">02</span><span class="t">Place your brand</span><span class="x">Upload your logo. Colours come from it.</span><span class="d">Brand</span></div>
-    <div class="step"><span class="n">03</span><span class="t">Share the contest</span><span class="x">One link for the page, the game and the leaderboard.</span><span class="d">Share</span></div>
-    <div class="step"><span class="n">04</span><span class="t">Collect your contacts</span><span class="x">Download everyone who entered and opted in.</span><span class="d">Grow</span></div>
+    <div class="step"><span class="n">03</span><span class="t">Share the contest</span><span class="x">A card from your skin, plus one link for the page and leaderboard.</span><span class="d">Share</span></div>
+    <div class="step"><span class="n">04</span><span class="t">Grow your mailing list</span><span class="x">Players who opt in join your list. Download it any time.</span><span class="d">Grow</span></div>
   </div>
   <div class="cta"><a class="pill" href="/#create">Start a contest</a></div>
 </section>
@@ -217,7 +233,7 @@ footer nav a:hover{color:#fff}
   <ul>
     <li><button type="button" aria-expanded="false"><span>Who is Thebes for?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Small businesses and startups that want attention and customer contacts without a big ad budget: cafes, shops, studios, apps, creators and anyone with something to promote.</p></div></li>
     <li><button type="button" aria-expanded="false"><span>Do I need to design or code anything?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>No. You pick a game and add your logo, name and prize. Thebes fills in the words and colours, you check the result, and you can change anything you don't like before it goes live.</p></div></li>
-    <li><button type="button" aria-expanded="false"><span>What happens to the contact details?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Players choose whether to share their details and whether they agree to hear from you. The list belongs to your business and you can export it as a spreadsheet whenever you want.</p></div></li>
+    <li><button type="button" aria-expanded="false"><span>Who ends up on my mailing list?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Only players who tick the box to join your mailing list. Entering the draw is a separate choice, and we keep the exact words each player agreed to. Export the list as a spreadsheet whenever you want.</p></div></li>
     <li><button type="button" aria-expanded="false"><span>Who gives the prize?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>You do. Thebes never pays prizes. It runs the game, keeps a fair leaderboard and names the winners when the contest closes, then you send the prize.</p></div></li>
     <li><button type="button" aria-expanded="false"><span>Does it cost anything?</span><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg></button><div class="a"><p>Thebes has a free tier to get your first contest live, and paid tiers for more games and looks.</p></div></li>
   </ul>

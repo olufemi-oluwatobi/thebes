@@ -209,18 +209,19 @@ app.get('/api/companies/:id/dashboard', async (c) => {
     FROM contests k LEFT JOIN contest_counters cc ON cc.contest_id = k.id LEFT JOIN contest_builds b ON b.id = k.current_build_id
     WHERE k.company_id = ? AND k.deleted_at IS NULL ORDER BY k.created_at DESC LIMIT 100`).bind(id).all()).results;
   const totals = contests.reduce((a, k) => ({ views: a.views + (k.views || 0), plays: a.plays + (k.plays || 0), wins: a.wins + (k.wins || 0), entries: a.entries + (k.entries || 0) }), { views: 0, plays: 0, wins: 0, entries: 0 });
-  return c.json({ company: { ...co, brand: json(co.brand), logo: co.logo_key ? '/files/' + co.logo_key : null }, totals,
+  const mailing = (await c.env.DB.prepare('SELECT COUNT(*) n FROM entries WHERE company_id = ? AND mailing_opt_in = 1 AND withdrawn_at IS NULL').bind(id).first())?.n || 0;
+  return c.json({ company: { ...co, brand: json(co.brand), logo: co.logo_key ? '/files/' + co.logo_key : null }, totals: { ...totals, mailing },
     contests: contests.map((k) => ({ ...k, status: isClosed(k) ? 'ended' : k.status, poster: posterOf(k.template_id) })) });
 });
 
-app.get('/api/companies/:id/entries.csv', async (c) => {
-  const id = c.req.param('id'); await needMember(c, id, 'analyst');
-  const rows = (await c.env.DB.prepare(`SELECT e.created_at, k.title contest, e.email, e.name, e.phone, e.consent_text FROM entries e JOIN contests k ON k.id = e.contest_id
-    WHERE e.company_id = ? AND e.withdrawn_at IS NULL ORDER BY e.created_at DESC`).bind(id).all()).results;
-  const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv = ['date,contest,email,name,phone,consent', ...rows.map((r) => [new Date(r.created_at).toISOString(), r.contest, r.email, r.name, r.phone, r.consent_text].map(q).join(','))].join('\n');
-  return new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="contacts.csv"' } });
-});
+const csvOf = (rows) => { const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`; return ['date,contest,email,name,phone,draw,mailing_list,agreed_to', ...rows.map((r) => [new Date(r.created_at).toISOString(), r.contest, r.email, r.name, r.phone, r.consent ? 'yes' : 'no', r.mailing_opt_in ? 'yes' : 'no', r.consent_text].map(q).join(','))].join('\n'); };
+const entryRows = (DB, company, onlyMailing) => DB.prepare(`SELECT e.created_at, k.title contest, e.email, e.name, e.phone, e.consent, e.mailing_opt_in, e.consent_text FROM entries e JOIN contests k ON k.id = e.contest_id
+  WHERE e.company_id = ? AND e.withdrawn_at IS NULL ${onlyMailing ? 'AND e.mailing_opt_in = 1' : ''} ORDER BY e.created_at DESC`).bind(company).all().then((r) => r.results);
+const csvRes = (csv, name) => new Response(csv, { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${name}"` } });
+// everyone who entered a draw, with what each agreed to
+app.get('/api/companies/:id/entries.csv', async (c) => { const id = c.req.param('id'); await needMember(c, id, 'analyst'); return csvRes(csvOf(await entryRows(c.env.DB, id, false)), 'entries.csv'); });
+// only players who opted in to the sponsor's mailing list
+app.get('/api/companies/:id/mailing-list.csv', async (c) => { const id = c.req.param('id'); await needMember(c, id, 'analyst'); return csvRes(csvOf(await entryRows(c.env.DB, id, true)), 'mailing-list.csv'); });
 
 // ---------- templates and the design step ----------
 app.get('/api/templates', async (c) => {
@@ -572,20 +573,25 @@ app.post('/api/contests/:id/comments', async (c) => {
   return c.json({ id: cid, body, at: t, name: '@' + u.handle });
 });
 
-// contacts, after a game, with the exact consent the player agreed to
+// contacts, after a game. Entering the draw and joining the sponsor's mailing list are two separate choices, stored with the exact words agreed to
+const entryWords = (co, prize) => `Enter me in the draw. ${co} can use my details to contact me about ${prize ? 'the prize' : 'this contest'}.`;
+const mailWords = (co) => `Add me to the ${co} mailing list. I can unsubscribe any time.`;
 app.post('/api/contests/:id/entry', async (c) => {
   const id = c.req.param('id'), DB = c.env.DB, t = now();
-  const k = await DB.prepare('SELECT * FROM contests WHERE id = ?').bind(id).first();
+  const k = await DB.prepare('SELECT k.*, co.name company FROM contests k JOIN companies co ON co.id = k.company_id WHERE k.id = ?').bind(id).first();
   if (!k) return fail(c, 404, 'no such contest');
   const b = await c.req.json().catch(() => ({}));
-  if (b.consent !== true) return fail(c, 400, 'tick the box to agree first');
+  const draw = b.consent === true, mail = b.mailing === true;
+  if (!draw && !mail) return fail(c, 400, 'tick a box to continue');
   const email = String(b.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(c, 400, 'that does not look like an email address');
   const p = await player(c), play = await DB.prepare('SELECT id FROM plays WHERE contest_id = ? AND player_id = ?').bind(id, p.id).first();
   const had = await DB.prepare('SELECT 1 FROM entries WHERE contest_id = ? AND player_id = ?').bind(id, p.id).first();
-  await DB.prepare(`INSERT INTO entries (id, contest_id, company_id, player_id, play_id, email, name, phone, consent, consent_text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-    ON CONFLICT (contest_id, player_id) DO UPDATE SET email = excluded.email, name = excluded.name, phone = excluded.phone`)
-    .bind(uid('e'), id, k.company_id, p.id, play?.id || null, email, String(b.name || '').slice(0, 80) || null, String(b.phone || '').slice(0, 30) || null, k.consent_text, t).run();
+  const words = [draw && entryWords(k.company, k.prize_summary), mail && mailWords(k.company)].filter(Boolean).join(' ');
+  await DB.prepare(`INSERT INTO entries (id, contest_id, company_id, player_id, play_id, email, name, phone, consent, consent_text, mailing_opt_in, mailing_opt_in_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (contest_id, player_id) DO UPDATE SET email = excluded.email, name = excluded.name, phone = excluded.phone, consent = excluded.consent, consent_text = excluded.consent_text,
+      mailing_opt_in = excluded.mailing_opt_in, mailing_opt_in_at = CASE WHEN excluded.mailing_opt_in = 1 THEN COALESCE(entries.mailing_opt_in_at, excluded.mailing_opt_in_at) END`)
+    .bind(uid('e'), id, k.company_id, p.id, play?.id || null, email, String(b.name || '').slice(0, 80) || null, String(b.phone || '').slice(0, 30) || null, draw ? 1 : 0, words, mail ? 1 : 0, mail ? t : null, t).run();
   if (!had) await DB.batch([DB.prepare('UPDATE contest_counters SET entries = entries + 1, updated_at = ? WHERE contest_id = ?').bind(t, id),
     DB.prepare('UPDATE company_counters SET entries = entries + 1, updated_at = ? WHERE company_id = ?').bind(t, k.company_id)]);
   return c.json({ ok: true });

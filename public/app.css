@@ -208,3 +208,6 @@ textarea.in{height:auto;padding:12px 14px;line-height:22px;resize:vertical}
 .form .cta{flex:none}
 
 h1,h2,h3,.big,.h3,.ttl{font-family:"Libre Baskerville",Georgia,serif}
+.sharebox{margin:4px 16px 12px;border-radius:18px;background:var(--ink);overflow:hidden;display:flex;justify-content:center;align-items:center;min-height:120px}
+.sharebox img{display:block;width:100%;max-height:52vh;object-fit:contain}
+#sbtn{display:flex;gap:10px;padding:0 16px 14px}
