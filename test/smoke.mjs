@@ -145,4 +145,53 @@ await owner.post(`/api/contests/${ch.body.id}/publish`);
 ok('a challenge has no leaderboard', (await anon.j(`/api/contests/${ch.body.id}`)).body.item.leaderboard === false);
 ok('admin removes it', (await admin.post(`/api/admin/contests/${ch.body.id}`, { action: 'remove' })).status === 200 && (await anon.j(`/api/contests/${ch.body.id}`)).status === 410);
 
+// ---------- trivia ----------
+const QUIZ = [
+  { q: 'What do we bake every morning?', options: ['Sourdough', 'Rye', 'Brioche', 'Bagel'] },
+  { q: 'What year did we open?', options: ['1987', '1999', '2005', '2012'] },
+  { q: 'Which pie sells out first?', options: ['Apple', 'Pecan', 'Cherry'] },
+];
+ok('trivia needs 3 questions', (await owner.post('/api/contests', { company_id: coId, game: 'trivia', type: 'contest', questions: QUIZ.slice(0, 2) })).status === 400);
+ok('trivia refuses a repeated answer', (await owner.post('/api/contests', { company_id: coId, game: 'trivia', type: 'contest', questions: [...QUIZ.slice(0, 2), { q: 'x?', options: ['a', 'A'] }] })).status === 400);
+const qz = await owner.post('/api/design/quiz', { brand: "Mama's Diner", brief: 'a diner', count: 5 });
+ok('quiz writer returns checked questions', qz.status === 200 && qz.body.questions.length >= 3, JSON.stringify(qz.body));
+const tdesign = await owner.post('/api/design', { game: 'trivia', questions: 3, template_id: 'trivia-classic', brand: "Mama's Diner", colors: ['#D0BCFF'], prize: 'Pie', time: 90, title: 'Diner Trivia' });
+ok('trivia design fills its slots', tdesign.status === 200 && /THREE QUESTIONS/.test(tdesign.body.slots.subtitle || ''), JSON.stringify(tdesign.body));
+const tk = await owner.post('/api/contests', { company_id: coId, brand: "Mama's Diner", game: 'trivia', type: 'contest', title: 'Diner Trivia', questions: QUIZ, time: 90, prize: 'Pie', winners: 1, ends_at: Date.now() + 3600e3 });
+ok('trivia contest created', tk.status === 200 && tk.body.game === 'trivia' && tk.body.settings.tries === 3, JSON.stringify(tk.body));
+const tid = tk.body.id;
+const tsrc = fs.readFileSync(path.join(ROOT, 'public/templates/trivia-classic.gt'), 'utf8');
+const tLocal = compile(tsrc, { vars: varsFor('trivia-classic', { id: tid, questions: QUIZ, time: 90, brand: 'X' }) });
+ok('trivia template compiles with questions', tLocal.ok, JSON.stringify(tLocal.diagnostics));
+await game.build(tLocal.doc, { outDir: '/tmp/thebes-smoke-tl' });
+ok('a trivia page with the questions in it is refused', (await owner.j(`/api/contests/${tid}/page`, { method: 'PUT', body: JSON.stringify({ html: fs.readFileSync('/tmp/thebes-smoke-tl/index.html', 'utf8') }) })).status === 400);
+ok('a wordle page is refused for a trivia contest', (await owner.j(`/api/contests/${tid}/page`, { method: 'PUT', body: JSON.stringify({ html }) })).status === 400);
+const tServer = compile(tsrc, { vars: varsFor('trivia-classic', { id: tid, questions: null, time: 90, brand: 'X' }) });
+ok('server-mode trivia compiles', tServer.ok, JSON.stringify(tServer.diagnostics));
+await game.build(tServer.doc, { outDir: '/tmp/thebes-smoke-ts' });
+const thtml = fs.readFileSync('/tmp/thebes-smoke-ts/index.html', 'utf8');
+ok('trivia page keeps the questions out', !thtml.includes('Sourdough') && thtml.includes('"server":true'));
+ok('trivia page uploaded', (await owner.j(`/api/contests/${tid}/page`, { method: 'PUT', body: JSON.stringify({ html: thtml }) })).status === 200);
+ok('trivia published', (await owner.post(`/api/contests/${tid}/publish`)).body.status === 'live');
+const ts = await p1.post(`/api/contests/${tid}/play/start`);
+ok('trivia start sends questions, not answers', ts.status === 200 && ts.body.questions.length === 3 && !JSON.stringify(ts.body).includes('"right"') && ts.body.questions[0].options.length === 4, JSON.stringify(ts.body));
+const opts = ts.body.questions.map((x) => x.options);
+const rightIx = (n) => opts[n].indexOf(QUIZ[n].options[0]);
+ok('answers must come in order', (await p1.post(`/api/contests/${tid}/play/guess`, { n: 1, pick: 0 })).status === 409);
+const a1 = await p1.post(`/api/contests/${tid}/play/guess`, { n: 0, pick: rightIx(0) });
+ok('right answer scored', a1.body.correct === true && a1.body.right === rightIx(0) && a1.body.status === 'playing', JSON.stringify(a1.body));
+const a2 = await p1.post(`/api/contests/${tid}/play/guess`, { n: 1, pick: (rightIx(1) + 1) % 4 });
+ok('wrong answer scored', a2.body.correct === false && a2.body.right === rightIx(1));
+const a3 = await p1.post(`/api/contests/${tid}/play/guess`, { n: 2, pick: rightIx(2) });
+ok('last answer ends the game', a3.body.status === 'won', JSON.stringify(a3.body));
+ok('no answers after the end', (await p1.post(`/api/contests/${tid}/play/guess`, { n: 3, pick: 0 })).status === 409);
+const tr = await p1.post(`/api/contests/${tid}/play/start`);
+ok('trivia resume returns the answers given', tr.body.status === 'won' && tr.body.moves.length === 3 && tr.body.moves[0].right === rightIx(0));
+await p2.post(`/api/contests/${tid}/play/start`);
+for (let n = 0; n < 3; n++) await p2.post(`/api/contests/${tid}/play/guess`, { n, pick: rightIx(n) });
+const tlb = (await anon.j(`/api/contests/${tid}/leaderboard`)).body;
+ok('trivia leaderboard: most right first', tlb.rows.length === 2 && tlb.rows[0].tries === 3 && tlb.rows[1].tries === 2, JSON.stringify(tlb.rows));
+const tpl = (await anon.j('/api/templates')).body.templates;
+ok('templates say which game', tpl.some((x) => x.id === 'trivia-classic' && x.game === 'trivia') && tpl.some((x) => x.id === 'pop-player' && x.game === 'wordle'));
+
 console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

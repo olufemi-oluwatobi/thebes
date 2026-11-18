@@ -293,8 +293,22 @@ const compilerReady = () => (wready ||= compiler('init', { base: location.origin
 const sources = {};
 const sourceOf = async (t) => (sources[t] ||= await (await fetch(`/templates/${t}.gt`)).text());
 
-const C = { step: 0, game: 'wordle', template: 'pop-player', templates: null, companyId: null, companyName: '', logo: null, colors: [], brief: '', type: 'daily', title: 'The Daily Word', word: '', tries: 6, time: 180, prize: '', winners: 1, ends: '', fields: { email: true, name: true, phone: false }, slots: null, previewing: false };
-const GAMES = [['wordle', 'Daily Word', 'Guess the five-letter word.', ['#14a86a', '#f9d26a', '#fff', '#14a86a', '#fff'], 0], ['trivia', 'Trivia Sprint', 'Ten fast questions, one clock.', ['#cfe3ff', '#cfe3ff', '#fff', '#cfe3ff', '#fff'], 1], ['memory', 'Memory Match', 'Flip and pair your products.', ['#ede2ff', '#fff', '#ede2ff', '#fff', '#ede2ff'], 1], ['sudoku', 'Sudoku', 'One grid, every digit once.', ['#fff', '#ffe0c7', '#fff', '#ffe0c7', '#fff'], 1], ['chess', 'Finish the Game', 'Find the winning moves.', ['#fff', '#050515', '#fff', '#050515', '#fff'], 1], ['letters', 'Letter Rack', 'Best word from seven tiles.', ['#D0BCFF', '#D0BCFF', '#fff', '#D0BCFF', '#fff'], 1]];
+const C = { step: 0, game: 'wordle', template: 'pop-player', templates: null, companyId: null, companyName: '', logo: null, colors: [], brief: '', type: 'daily', title: 'The Daily Word', word: '', questions: [], quizText: '', tries: 6, time: 180, prize: '', winners: 1, ends: '', fields: { email: true, name: true, phone: false }, slots: null, previewing: false };
+const GAMES = [['wordle', 'Daily Word', 'Guess the five-letter word.', ['#14a86a', '#f9d26a', '#fff', '#14a86a', '#fff'], 0], ['trivia', 'Trivia Sprint', 'Quick questions about your business.', ['#050515', '#D0BCFF', '#836CBB', '#D0BCFF', '#050515'], 0], ['memory', 'Memory Match', 'Flip and pair your products.', ['#ede2ff', '#fff', '#ede2ff', '#fff', '#ede2ff'], 1], ['sudoku', 'Sudoku', 'One grid, every digit once.', ['#fff', '#ffe0c7', '#fff', '#ffe0c7', '#fff'], 1], ['chess', 'Finish the Game', 'Find the winning moves.', ['#fff', '#050515', '#fff', '#050515', '#fff'], 1], ['letters', 'Letter Rack', 'Best word from seven tiles.', ['#D0BCFF', '#D0BCFF', '#fff', '#D0BCFF', '#fff'], 1]];
+// trivia questions: "Q | right | wrong | wrong | wrong", one a line
+const parseQuiz = (t) => String(t || '').split('\n').map((l) => l.split('|').map((x) => x.trim())).filter((p) => p[0]).map(([q, ...o]) => ({ q, options: o.filter(Boolean) }));
+function quizProblem(t) {
+  const qs = parseQuiz(t);
+  if (qs.length < 3) return 'Write at least 3 questions';
+  if (qs.length > 20) return 'At most 20 questions';
+  for (const [i, x] of qs.entries()) {
+    if (x.options.length < 2 || x.options.length > 4) return `Question ${i + 1}: give the right answer and 1 to 3 wrong ones, split by |`;
+    if (x.q.length > 140 || x.options.some((o) => o.length > 60)) return `Question ${i + 1} is too long`;
+    if (new Set(x.options.map((o) => o.toLowerCase())).size !== x.options.length) return `Question ${i + 1} has the same answer twice`;
+    if (/;/.test(x.q + x.options.join(''))) return `Question ${i + 1}: leave out ;`;
+  }
+  return null;
+}
 const TNOTE = { challenge: 'One play, no end date, no leaderboard. Good for sharing anywhere.', contest: 'Runs until the end date. Leaderboard, and winners picked when it closes.', daily: 'Runs for a day, with a leaderboard and a winner at the end.' };
 const pad = (n) => String(n).padStart(2, '0');
 const localInput = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
@@ -313,7 +327,7 @@ async function renderCreate() {
   const head = (h, p) => `<div><h1>${h}</h1><p class="lede">${p}</p></div>`;
   let m = '';
   if (st === 0) m = head('Pick a game', 'Every contest starts from a game people already know how to play.') + `<div class="grid2">${GAMES.map(([id, n, t, mk, soon]) => `<button type="button" class="tile ${C.game === id ? 'sel' : ''}" ${soon ? 'disabled' : `data-act="game" data-v="${id}"`}><span class="marks">${mk.map((c) => `<i style="background:${c}"></i>`).join('')}</span><span style="display:flex;flex-direction:column;gap:4px"><span class="n1">${n}</span><span class="n2">${t}</span></span><span class="tag ${soon ? '' : 'live'}">${soon ? 'Coming soon' : 'Live'}</span></button>`).join('')}</div>`;
-  if (st === 1) m = head('Choose a look', 'We fit your brand into it. You can change colours and words after.') + `<div class="grid2">${C.templates.map((t) => `<button type="button" class="look ${C.template === t.id ? 'sel' : ''}" data-act="look" data-v="${t.id}"><img src="${esc(t.poster)}" alt="${esc(t.name)}"><span class="info"><span class="top"><span class="n1" style="font-size:15px;font-weight:800">${esc(t.name)}</span><span class="tag ${t.min_plan_id === 'free' ? 'pink' : 'dark'}">${t.min_plan_id === 'free' ? 'Free' : 'Pro'}</span></span><span class="n2" style="font-size:12px;line-height:16px;color:var(--sub)">${esc(t.description)}</span></span></button>`).join('')}</div>`;
+  if (st === 1) m = head('Choose a look', 'We fit your brand into it. You can change colours and words after.') + `<div class="grid2">${C.templates.filter((t) => (t.game || 'wordle') === C.game).map((t) => `<button type="button" class="look ${C.template === t.id ? 'sel' : ''}" data-act="look" data-v="${t.id}"><img src="${esc(t.poster)}" alt="${esc(t.name)}"><span class="info"><span class="top"><span class="n1" style="font-size:15px;font-weight:800">${esc(t.name)}</span><span class="tag ${t.min_plan_id === 'free' ? 'pink' : 'dark'}">${t.min_plan_id === 'free' ? 'Free' : 'Pro'}</span></span><span class="n2" style="font-size:12px;line-height:16px;color:var(--sub)">${esc(t.description)}</span></span></button>`).join('')}</div>`;
   if (st === 2) m = head('Your brand', 'Saved to your company, so the next contest is quicker.') + `
     <div class="fld"><label for="co">Company name</label><input class="in" id="co" value="${esc(C.companyName)}" ${C.companyId ? 'readonly' : ''} placeholder="Mama's Diner"></div>
     <div class="fld"><span class="lb">Logo</span><label class="upload ${C.logo ? 'done' : ''}" for="logo">${C.logo ? `<img src="${esc(C.logo.url)}" alt="Your logo"><span style="display:flex;flex-direction:column;gap:2px"><b style="font-size:14px">Logo added</b><span style="font-size:12px;color:var(--sub)">Tap to replace</span></span>` : `${I.upload}<span style="display:flex;flex-direction:column;gap:2px"><b style="font-size:14px">Upload your logo</b><span style="font-size:12px;color:var(--sub)">PNG, SVG or JPEG, up to 5 MB</span></span>`}</label><input type="file" id="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="sr"></div>
@@ -323,13 +337,16 @@ async function renderCreate() {
     <div class="fld"><span class="lb">Type</span><div class="seg">${[['challenge', 'Challenge'], ['contest', 'Contest'], ['daily', 'Daily']].map(([id, n]) => `<button type="button" class="${C.type === id ? 'on' : ''}" data-act="type" data-v="${id}">${n}</button>`).join('')}</div><span class="note">${TNOTE[C.type]}</span></div>
     <div class="fld"><label for="title">Title</label><input class="in" id="title" value="${esc(C.title)}" maxlength="40"></div>
     <div class="grid2">
-      <div class="fld"><label for="word">Word</label><input class="in" id="word" value="${esc(C.word)}" maxlength="5" autocomplete="off" autocapitalize="none" style="letter-spacing:.14em;text-transform:uppercase"><span class="note">Five letters. Only your team sees it.</span></div>
-      <div class="fld"><label for="time">Time limit</label><select class="in" id="time">${[[0, 'No limit'], [60, '1 minute'], [180, '3 minutes'], [300, '5 minutes']].map(([v, n]) => `<option value="${v}" ${C.time === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="fld"><label for="tries">Tries</label><select class="in" id="tries">${[4, 5, 6, 8].map((n) => `<option ${C.tries === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      ${C.game === 'trivia' ? '' : `<div class="fld"><label for="word">Word</label><input class="in" id="word" value="${esc(C.word)}" maxlength="5" autocomplete="off" autocapitalize="none" style="letter-spacing:.14em;text-transform:uppercase"><span class="note">Five letters. Only your team sees it.</span></div>`}
+      <div class="fld"><label for="time">Time limit</label><select class="in" id="time">${[[0, 'No limit'], [60, '1 minute'], [90, '90 seconds'], [180, '3 minutes'], [300, '5 minutes']].map(([v, n]) => `<option value="${v}" ${C.time === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      ${C.game === 'trivia' ? '' : `<div class="fld"><label for="tries">Tries</label><select class="in" id="tries">${[4, 5, 6, 8].map((n) => `<option ${C.tries === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`}
       ${C.type !== 'challenge' ? `<div class="fld"><label for="ends">Ends</label><input class="in" id="ends" type="datetime-local" value="${esc(C.ends || localInput(Date.now() + (C.type === 'daily' ? 864e5 : 7 * 864e5)))}"></div>` : ''}
       <div class="fld"><label for="prize">Prize <span style="font-weight:400;color:var(--sub)">· optional</span></label><input class="in" id="prize" value="${esc(C.prize)}" maxlength="60" placeholder="Lunch for two"></div>
       ${C.type !== 'challenge' ? `<div class="fld"><label for="winners">Winners</label><select class="in" id="winners">${[1, 3, 5, 10].map((n) => `<option ${C.winners === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
     </div>
+    ${C.game === 'trivia' ? `<div class="fld"><label for="quiz">Questions</label><textarea class="in" id="quiz" rows="8" placeholder="What do we bake every morning? | Sourdough | Rye | Brioche | Bagel">${esc(C.quizText)}</textarea>
+      <span class="note">One question a line: the question, then the right answer, then up to three wrong ones, split by |. We shuffle the answers. Only your team sees the right ones.</span>
+      <button type="button" class="btn" data-act="quizai" style="align-self:flex-start">${C.quizText ? 'Write new questions' : 'Write them from my brief'}</button></div>` : ''}
     <div class="fld"><span class="lb">Collect from players</span><div class="togs">${Object.keys(C.fields).map((f) => `<button type="button" class="tog ${C.fields[f] ? 'on' : ''}" data-act="field" data-v="${f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join('')}</div><span class="note">Players see what they share and tick a box to agree first.</span></div>`;
   if (st === 4) {
     const t = C.templates.find((x) => x.id === C.template), slotDefs = Object.entries(t?.slots?.slots || {}).filter(([, s]) => s.ai);
@@ -350,8 +367,8 @@ async function renderCreate() {
 function readStep() {
   const v = (id) => $('#' + id)?.value;
   if (C.step === 3) {
-    C.brief = v('brief') ?? C.brief; C.title = (v('title') || 'The Daily Word').trim(); C.word = (v('word') || '').trim().toLowerCase();
-    C.time = +v('time') || 0; C.tries = +v('tries') || 6; C.prize = (v('prize') || '').trim(); C.winners = +(v('winners') || 1); C.ends = v('ends') || '';
+    C.brief = v('brief') ?? C.brief; C.title = (v('title') || 'The Daily Word').trim(); C.word = (v('word') || '').trim().toLowerCase(); if ($('#quiz')) C.quizText = v('quiz');
+    C.time = +v('time') || 0; C.tries = +v('tries') || 6; C.questions = parseQuiz(C.quizText); C.prize = (v('prize') || '').trim(); C.winners = +(v('winners') || 1); C.ends = v('ends') || '';
   }
   if (C.step === 4) $$('[data-slot]').forEach((el) => { if (el.type === 'color') return; const v = el.value.trim(); if (v) C.slots[el.dataset.slot] = v; else delete C.slots[el.dataset.slot]; });
 }
@@ -359,7 +376,7 @@ function readStep() {
 async function design(extra = '') {
   const pv = $('#pv'); if (pv) pv.innerHTML = '<div class="busy">Designing your game…</div>';
   try {
-    const r = await post('/api/design', { template_id: C.template, brief: [C.brief, extra].filter(Boolean).join('\n'), brand: C.companyName, colors: C.colors, prize: C.prize, tries: C.tries, time: C.time, title: C.title });
+    const r = await post('/api/design', { game: C.game, questions: C.questions.length, template_id: C.template, brief: [C.brief, extra].filter(Boolean).join('\n'), brand: C.companyName, colors: C.colors, prize: C.prize, tries: C.tries, time: C.time, title: C.title });
     C.slots = { ...(C.slots || {}), ...r.slots };
     if (r.reverted?.length) toast('Some colours were too hard to read, so we kept the defaults');
     renderCreate();
@@ -367,7 +384,7 @@ async function design(extra = '') {
 }
 async function compileGame({ server, id }) {
   await compilerReady();
-  const vars = varsFor(C.template, { id, word: server ? null : C.word, tries: C.tries, time: C.time, series: id, brand: C.companyName, slots: C.slots || {} });
+  const vars = varsFor(C.template, { id, word: server ? null : C.word, questions: server ? null : C.questions, tries: C.tries, time: C.time, series: id, brand: C.companyName, slots: C.slots || {} });
   const r = await compiler('compile', { source: await sourceOf(C.template), vars });
   if (!r.ok) throw new Error((r.diagnostics || []).find((d) => d.level === 'error')?.msg || 'the game did not build');
   return r.html;
@@ -413,7 +430,7 @@ async function publish(btn) {
   try {
     readStep();
     const ends = C.type === 'challenge' ? null : (C.ends ? new Date(C.ends).getTime() : null);
-    const k = await post('/api/contests', { company_id: C.companyId, brand: C.companyName, type: C.type, title: C.title, brief: C.brief, word: C.word, tries: C.tries, time: C.time || null, prize: C.prize || null,
+    const k = await post('/api/contests', { company_id: C.companyId, brand: C.companyName, game: C.game, questions: C.questions, type: C.type, title: C.title, brief: C.brief, word: C.word, tries: C.tries, time: C.time || null, prize: C.prize || null,
       winners: C.winners, ends_at: ends, contact_fields: Object.keys(C.fields).filter((f) => C.fields[f]), win: C.slots?.win, lose: C.slots?.lose });
     const html = await compileGame({ server: true, id: k.id });
     await api(`/api/contests/${k.id}/page`, { method: 'PUT', body: JSON.stringify({ html, template_id: C.template, slot_values: C.slots }) });
@@ -428,7 +445,16 @@ $('#create').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, v = b.dataset.v;
   if (a === 'signin') return signIn('Sign in to make a contest.');
-  if (a === 'game') { C.game = v; return renderCreate(); }
+  if (a === 'game') {
+    if (C.game !== v) { C.game = v; C.slots = null; C.template = v === 'trivia' ? 'trivia-classic' : 'pop-player'; C.title = v === 'trivia' ? 'Trivia Sprint' : 'The Daily Word'; C.time = v === 'trivia' ? 90 : 180; }
+    return renderCreate();
+  }
+  if (a === 'quizai') {
+    readStep(); b.disabled = true; b.textContent = 'Writing…';
+    try { const r = await post('/api/design/quiz', { brand: C.companyName, brief: C.brief, count: 10 }); C.quizText = r.questions.map((x) => [x.q, ...x.options].join(' | ')).join('\n'); if (!r.ai) toast('Sample questions: edit them to fit your business'); }
+    catch (err) { toast(err.message); }
+    return renderCreate();
+  }
   if (a === 'look') { C.template = v; C.slots = null; return renderCreate(); }
   if (a === 'type') { readStep(); C.type = v; C.ends = ''; return renderCreate(); }
   if (a === 'field') { readStep(); if (v === 'email' && C.fields.email) return toast('Email is how the business reaches winners'); C.fields[v] = !C.fields[v]; return renderCreate(); }
@@ -441,7 +467,8 @@ $('#create').addEventListener('click', async (e) => {
       try { const co = await post('/api/companies', { name }); C.companyId = co.id; C.companyName = co.name; await loadMe(); } catch (err) { return toast(err.message); }
     }
     if (C.step === 3) {
-      if (!/^[a-z]{5}$/.test(C.word)) return toast('The word must be five letters, A to Z');
+      if (C.game === 'trivia') { const bad = quizProblem(C.quizText); if (bad) return toast(bad); }
+      else if (!/^[a-z]{5}$/.test(C.word)) return toast('The word must be five letters, A to Z');
       if (C.type !== 'challenge' && C.ends && new Date(C.ends).getTime() <= Date.now()) return toast('The end has to be in the future');
       C.slots = null;
     }

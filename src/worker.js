@@ -145,7 +145,7 @@ app.get('/api/me/plays', async (c) => {
     WHERE p.player_id = ? ORDER BY p.started_at DESC LIMIT 60`).bind(p.id).all()).results;
   return c.json({ plays: rows.map((r) => ({ ...r, of: json(r.settings).tries || 6, settings: undefined, poster: posterOf(r.template_id) })) });
 });
-const posterOf = (t) => `/img/${t === 'analog-player' ? 'analog-player' : 'pop-player'}.jpg`;
+const posterOf = (t) => `/img/${['analog-player', 'trivia-classic'].includes(t) ? t : 'pop-player'}.jpg`;
 
 // ---------- companies and assets ----------
 app.post('/api/companies', async (c) => {
@@ -225,7 +225,7 @@ app.get('/api/companies/:id/mailing-list.csv', async (c) => { const id = c.req.p
 
 // ---------- templates and the design step ----------
 app.get('/api/templates', async (c) => {
-  const rows = (await c.env.DB.prepare(`SELECT t.id, t.name, t.family, t.description, t.min_plan_id, t.current_version, v.source_key, v.slots FROM templates t
+  const rows = (await c.env.DB.prepare(`SELECT t.id, t.game_type_id game, t.name, t.family, t.description, t.min_plan_id, t.current_version, v.source_key, v.slots FROM templates t
     JOIN template_versions v ON v.template_id = t.id AND v.version = t.current_version WHERE t.status = 'live' ORDER BY t.sort`).all()).results;
   return c.json({ templates: rows.map((r) => ({ ...r, slots: json(r.slots), source: '/' + r.source_key, poster: posterOf(r.id) })) });
 });
@@ -252,6 +252,11 @@ app.post('/api/design', async (c) => {
     win: b.prize ? `You got it! ${b.prize} is yours.` : 'You got it!', lose: 'So close. Come back tomorrow.', timeout: 'Time! Come back tomorrow.',
     ...(colors[0] ? { sponsor: colors[0] } : {}),
   };
+  if (b.game === 'trivia') {
+    const q = Math.max(1, parseInt(b.questions) || 10);
+    Object.assign(base, { title: String(b.title || 'Trivia Sprint').slice(0, 22), subtitle: [`${N[q] || q} QUESTIONS`, mins ? `${N[mins] || mins} MINUTE${mins === 1 ? '' : 'S'}` : 'ONE CLOCK'].join('  ·  '),
+      win: b.prize ? `Nicely done! You're in the draw for ${b.prize}.` : 'Nicely done!', lose: 'Not this time. Try the next one.', timeout: "Time's up!", ...(colors[0] ? { accent: colors[0], sponsor: colors[0] } : {}) });
+  }
   let ai = {}, aiUsed = false;
   if (c.env.AI_MODE === 'live' && c.env.AI) {
     try {
@@ -284,17 +289,53 @@ app.post('/api/design', async (c) => {
   return c.json({ slots: out, ai: aiUsed, reverted: failed });
 });
 
+// trivia questions from the brief: AI writes them, every one is checked, the creator edits before publishing
+const SAMPLE_QUIZ = (brand) => [
+  { q: `What does ${brand} love most about its regulars?`, options: ['They keep coming back', 'They never tip', 'They never visit', 'They complain'] },
+  { q: 'Which day is usually the busiest for a neighbourhood business?', options: ['Saturday', 'Tuesday', 'Wednesday', 'Monday'] },
+  { q: 'What is the best way to hear about our next contest?', options: ['Join the mailing list', 'Guess', 'Wait a year', 'Ask a stranger'] },
+];
+app.post('/api/design/quiz', async (c) => {
+  needUser(c);
+  const b = await c.req.json().catch(() => ({}));
+  const n = Math.min(20, Math.max(3, parseInt(b.count) || 10)), brand = String(b.brand || 'the business').slice(0, 60);
+  if (c.env.AI_MODE === 'live' && c.env.AI) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', { max_tokens: 1800, messages: [
+          { role: 'system', content: 'You write multiple-choice trivia for a small business contest. Reply with one JSON array only. Each item: {"q": question (max 120 characters), "options": [the right answer, then 3 wrong answers]} (each answer max 40 characters, all different). Only ask what the brief says or what is general knowledge about the kind of business. No made-up facts about the business. No | or ; characters.' },
+          { role: 'user', content: `Business: ${brand}\nBrief: ${String(b.brief || '').slice(0, 1000)}\nWrite ${n} questions.` },
+        ] });
+        const m = String(r?.response || '').match(/\[[\s\S]*\]/);
+        const list = (m ? json(m[0]) : null) || [];
+        const good = (Array.isArray(list) ? list : []).filter((x) => typeof checkQuiz([x, x, x]) !== 'string').slice(0, n);
+        if (good.length >= 3) return c.json({ questions: good, ai: true });
+      } catch (e) { console.log('quiz: AI failed', e.message); }
+    }
+  }
+  return c.json({ questions: SAMPLE_QUIZ(brand), ai: false });
+});
+
 // ---------- contests ----------
 const TYPES = ['challenge', 'contest', 'daily'];
 app.post('/api/contests', async (c) => {
   const b = await c.req.json().catch(() => ({}));
   const u = needUser(c); await needMember(c, b.company_id, 'editor');
   const DB = c.env.DB, t = now();
-  const word = String(b.word || '').toLowerCase().trim();
-  if (!/^[a-z]{5}$/.test(word)) return fail(c, 400, 'the word must be five letters');
-  if (!WORDS.has(word)) return fail(c, 400, 'that word is not in the word list players can guess from');
+  const game = b.game === 'trivia' ? 'trivia' : 'wordle';
+  let secret, word = '';
+  if (game === 'wordle') {
+    word = String(b.word || '').toLowerCase().trim();
+    if (!/^[a-z]{5}$/.test(word)) return fail(c, 400, 'the word must be five letters');
+    if (!WORDS.has(word)) return fail(c, 400, 'that word is not in the word list players can guess from');
+    secret = { word };
+  } else {
+    const qs = checkQuiz(b.questions);
+    if (typeof qs === 'string') return fail(c, 400, qs);
+    secret = { questions: qs };
+  }
   if (!TYPES.includes(b.type)) return fail(c, 400, 'type is challenge, contest or daily');
-  const tries = Math.min(10, Math.max(1, parseInt(b.tries) || 6)), time = b.time ? Math.min(3600, Math.max(10, parseInt(b.time))) : 0;
+  const tries = game === 'trivia' ? secret.questions.length : Math.min(10, Math.max(1, parseInt(b.tries) || 6)), time = b.time ? Math.min(3600, Math.max(10, parseInt(b.time))) : 0;
   const ends = b.ends_at ? +new Date(b.ends_at) : (b.type === 'challenge' ? null : t + (b.type === 'daily' ? DAY : 7 * DAY));
   const starts = b.starts_at ? +new Date(b.starts_at) : null;
   if (ends && ends <= (starts || t)) return fail(c, 400, 'the end has to be after the start');
@@ -305,20 +346,20 @@ app.post('/api/contests', async (c) => {
   let seriesId = null;   // a daily belongs to a series (its streaks and episodes); made on first use
   if (series) {
     seriesId = (await DB.prepare('SELECT id FROM series WHERE company_id = ? AND slug = ?').bind(b.company_id, series).first())?.id;
-    if (!seriesId) { seriesId = uid('s'); await DB.prepare("INSERT INTO series (id, company_id, game_type_id, slug, name, cadence, created_at) VALUES (?, ?, 'wordle', ?, ?, 'daily', ?)").bind(seriesId, b.company_id, series, title, t).run(); }
+    if (!seriesId) { seriesId = uid('s'); await DB.prepare("INSERT INTO series (id, company_id, game_type_id, slug, name, cadence, created_at) VALUES (?, ?, ?, ?, ?, 'daily', ?)").bind(seriesId, b.company_id, game, series, title, t).run(); }
   }
   const episode = seriesId ? ((await DB.prepare('SELECT MAX(episode) n FROM contests WHERE series_id = ?').bind(seriesId).first())?.n || 0) + 1 : null;
   await DB.batch([
     DB.prepare(`INSERT INTO contests (id, company_id, created_by, type, game_type_id, series_id, episode, slug, title, description, status, visibility, starts_at, ends_at, settings, prize_summary, win_message, lose_message, contact_fields, consent_text, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 'wordle', ?, ?, ?, ?, ?, 'draft', 'public', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(id, b.company_id, u.id, b.type, seriesId, episode, slug, title, String(b.brief || '').slice(0, 500), starts, ends, JSON.stringify({ tries, time: time || null, series }),
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', 'public', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(id, b.company_id, u.id, b.type, game, seriesId, episode, slug, title, String(b.brief || '').slice(0, 500), starts, ends, JSON.stringify({ tries, time: time || null, series, game }),
         b.prize ? String(b.prize).slice(0, 80) : null, b.win ? String(b.win).slice(0, 80) : null, b.lose ? String(b.lose).slice(0, 80) : null, JSON.stringify(fields),
         `I agree to share these details with ${b.brand || 'the business'} so they can contact me about this contest and their offers.`, t, t),
-    DB.prepare('INSERT INTO contest_secrets (contest_id, secrets) VALUES (?, ?)').bind(id, JSON.stringify({ word })),
+    DB.prepare('INSERT INTO contest_secrets (contest_id, secrets) VALUES (?, ?)').bind(id, JSON.stringify(secret)),
     DB.prepare('INSERT INTO contest_counters (contest_id, updated_at) VALUES (?, ?)').bind(id, t),
     ...(b.prize && b.type !== 'challenge' ? [DB.prepare('INSERT INTO contest_prizes (contest_id, rank_from, rank_to, title) VALUES (?, 1, ?, ?)').bind(id, Math.min(100, Math.max(1, parseInt(b.winners) || 1)), String(b.prize).slice(0, 80))] : []),
   ]);
-  return c.json({ id, slug, episode, settings: { tries, time, series } });
+  return c.json({ id, slug, episode, game, settings: { tries, time, series } });
 });
 
 // the page the creator's browser built: must keep the word on the server
@@ -330,14 +371,16 @@ app.put('/api/contests/:id/page', async (c) => {
   const b = await c.req.json().catch(() => ({}));
   const html = String(b.html || '');
   if (html.length < 1000 || html.length > 4_000_000 || !html.startsWith('<!doctype html>')) return fail(c, 400, 'that is not a game page');
-  if (!/window\.GAME=\{[^<]*"values":\{"server":true/.test(html)) return fail(c, 400, 'a published game must keep its word on the server');
-  const word = json((await DB.prepare('SELECT secrets FROM contest_secrets WHERE contest_id = ?').bind(id).first())?.secrets).word;
-  const game = html.match(/window\.GAME=(\{.*?\});\n/)?.[1] || '';
-  if (word && game.toLowerCase().includes(`"${word}"`)) return fail(c, 400, 'the page gives the word away');
+  if (!/window\.GAME=\{[^<]*"values":\{"server":true/.test(html)) return fail(c, 400, 'a published game must keep its answers on the server');
+  const sec = json((await DB.prepare('SELECT secrets FROM contest_secrets WHERE contest_id = ?').bind(id).first())?.secrets);
+  const game = (html.match(/window\.GAME=(\{.*?\});\n/)?.[1] || '').toLowerCase();
+  if (!game.includes(`"kind":"${k.game_type_id}"`)) return fail(c, 400, `this contest plays ${k.game_type_id}`);
+  if (sec.word && game.includes(`"${sec.word}"`)) return fail(c, 400, 'the page gives the word away');
+  if (sec.questions && (game.includes('"questions"') || sec.questions.some((x) => game.includes(JSON.stringify(x.q.toLowerCase()))))) return fail(c, 400, 'the page gives the questions away');
   const v = ((await DB.prepare('SELECT MAX(version) v FROM contest_builds WHERE contest_id = ?').bind(id).first())?.v || 0) + 1;
   const bid = uid('b'), key = `pages/${id}/v${v}.html`, t = now();
   await c.env.BUCKET.put(key, html, { httpMetadata: { contentType: 'text/html; charset=utf-8' } });
-  const tmpl = b.template_id === 'analog-player' ? 'analog-player' : 'pop-player';
+  const tmpl = k.game_type_id === 'trivia' ? 'trivia-classic' : b.template_id === 'analog-player' ? 'analog-player' : 'pop-player';
   await DB.batch([
     DB.prepare(`INSERT INTO contest_builds (id, contest_id, version, template_id, template_version, slot_values, source_key, page_key, engine, status, made_by, created_by, created_at)
       VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'game@1', 'ok', 'wizard', ?, ?)`).bind(bid, id, v, tmpl, JSON.stringify(b.slot_values || {}), `templates/${tmpl}.gt`, key, user(c).id, t),
@@ -435,14 +478,51 @@ async function playCtx(c) {
   if (k.status === 'live' && k.ends_at && k.ends_at <= now()) { await closeContest(c.env, k.id); k.status = 'ended'; }
   const p = await player(c);
   const play = await DB.prepare('SELECT * FROM plays WHERE contest_id = ? AND player_id = ?').bind(id, p.id).first();
-  return { k, p, play, word: json(k.secrets).word, s: json(k.settings) };
+  const sec = json(k.secrets);
+  return { k, p, play, word: sec.word, quiz: sec.questions, s: json(k.settings) };
+}
+
+// ---------- trivia: questions held here, the options shuffled the same way for everyone ----------
+function checkQuiz(list) {
+  if (!Array.isArray(list) || list.length < 3 || list.length > 20) return 'write 3 to 20 questions';
+  const out = [];
+  for (const [i, x] of list.entries()) {
+    const q = String(x?.q || '').trim(), options = (Array.isArray(x?.options) ? x.options : []).map((o) => String(o || '').trim()).filter(Boolean);
+    if (!q || q.length > 140) return `question ${i + 1} needs words, at most 140 letters`;
+    if (options.length < 2 || options.length > 4) return `question ${i + 1} needs the right answer and 1 to 3 wrong ones`;
+    if (options.some((o) => o.length > 60)) return `question ${i + 1}: answers are at most 60 letters`;
+    if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) return `question ${i + 1} has the same answer twice`;
+    if (/[|;]/.test(q + options.join(''))) return `question ${i + 1}: leave out | and ;`;
+    out.push({ q, options });
+  }
+  return out;
+}
+const orderOf = (kid, n, len) => {                 // the shuffled order of question n's options
+  let h = 7; for (const ch of `${kid}:${n}`) h = (h * 31 + ch.charCodeAt(0)) % 2147483646;
+  let seed = h + 1; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const a = [...Array(len).keys()]; for (let i = len - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+const quizFor = (k, quiz) => quiz.map((x, n) => ({ q: x.q, options: orderOf(k.id, n, x.options.length).map((i) => x.options[i]) }));
+const rightOf = (k, quiz, n) => orderOf(k.id, n, quiz[n].options.length).indexOf(0);
+const triviaMoves = async (DB, play) => play ? (await DB.prepare('SELECT n, move, result FROM play_moves WHERE play_id = ? ORDER BY n').bind(play.id).all()).results.map((m) => ({ n: m.n - 1, pick: +m.move, right: json(m.result).right, ok: json(m.result).ok })) : [];
+// a finished trivia play: tries holds how many were right; rank is most right, then fastest
+async function finishTrivia(c, k, play, quiz, ms, timedOut) {
+  const DB = c.env.DB, t = now(), moves = await triviaMoves(DB, play), right = moves.filter((m) => m.ok).length;
+  const status = right > 0 ? 'won' : timedOut ? 'timeout' : 'lost';
+  const q = [DB.prepare('UPDATE plays SET tries = ?, status = ?, ms = ?, score = ?, finished_at = ? WHERE id = ? AND status = ?')
+    .bind(right, status, ms, status === 'won' ? (quiz.length - right) * 10_000_000 + Math.min(ms, 9_999_999) : null, t, play.id, 'playing')];
+  if (status === 'won') q.push(DB.prepare('UPDATE contest_counters SET wins = wins + 1, updated_at = ? WHERE contest_id = ?').bind(t, k.id));
+  await DB.batch(q);
+  return status;
 }
 const movesOf = async (DB, play) => play ? (await DB.prepare('SELECT move guess, result FROM play_moves WHERE play_id = ? ORDER BY n').bind(play.id).all()).results.map((m) => ({ guess: m.guess, result: json(m.result) })) : [];
 
 app.post('/api/contests/:id/play/start', async (c) => {
-  const DB = c.env.DB, ctx = await playCtx(c), { k, p, word } = ctx, t = now();
+  const DB = c.env.DB, ctx = await playCtx(c), { k, p, word, quiz } = ctx, t = now();
   let play = ctx.play;
-  if (k.status === 'ended') return c.json({ closed: true, moves: await movesOf(DB, play), status: play?.status || null, answer: word });
+  const movesFor = (pl) => quiz ? triviaMoves(DB, pl) : movesOf(DB, pl), extra = quiz ? { questions: quizFor(k, quiz) } : {};
+  if (k.status === 'ended') return c.json({ closed: true, moves: await movesFor(play), status: play?.status || null, ...(quiz ? extra : { answer: word }) });
   if (!play) {
     play = { id: uid('pl'), status: 'playing', started_at: t };
     await DB.batch([
@@ -452,15 +532,30 @@ app.post('/api/contests/:id/play/start', async (c) => {
     ]);
   }
   const done = play.status !== 'playing';
-  return c.json({ play: play.id, status: play.status, moves: await movesOf(DB, play), ms: done ? play.ms : t - play.started_at, ...(done && play.status !== 'won' ? { answer: word } : {}) });
+  return c.json({ play: play.id, status: play.status, moves: await movesFor(play), ms: done ? play.ms : t - play.started_at, ...extra, ...(!quiz && done && play.status !== 'won' ? { answer: word } : {}) });
 });
 
 app.post('/api/contests/:id/play/guess', async (c) => {
-  const DB = c.env.DB, { k, play, word, s } = await playCtx(c), t = now();
+  const DB = c.env.DB, ctx = await playCtx(c), { k, play, word, s } = ctx, t = now();
   if (k.status === 'ended') return fail(c, 409, 'this contest has closed', 'closed');
   if (!play) return fail(c, 400, 'start the game first');
   if (play.status !== 'playing') return fail(c, 409, 'this game is over', 'over');
-  const guess = String((await c.req.json().catch(() => ({}))).guess || '').toLowerCase();
+  const body = await c.req.json().catch(() => ({}));
+  if (ctx.quiz) {
+    const quiz = ctx.quiz, n = parseInt(body.n), pick = parseInt(body.pick), ms = t - play.started_at;
+    if (n !== play.tries) return fail(c, 409, 'answer the questions in order', 'order');
+    if (!(n >= 0 && n < quiz.length) || !(pick >= 0 && pick < quiz[n].options.length)) return fail(c, 400, 'pick one of the answers');
+    if (s.time && ms > s.time * 1000 + 3000) return c.json({ status: 'timeout', final: await finishTrivia(c, k, play, quiz, s.time * 1000, true), right: null });
+    const right = rightOf(k, quiz, n), ok = pick === right;
+    const r = await DB.batch([
+      DB.prepare('UPDATE plays SET tries = ? WHERE id = ? AND tries = ?').bind(n + 1, play.id, n),
+      DB.prepare('INSERT INTO play_moves (play_id, n, move, result, at_ms) SELECT ?, ?, ?, ?, ? WHERE changes() = 1').bind(play.id, n + 1, String(pick), JSON.stringify({ right, ok }), ms),
+    ]);
+    if (!r[0].meta.changes) return fail(c, 409, 'answer the questions in order', 'order');
+    const status = n + 1 >= quiz.length ? await finishTrivia(c, k, play, quiz, ms, false) : 'playing';
+    return c.json({ right, correct: ok, status, n });
+  }
+  const guess = String(body.guess || '').toLowerCase();
   if (!/^[a-z]{5}$/.test(guess)) return fail(c, 400, 'five letters', 'not_a_word');
   if (!WORDS.has(guess) && guess !== word) return fail(c, 400, 'not in word list', 'not_a_word');
   const ms = t - play.started_at, max = s.tries || 6;
@@ -481,9 +576,10 @@ app.post('/api/contests/:id/play/guess', async (c) => {
 });
 
 app.post('/api/contests/:id/play/timeout', async (c) => {
-  const DB = c.env.DB, { play, word, s } = await playCtx(c), t = now();
+  const DB = c.env.DB, { k, play, word, quiz, s } = await playCtx(c), t = now();
   if (!play || play.status !== 'playing' || !s.time) return c.json({ status: play?.status || null });
   if (t - play.started_at < s.time * 1000 - 2000) return fail(c, 400, 'there is still time');
+  if (quiz) return c.json({ status: await finishTrivia(c, k, play, quiz, s.time * 1000, true) });
   await DB.prepare("UPDATE plays SET status = 'timeout', ms = ?, finished_at = ? WHERE id = ? AND status = 'playing'").bind(s.time * 1000, t, play.id).run();
   return c.json({ status: 'timeout', answer: word });
 });
