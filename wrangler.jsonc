@@ -11,8 +11,7 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*", "/play/*", "/files/*", "/auth/*"]
   },
-  // wrangler d1 create thebes → put its id here
-  "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "REPLACE_WITH_YOUR_D1_ID", "migrations_dir": "db/migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "518aab82-fa35-4f59-8734-8d80be609848", "migrations_dir": "db/migrations" }],
   // wrangler r2 bucket create thebes-files
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "thebes-files" }],
   "ai": { "binding": "AI" },

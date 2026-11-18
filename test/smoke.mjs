@@ -127,6 +127,11 @@ ok('a newcomer sees it closed', late.body.closed === true);
 const ov = (await admin.j('/api/admin/overview')).body;
 ok('admin overview', ov.users.n >= 4 && ov.contests.ended >= 1, JSON.stringify(ov));
 
+// dailies belong to a series and are numbered
+const d1 = await owner.post('/api/contests', { company_id: coId, brand: "Mama's Diner", type: 'daily', title: 'The Daily Word', word: 'crane' });
+const d2 = await owner.post('/api/contests', { company_id: coId, brand: "Mama's Diner", type: 'daily', title: 'The Daily Word', word: 'stout' });
+ok('dailies are created as episodes 1 and 2 of one series', d1.status === 200 && d2.status === 200 && d1.body.episode === 1 && d2.body.episode === 2, JSON.stringify([d1.body, d2.body]));
+
 // a challenge has no leaderboard and no winners
 const ch = await owner.post('/api/contests', { company_id: coId, brand: "Mama's Diner", type: 'challenge', title: 'Quick one', word: 'crane' });
 await owner.j(`/api/contests/${ch.body.id}/page`, { method: 'PUT', body: JSON.stringify({ html: await buildPage(ch.body.id, "Mama's Diner"), template_id: 'pop-player' }) });

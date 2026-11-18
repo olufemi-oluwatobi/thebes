@@ -301,17 +301,23 @@ app.post('/api/contests', async (c) => {
   let slug = slugify(title) + '-' + rand(2);
   const fields = (Array.isArray(b.contact_fields) ? b.contact_fields : ['email']).filter((f) => ['email', 'name', 'phone'].includes(f));
   const series = b.type === 'daily' ? slugify(b.series || title) : null;
+  let seriesId = null;   // a daily belongs to a series (its streaks and episodes); made on first use
+  if (series) {
+    seriesId = (await DB.prepare('SELECT id FROM series WHERE company_id = ? AND slug = ?').bind(b.company_id, series).first())?.id;
+    if (!seriesId) { seriesId = uid('s'); await DB.prepare("INSERT INTO series (id, company_id, game_type_id, slug, name, cadence, created_at) VALUES (?, ?, 'wordle', ?, ?, 'daily', ?)").bind(seriesId, b.company_id, series, title, t).run(); }
+  }
+  const episode = seriesId ? ((await DB.prepare('SELECT MAX(episode) n FROM contests WHERE series_id = ?').bind(seriesId).first())?.n || 0) + 1 : null;
   await DB.batch([
-    DB.prepare(`INSERT INTO contests (id, company_id, created_by, type, game_type_id, slug, title, description, status, visibility, starts_at, ends_at, settings, prize_summary, win_message, lose_message, contact_fields, consent_text, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 'wordle', ?, ?, ?, 'draft', 'public', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(id, b.company_id, u.id, b.type, slug, title, String(b.brief || '').slice(0, 500), starts, ends, JSON.stringify({ tries, time: time || null, series }),
+    DB.prepare(`INSERT INTO contests (id, company_id, created_by, type, game_type_id, series_id, episode, slug, title, description, status, visibility, starts_at, ends_at, settings, prize_summary, win_message, lose_message, contact_fields, consent_text, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'wordle', ?, ?, ?, ?, ?, 'draft', 'public', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(id, b.company_id, u.id, b.type, seriesId, episode, slug, title, String(b.brief || '').slice(0, 500), starts, ends, JSON.stringify({ tries, time: time || null, series }),
         b.prize ? String(b.prize).slice(0, 80) : null, b.win ? String(b.win).slice(0, 80) : null, b.lose ? String(b.lose).slice(0, 80) : null, JSON.stringify(fields),
         `I agree to share these details with ${b.brand || 'the business'} so they can contact me about this contest and their offers.`, t, t),
     DB.prepare('INSERT INTO contest_secrets (contest_id, secrets) VALUES (?, ?)').bind(id, JSON.stringify({ word })),
     DB.prepare('INSERT INTO contest_counters (contest_id, updated_at) VALUES (?, ?)').bind(id, t),
     ...(b.prize && b.type !== 'challenge' ? [DB.prepare('INSERT INTO contest_prizes (contest_id, rank_from, rank_to, title) VALUES (?, 1, ?, ?)').bind(id, Math.min(100, Math.max(1, parseInt(b.winners) || 1)), String(b.prize).slice(0, 80))] : []),
   ]);
-  return c.json({ id, slug, settings: { tries, time, series } });
+  return c.json({ id, slug, episode, settings: { tries, time, series } });
 });
 
 // the page the creator's browser built: must keep the word on the server
