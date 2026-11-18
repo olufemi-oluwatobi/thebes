@@ -71,7 +71,7 @@ app.post('/api/auth/start', async (c) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return fail(c, 400, 'that does not look like an email address');
   const token = rand(24);
   await c.env.DB.prepare('INSERT INTO login_tokens (token_hash, email, expires_at) VALUES (?, ?, ?)').bind(await sha(token), e, now() + 20 * 60000).run();
-  const link = `${c.env.APP_URL}/auth/verify?t=${token}`;
+  const link = `${c.env.APP_URL || new URL(c.req.url).origin}/auth/verify?t=${token}`;
   if (c.env.EMAIL_MODE === 'show') return c.json({ sent: false, link });
   if (!c.env.RESEND_API_KEY) return fail(c, 503, 'email sign-in is not set up yet (RESEND_API_KEY)');
   const r = await fetch('https://api.resend.com/emails', {
@@ -348,7 +348,7 @@ app.post('/api/contests/:id/publish', async (c) => {
   const status = k.starts_at && k.starts_at > t ? 'scheduled' : 'live';
   await DB.prepare('UPDATE contests SET status = ?, published_at = ?, updated_at = ? WHERE id = ?').bind(status, t, t, id).run();
   await DB.prepare('UPDATE company_counters SET contests = contests + 1, updated_at = ? WHERE company_id = ?').bind(t, k.company_id).run();
-  return c.json({ status, url: `${c.env.APP_URL}/c/${id}` });
+  return c.json({ status, url: `${c.env.APP_URL || new URL(c.req.url).origin}/c/${id}` });
 });
 
 // a contest as the feed shows it

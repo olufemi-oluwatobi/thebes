@@ -21,7 +21,7 @@
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "observability": { "enabled": true },
   "vars": {
-    "APP_URL": "https://thebes.YOUR-SUBDOMAIN.workers.dev",
+    "APP_URL": "",                        // empty: links use the address the request came in on
     "EMAIL_MODE": "resend",               // "resend" sends sign-in links (secret RESEND_API_KEY); "show" returns them (local only)
     "EMAIL_FROM": "Thebes <hello@YOUR-DOMAIN>",
     "ADMIN_EMAILS": "",                   // comma-separated: these accounts become admins when they sign in
