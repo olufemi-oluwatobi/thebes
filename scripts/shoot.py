@@ -10,14 +10,14 @@ TAG = str(int(time.time()))[-6:]
 UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148 Safari/604.1'
 
 FLYERS = [
-  ('Hand-poured candles, made in Lagos', 'Ember & Wick', '#E9C46A', '#26331F'),
+  ('Hand-poured candles, made in Austin', 'Ember & Wick', '#E9C46A', '#26331F'),
   ('Learn guitar in 8 weeks', 'Strings Academy', '#CBD6A8', '#26331F'),
   ('Skin that feels like you', 'Ritual Skin', '#E9E6D2', '#26331F'),
 ]
 CAMPS = [
-  dict(title='Ember & Wick candles', product_url='https://example.com/candles', snippet='Hand-poured soy candles made in Lagos. Gift boxes from $12.', reward_rule='signup', reward_cents=300, locations=['NG:Lagos', 'NG']),
+  dict(title='Ember & Wick candles', product_url='https://example.com/candles', snippet='Hand-poured soy candles made in Austin. Gift boxes from $12.', reward_rule='signup', reward_cents=300, locations=['US:Austin', 'US']),
   dict(title='Guitar in 8 weeks', product_url='https://example.com/guitar', snippet='Small classes, real songs from week one. First lesson free.', reward_rule='snippet', reward_cents=200, locations=['*']),
-  dict(title='Ritual Skin', product_url='https://example.com/skin', snippet='Simple skincare made for humid weather. First order ships free.', reward_rule='click', reward_cents=50, locations=['NG:Lagos']),
+  dict(title='Ritual Skin', product_url='https://example.com/skin', snippet='Simple skincare made for humid weather. First order ships free.', reward_rule='click', reward_cents=50, locations=['US:Austin']),
 ]
 
 def flyer_html(t, brand, bg, fg):
@@ -41,8 +41,8 @@ with sync_playwright() as p:
     adm, _ = ctx('admin@thebes.local')
     sel, sp = ctx(f'seller{TAG}@example.com')
     mk, mp = ctx(f'ama{TAG}@example.com')
-    api(mk, '/api/me/profile', dict(name='Ama', city='Lagos', country='NG', phone='+2348000000001', prefs=dict(scope='local', categories=['food'])))
-    co = api(sel, '/api/companies', dict(name='Lagos Makers'))['id']
+    api(mk, '/api/me/profile', dict(name='Ama', city='Austin', country='US', phone='+2348000000001', prefs=dict(scope='local', categories=['food'])))
+    co = api(sel, '/api/companies', dict(name='Austin Makers'))['id']
 
     # flyers
     fp = b.new_context(viewport={'width':800,'height':1000}).new_page()

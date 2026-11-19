@@ -20,6 +20,8 @@ const ID_CHECK_CENTS = 5000;
 const MIN_FUND = 1000;
 const MIN_PAYOUT = 1000;
 const STATUS = { draft: 'Draft', review: 'In review', live: 'Live', paused: 'Paused', ended: 'Ended' };
+const MARKETER = { none: 'Not joined', verifying: 'Waiting for check', approved: 'Approved', rejected: 'Not approved', suspended: 'Suspended' };
+const marketerCan = () => !!me && (me.user.role === 'admin' || me.user.squad_status === 'approved');
 const where = (locs) => (locs || []).map((l) => {
   if (l === '*') return 'Everywhere';
   const [cc, city] = String(l).split(':');
@@ -57,7 +59,7 @@ async function copyText(text) {
   toast('Copied');
 }
 
-// "Lagos, NG" or "NG:Lagos" or "NG" or "*" -> the form the server stores
+// "Austin, US" or "US:Austin" or "US" or "*" -> the form the server stores
 function normLoc(s) {
   s = String(s).trim();
   if (!s) return null;
@@ -85,7 +87,7 @@ function drawNav() {
     nav.innerHTML = `<a href="#board" data-tab="board">Board</a><a href="#signin" data-tab="signin">Sign in</a>`;
   } else {
     const admin = me.user.role === 'admin' ? `<a href="#admin" data-tab="admin">Admin</a>` : '';
-    nav.innerHTML = `<a href="#board" data-tab="board">Board</a><a href="#links" data-tab="links">Links</a><a href="#sell" data-tab="sell">Sell</a><a href="#wallet" data-tab="wallet">Wallet</a><a href="#me" data-tab="me">Me</a>${admin}`;
+    nav.innerHTML = `<a href="#board" data-tab="board">Board</a><a href="#links" data-tab="links">Links</a><a href="#join" data-tab="join">Join</a><a href="#sell" data-tab="sell">Sell</a><a href="#wallet" data-tab="wallet">Wallet</a><a href="#me" data-tab="me">Me</a>${admin}`;
   }
   nav.querySelectorAll('a').forEach((a) => a.classList.toggle('on', a.dataset.tab === route));
 }
@@ -109,6 +111,7 @@ async function go() {
     else if (name === 'campaign') await viewCampaign(id);
     else if (name === 'signin') viewSignIn();
     else if (name === 'links') { await viewLinks(); pollTimer = setInterval(() => viewLinks(true), 15000); }
+    else if (name === 'join') await viewJoin();
     else if (name === 'sell') await viewSell();
     else if (name === 'new') await viewNew(id);
     else if (name === 'seller') await viewSeller(id);
@@ -213,7 +216,8 @@ async function viewLinks(quiet) {
         <div><span>${l.total - l.verified}</span>not counted</div>
         <div><span>${money(l.earned)}</span>earned</div>
       </div>
-      <p class="note">${money(l.left_cents)} left in this campaign · <code>${esc(l.url)}</code></p>
+      <p class="note">${esc(l.channel || 'online')} · ${l.conversions || 0} affiliate${l.conversions === 1 ? '' : 's'}${l.target_results ? ` · ${l.verified}/${l.target_results} target` : ''} · ${money(l.left_cents)} left</p>
+      <p class="note"><code>${esc(l.url)}</code></p>
       <div class="acts"><button class="pill" data-act="copy" data-copy="${encodeURIComponent(l.url)}">Copy link</button><a class="pill" href="#campaign/${esc(l.campaign_id)}">Open</a></div>
       ${l.reward_rule === 'snippet' ? `<form data-form="proof" data-id="${esc(l.campaign_id)}" class="stack"><label>Link to your post<input name="post_url" type="url" required placeholder="https://"></label><button class="pill" type="submit">Send proof</button></form>` : ''}
     </article>`).join('')
@@ -238,7 +242,9 @@ async function viewSell() {
       <p class="note">${money(c.reward_cents)} ${esc(rule(c.reward_rule))} · ${money(c.budget_cents)} funded · ${c.stats.verified} verified · ${c.stats.marketers} marketers</p>
     </a>`).join('')
     : `<div class="empty"><h2>No campaigns yet</h2><p>Add a product link, a short pitch and a flyer. Marketers do the sharing.</p></div>`;
+  const credits = me.companies.reduce((n, co) => n + Number(co.listing_credits || 0), 0);
   app.innerHTML = `<section class="page"><h1>Sell your work</h1>
+    <p class="note">${credits} free listing${credits === 1 ? '' : 's'} left. After that a listing needs a paid credit from an admin.</p>
     <div class="acts"><a class="pill solid" href="#new">New campaign</a></div>
     ${rows}</section>`;
 }
@@ -260,14 +266,14 @@ async function viewNew(id) {
       ${companies}
       <label>Product name<input name="title" required maxlength="80" value="${esc(c?.title || '')}" placeholder="Spring menu special"></label>
       <label>Your product or affiliate link<input name="product_url" type="url" required value="${esc(c?.product_url || '')}" placeholder="https://"></label>
-      <label>Pitch marketers copy and share<textarea name="snippet" required minlength="10" maxlength="500" rows="4" placeholder="Hand-poured candles, made in Lagos. Gift boxes from $12.">${esc(c?.snippet || '')}</textarea></label>
+      <label>Pitch marketers copy and share<textarea name="snippet" required minlength="10" maxlength="500" rows="4" placeholder="Hand-poured candles, made in Austin. Gift boxes from $12.">${esc(c?.snippet || '')}</textarea></label>
       <label>Flyer (optional, up to 5 MB)<input name="flyer" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
       <fieldset><legend>Reward rule</legend>
         ${['click', 'signup', 'snippet'].map((r) => `<label class="radio-row"><input type="radio" name="reward_rule" value="${r}" ${r === cur ? 'checked' : ''}> ${esc(rule(r))}</label>`).join('')}
       </fieldset>
       <label>Reward in dollars<input name="reward" inputmode="decimal" required value="${c ? (c.reward_cents / 100).toFixed(2) : ''}" placeholder="0.50"></label>
-      <label>Where it can be shared<input name="locations" required value="${esc(locs)}" placeholder="Lagos, NG · Zurich, CH · *"></label>
-      <p class="note">Use a city and country like "Lagos, NG", a country code like "NG", or * for everywhere. Separate with commas.</p>
+      <label>Where it can be shared<input name="locations" required value="${esc(locs)}" placeholder="Austin, US · Zurich, CH · *"></label>
+      <p class="note">Use a city and country like "Austin, US", a country code like "US", or * for everywhere. Separate with commas.</p>
       <button class="pill solid" type="submit">${c ? 'Save changes' : 'Save as draft'}</button>
     </form></section>`;
 }
@@ -280,6 +286,9 @@ async function viewSeller(id) {
   const pct = c.budget_cents ? Math.min(100, Math.round((c.spent_cents / c.budget_cents) * 100)) : 0;
   const canEdit = ['draft', 'paused'].includes(c.status);
   const canSubmit = canEdit && c.budget_cents >= MIN_FUND;
+  const company = me.companies.find((x) => x.id === c.company_id);
+  const credits = Number(company?.listing_credits || 0);
+  const canPublish = canEdit && c.budget_cents >= MIN_FUND && credits > 0;
   const postback = `${location.origin}/api/squad/postback?key=${c.postback_key}&ref={gs_ref}`;
   app.innerHTML = `<section class="page"><a href="#sell" class="back">← Sell</a>
     <div class="row"><h1>${esc(c.title)}</h1><span class="status s-${esc(c.status)}">${esc(STATUS[c.status] || c.status)}</span></div>
@@ -293,12 +302,45 @@ async function viewSeller(id) {
     ${c.budget_cents < MIN_FUND ? `<div class="card-l"><h3>Fund the campaign</h3>
       <p>Send at least ${money(MIN_FUND)} by bank transfer and put this reference on it: <code>${esc(c.id.slice(-8).toUpperCase())}</code>. We confirm the transfer and add it here.</p>
       <p class="note">Card payments are not connected yet.</p></div>` : ''}
+    <p class="note">${credits} free listing${credits === 1 ? '' : 's'} left for this business.</p>
     <div class="acts">
       ${canEdit ? `<a class="pill" href="#new/${esc(c.id)}">Edit</a>` : ''}
-      ${canSubmit ? `<button class="pill solid" data-act="submit" data-id="${esc(c.id)}">Send for review</button>` : ''}
+      ${canPublish ? `<button class="pill solid" data-act="publish" data-id="${esc(c.id)}">Publish now · use 1 listing</button>` : ''}
+      ${canSubmit ? `<button class="pill" data-act="submit" data-id="${esc(c.id)}">Send for review</button>` : ''}
     </div>
+    ${canEdit && !credits ? `<p class="note">No free listings left. Pay for a listing credit and an admin adds it here.</p>` : ''}
     ${c.reward_rule === 'signup' ? `<div class="card-l"><h3>Report sign-ups</h3><p>Call this from your thank-you page, with the <code>gs_ref</code> value you get on the link:</p><code class="wrap">${esc(postback)}</code><div class="acts"><button class="pill" data-act="copy" data-copy="${encodeURIComponent(postback)}">Copy URL</button></div></div>` : ''}
     <p class="note">Link to the product: <code class="wrap">${esc(c.product_url)}</code></p>
+  </section>`;
+}
+
+// ---------- marketer onboarding ----------
+async function viewJoin() {
+  const d = await api('/api/squad/marketer');
+  const m = d.marketer || {};
+  const status = m.status || 'none';
+  const canEdit = status !== 'approved';
+  const notice = status === 'verifying' ? '<p class="note">We are checking your details. An admin will approve you and send your link.</p>'
+    : status === 'approved' ? '<p class="note">You are approved. An admin sends your tracked links by DM or gives you a QR for offline sharing.</p>'
+    : status === 'rejected' ? `<p class="note">Not approved. ${esc(m.note || 'Update your details and send again.')}</p>`
+    : status === 'suspended' ? `<p class="note">Suspended. ${esc(m.note || 'Contact us to fix this.')}</p>` : '';
+  app.innerHTML = `<section class="page"><h1>Join the squad</h1>
+    <p class="lead">Share products you already use. We check every marketer by hand so the payouts stay real.</p>
+    <p class="note">Status: <b>${esc(MARKETER[status] || status)}</b>${m.note ? ' · ' + esc(m.note) : ''}</p>
+    ${notice}
+    ${canEdit ? `<form data-form="marketer" class="stack">
+      <label>Country<input name="country" required maxlength="2" value="${esc(m.country || 'US')}" placeholder="US"></label>
+      <p class="note">We are onboarding in ${esc((d.countries || []).join(', '))} for now.</p>
+      <label>City<input name="city" required maxlength="60" value="${esc(m.city || '')}" placeholder="Austin"></label>
+      <label>Phone with country code<input name="phone" required inputmode="tel" value="${esc(m.phone || '')}" placeholder="+1 512 000 0000"></label>
+      <label>How you share<select name="channel"><option value="online" ${m.channel === 'offline' ? '' : 'selected'}>Online</option><option value="offline" ${m.channel === 'offline' ? 'selected' : ''}>Offline</option></select></label>
+      <label>Platform<select name="platform">${['x','youtube','instagram','tiktok','whatsapp'].map((x) => `<option value="${x}" ${m.platform === x ? 'selected' : ''}>${x === 'x' ? 'X / Twitter' : x[0].toUpperCase() + x.slice(1)}</option>`).join('')}</select></label>
+      <label>Handle<input name="handle" maxlength="80" value="${esc(m.handle || '')}" placeholder="@yourname"></label>
+      <label>Profile link<input name="url" type="url" value="${esc(m.url || '')}" placeholder="https://"></label>
+      <label>Audience (optional)<input name="audience" maxlength="80" value="${esc(m.audience || '')}" placeholder="12k on YouTube"></label>
+      <label>Proof for the admin (profile link, country proof or notes)<textarea name="proof" rows="3" maxlength="500" placeholder="Anything that helps us check you">${esc(m.proof || '')}</textarea></label>
+      <button class="pill solid" type="submit">Send for approval</button>
+    </form>` : `<div class="card-l"><b>${esc(m.handle ? '@' + m.handle : m.city || '')}</b><p class="note">${esc([m.city, m.country].filter(Boolean).join(', '))} · ${esc(m.platform || m.channel || '')}</p></div>`}
   </section>`;
 }
 
@@ -332,8 +374,8 @@ function viewMe() {
   app.innerHTML = `<section class="page"><h1>Your profile</h1>
     <form data-form="profile" class="stack">
       <label>Name<input name="name" maxlength="60" value="${esc(u.display_name || '')}"></label>
-      <label>City<input name="city" maxlength="60" value="${esc(u.city || '')}" placeholder="Lagos"></label>
-      <label>Country code<input name="country" maxlength="2" value="${esc(u.country || '')}" placeholder="NG"></label>
+      <label>City<input name="city" maxlength="60" value="${esc(u.city || '')}" placeholder="Austin"></label>
+      <label>Country code<input name="country" maxlength="2" value="${esc(u.country || '')}" placeholder="US"></label>
       <label>Phone (with country code)<input name="phone" inputmode="tel" value="${esc(u.phone || '')}" placeholder="+234 800 000 0000"></label>
       <fieldset><legend>Board opens on</legend>
         <label class="radio-row"><input type="radio" name="scope" value="local" ${prefs.scope !== 'global' ? 'checked' : ''}> Local</label>
@@ -361,13 +403,35 @@ async function viewAdmin() {
   const a = await api('/api/admin/squad');
   const review = a.review.length ? a.review.map((c) => `<article class="card-l">
       <div class="row"><b>${esc(c.title)}</b><span class="chip">${money(c.reward_cents)} ${esc(rule(c.reward_rule))}</span></div>
-      <p class="note">${esc(c.company)} · ${esc(where(c.locations))} · funded ${money(c.budget_cents)}</p>
+      <p class="note">${esc(c.company)} · ${esc(where(c.locations))} · funded ${money(c.budget_cents)} · fee ${money(c.fee_cents)}</p>
       <p class="snip">${esc(c.snippet)}</p>
-      <p class="note"><a href="${esc(c.product_url)}" target="_blank" rel="noopener">Check the product link</a></p>
+      <p class="note">Affiliate: ${esc(c.affiliate_network || 'not attached')} · <a href="${esc(c.product_url)}" target="_blank" rel="noopener">Check the product link</a></p>
       <div class="acts"><button class="pill solid" data-act="camp" data-id="${esc(c.id)}" data-action="approve">Approve and go live</button><button class="pill" data-act="camp" data-id="${esc(c.id)}" data-action="pause">Pause</button></div>
     </article>`).join('') : '<p class="note">Nothing in review.</p>';
+  const out = a.out_of_budget.length ? a.out_of_budget.map((c) => `<article class="card-l">
+      <div class="row"><b>${esc(c.title)}</b><span class="status s-paused">${esc(c.paused_reason === 'budget' ? 'Out of budget' : 'Low budget')}</span></div>
+      <p class="note">${esc(c.company)} · ${money(c.spent_cents)} spent of ${money(c.budget_cents)} · ${money(c.left_cents)} left · one result costs ${money(c.reward_cents + c.fee_cents)}</p>
+      <div class="acts"><button class="pill" data-act="camp" data-id="${esc(c.id)}" data-action="resume">Resume if funded</button><button class="pill" data-act="camp" data-id="${esc(c.id)}" data-action="end">End</button></div>
+    </article>`).join('') : '<p class="note">No paused campaigns.</p>';
+  const marketers = a.marketers.length ? a.marketers.map((m) => `<article class="card-l">
+      <div class="row"><b>${esc(m.handle ? '@' + m.handle : m.email)}</b><span class="chip">${esc(m.squad_channel || 'online')}</span></div>
+      <p class="note">${esc([m.city, m.country].filter(Boolean).join(', '))} · ${esc(m.phone || 'no phone')} · ${esc(m.social_platform || '')} ${esc(m.social_handle ? '@' + m.social_handle : '')}</p>
+      ${m.social_url ? `<p class="note"><a href="${esc(m.social_url)}" target="_blank" rel="noopener">Open profile</a>${m.audience ? ' · ' + esc(m.audience) : ''}</p>` : ''}
+      <p class="snip">${esc(m.squad_proof || 'No proof added')}</p>
+      <div class="acts"><button class="pill solid" data-act="marketer" data-id="${esc(m.id)}" data-action="approve">Approve</button><button class="pill" data-act="marketer" data-id="${esc(m.id)}" data-action="reject">Reject</button><button class="pill" data-act="marketer" data-id="${esc(m.id)}" data-action="suspend">Suspend</button></div>
+    </article>`).join('') : '<p class="note">No marketer applications.</p>';
+  const conversions = a.conversions.length ? a.conversions.map((x) => `<article class="card-l">
+      <div class="row"><b>${esc(x.title)}</b><span class="chip">${money(x.commission_cents)} ${esc(x.currency || 'USD')}</span></div>
+      <p class="note">${esc(x.handle ? '@' + x.handle : x.email)} · order ${esc(x.external_id)} · sale ${money(x.gross_cents)} · link ${esc(x.code || '—')}</p>
+      ${x.note ? `<p class="snip">${esc(x.note)}</p>` : ''}
+      <div class="acts"><button class="pill solid" data-act="conversion" data-id="${esc(x.id)}" data-decision="approve">Approve and pay</button><button class="pill" data-act="conversion" data-id="${esc(x.id)}" data-decision="reject">Reject</button></div>
+    </article>`).join('') : '<p class="note">No affiliate sales to check.</p>';
   const funds = `<p class="note">Add funds after a bank transfer is confirmed. Enter the transfer reference from the seller's page. Campaigns can be funded from the review list above.</p>
     <form data-form="fund" class="stack"><label>Campaign id<input name="id" required placeholder="cg-…"></label><label>Amount in dollars<input name="amount" inputmode="decimal" required></label><label>Transfer reference<input name="reference" maxlength="120"></label><button class="pill" type="submit">Add funds</button></form>`;
+  const affiliate = `<form data-form="affiliate" class="stack"><label>Campaign id<input name="id" required placeholder="cg-…"></label><label>Affiliate or product link<input name="product_url" type="url" required placeholder="https://"></label><label>Network<input name="affiliate_network" maxlength="60" placeholder="Impact, CJ, direct"></label><label>Account reference<input name="affiliate_ref" maxlength="120" placeholder="network account or publisher id"></label><label>Sub-id parameter<input name="subid_param" maxlength="30" value="subid"></label><label>Platform fee %<input name="platform_fee" inputmode="decimal" placeholder="10"></label><button class="pill" type="submit">Attach affiliate</button></form>`;
+  const conversionForm = `<form data-form="conversion" class="stack"><label>Campaign id<input name="campaign_id" required placeholder="cg-…"></label><label>Link code (optional)<input name="code" placeholder="abc123"></label><label>Marketer email (needed if no code)<input name="email" type="email" placeholder="marketer@example.com"></label><label>Network order id<input name="external_id" required maxlength="120"></label><label>Sale in dollars<input name="gross" inputmode="decimal"></label><label>Commission in dollars<input name="commission" inputmode="decimal"></label><label>Note<input name="note" maxlength="300"></label><button class="pill" type="submit">Add affiliate sale</button></form>`;
+  const sendLink = `<form data-form="sendlink" class="stack"><label>Campaign id<input name="id" required placeholder="cg-…"></label><label>Marketer email<input name="email" type="email" required></label><label>Channel<select name="channel"><option value="online">Online</option><option value="offline">Offline</option><option value="x">X</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option><option value="tiktok">TikTok</option><option value="whatsapp">WhatsApp</option></select></label><label>Sent via<input name="sent_via" maxlength="40" value="DM"></label><button class="pill" type="submit">Make and mark sent</button></form>`;
+  const credits = `<form data-form="credits" class="stack"><label>Company id<input name="id" required placeholder="co-…"></label><label>Credits<input name="count" inputmode="numeric" value="1" required></label><label>Amount paid in dollars<input name="amount" inputmode="decimal" placeholder="29.00"></label><button class="pill" type="submit">Add listing credits</button></form>`;
   const proofs = a.proofs.length ? a.proofs.map((p) => `<article class="card-l">
       <div class="row"><b>${esc(p.title)}</b><span class="chip">${money(p.reward_cents)}</span></div>
       <p class="note">${esc(p.handle ? '@' + p.handle : p.email)} · <a href="${esc(p.post_url)}" target="_blank" rel="noopener">Open the post</a></p>
@@ -381,8 +445,15 @@ async function viewAdmin() {
     </article>`).join('') : '<p class="note">No payouts requested.</p>';
   const fraud = a.fraud.length ? a.fraud.map((f) => `<article class="card-l"><b>${esc(f.handle ? '@' + f.handle : f.email)}</b><p class="note">${f.rejected} of ${f.total} clicks not counted this week · ${f.duplicates} repeat visits · ${f.suspicious} bot or datacenter</p></article>`).join('') : '<p class="note">No flags this week.</p>';
   app.innerHTML = `<section class="page"><h1>Admin</h1>
-    <p class="lead">Live: ${a.live.campaigns} campaigns · ${money(a.live.spent_cents)} of ${money(a.live.budget_cents)} spent · paid this week ${money(a.paid_this_week_cents)}</p>
+    <p class="lead">Live: ${a.live.campaigns} campaigns · ${money(a.live.spent_cents)} of ${money(a.live.budget_cents)} spent · paid this week ${money(a.paid_this_week_cents)} · countries ${esc((a.countries || []).join(', '))}</p>
+    <h2>Marketer applications</h2>${marketers}
     <h2>Review</h2>${review}
+    <h2>Out of budget</h2>${out}
+    <h2>Affiliate sales to check</h2>${conversions}
+    <h2>Attach an affiliate</h2>${affiliate}
+    <h2>Add an affiliate sale</h2>${conversionForm}
+    <h2>Send a link</h2>${sendLink}
+    <h2>Listing credits</h2>${credits}
     <h2>Fund a campaign</h2>${funds}
     <h2>Posts to check</h2>${proofs}
     <h2>Payouts to send</h2>${pays}
@@ -395,19 +466,38 @@ const acts = {
   async scope(el) { scope = el.dataset.v === 'global' ? 'global' : 'local'; await viewBoard(); },
   async 'copy-post'(el) {
     if (!me) { location.hash = '#signin'; return; }
+    if (!marketerCan()) { toast('Get approved as a marketer first'); location.hash = '#join'; return; }
     const c = campaigns.get(el.dataset.id);
     const url = await showLink(el.dataset.id);
     await copyText(`${c?.snippet || ''}\n\n${url}`);
   },
-  async mylink(el) { if (!me) { location.hash = '#signin'; return; } await showLink(el.dataset.id); },
+  async mylink(el) {
+    if (!me) { location.hash = '#signin'; return; }
+    if (!marketerCan()) { toast('Get approved as a marketer first'); location.hash = '#join'; return; }
+    await showLink(el.dataset.id);
+  },
   async copy(el) { await copyText(decodeURIComponent(el.dataset.copy)); },
   async submit(el) {
     await send(`/api/squad/campaigns/${el.dataset.id}/submit`);
     toast('Sent for review. We will confirm soon.');
     await go();
   },
+  async publish(el) {
+    await send(`/api/squad/campaigns/${el.dataset.id}/publish`);
+    await loadMe();
+    toast('Published live');
+    await go();
+  },
   async signout() { await send('/api/auth/signout'); me = null; toast('Signed out'); location.hash = '#board'; await go(); },
   async camp(el) { await send(`/api/admin/squad/campaigns/${el.dataset.id}`, { action: el.dataset.action }); toast('Done'); await go(); },
+  async marketer(el) {
+    if (el.dataset.action !== 'approve' && !confirm(`Mark this marketer ${el.dataset.action}?`)) return;
+    await send(`/api/admin/squad/marketers/${el.dataset.id}`, { action: el.dataset.action }); toast('Done'); await go();
+  },
+  async conversion(el) {
+    if (el.dataset.decision === 'reject' && !confirm('Reject this affiliate sale?')) return;
+    await send(`/api/admin/squad/conversions/${el.dataset.id}`, { decision: el.dataset.decision }); toast('Done'); await go();
+  },
   async proof(el) { await send(`/api/admin/squad/proofs/${el.dataset.id}`, { decision: el.dataset.decision }); toast('Done'); await go(); },
   async payout(el) {
     if (el.dataset.action === 'reject' && !confirm('Reject this payout? The money goes back to the marketer\'s balance.')) return;
@@ -423,6 +513,16 @@ const forms = {
     const box = document.getElementById('signin-msg');
     if (r.link) box.innerHTML = `<p class="note">Local mode: <a href="${esc(r.link)}">open the sign-in link</a></p>`;
     else box.innerHTML = `<p class="note">Check your inbox for the link. It works once, for 20 minutes.</p>`;
+  },
+  async marketer(f) {
+    const fd = new FormData(f);
+    await send('/api/squad/marketer/apply', {
+      country: fd.get('country'), city: fd.get('city'), phone: fd.get('phone'), channel: fd.get('channel'),
+      platform: fd.get('platform'), handle: fd.get('handle'), url: fd.get('url'), audience: fd.get('audience'), proof: fd.get('proof'),
+    });
+    await loadMe();
+    toast('Sent for approval');
+    await viewJoin();
   },
   async company(f) {
     const r = await send('/api/companies', { name: new FormData(f).get('name') });
@@ -481,6 +581,41 @@ const forms = {
     const fd = new FormData(f);
     await send(`/api/admin/squad/campaigns/${encodeURIComponent(fd.get('id'))}`, { action: 'fund', amount_cents: dollarsToCents(fd.get('amount')), reference: fd.get('reference') });
     toast('Funds added'); await go();
+  },
+  async affiliate(f) {
+    const fd = new FormData(f);
+    const pct = parseFloat(String(fd.get('platform_fee') || '10'));
+    await send(`/api/admin/squad/campaigns/${encodeURIComponent(fd.get('id'))}`, {
+      action: 'affiliate', product_url: fd.get('product_url'), affiliate_network: fd.get('affiliate_network'),
+      affiliate_ref: fd.get('affiliate_ref'), subid_param: fd.get('subid_param') || 'subid',
+      platform_fee_bps: Math.round((Number.isFinite(pct) ? pct : 10) * 100),
+    });
+    toast('Affiliate attached'); await go();
+  },
+  async conversion(f) {
+    const fd = new FormData(f);
+    await send('/api/admin/squad/conversions', {
+      campaign_id: fd.get('campaign_id'), code: fd.get('code') || undefined, email: fd.get('email') || undefined,
+      external_id: fd.get('external_id'), gross_cents: dollarsToCents(fd.get('gross')), commission_cents: dollarsToCents(fd.get('commission')),
+      note: fd.get('note'),
+    });
+    toast('Affiliate sale added'); await go();
+  },
+  async sendlink(f) {
+    const fd = new FormData(f);
+    const r = await send(`/api/admin/squad/campaigns/${encodeURIComponent(fd.get('id'))}/links`, {
+      email: fd.get('email'), channel: fd.get('channel'), sent_via: fd.get('sent_via'),
+    });
+    await copyText(r.url);
+    toast('Link made and copied');
+    await go();
+  },
+  async credits(f) {
+    const fd = new FormData(f);
+    await send(`/api/admin/squad/companies/${encodeURIComponent(fd.get('id'))}/credits`, {
+      count: Number(fd.get('count') || 1), amount_cents: dollarsToCents(fd.get('amount')),
+    });
+    toast('Credits added'); await go();
   },
 };
 

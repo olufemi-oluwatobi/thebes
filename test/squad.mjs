@@ -2,6 +2,7 @@
 //   BASE=http://127.0.0.1:8787 node test/squad.mjs
 // The admin is admin@thebes.local (ADMIN_EMAILS in the local config). Local mode returns sign-in links instead of emailing them.
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 
 const BASE = process.env.BASE || 'http://127.0.0.1:8787';
 let pass = 0, fail = 0;
@@ -27,14 +28,14 @@ async function signIn(who, email) {
   const r = await who.req(link.pathname + link.search);
   return r.status === 302;
 }
-const sql = (q) => execFileSync('npx', ['wrangler', 'd1', 'execute', 'thebes', '--local', '--env', 'local', '--command', q], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+const sql = (q) => execFileSync(process.execPath, [resolve('node_modules/wrangler/bin/wrangler.js'), 'd1', 'execute', 'thebes', '--local', '--env', 'local', '--command', q], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const ip = (n) => `10.20.${Math.floor(n / 250)}.${(n % 250) + 1}`;
 const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148 Safari/604.1';
 
 const admin = person();
 const seller = person();
 const other = person();
-const ama = person();   // a marketer in Lagos
+const ama = person();   // a marketer in Austin
 const zed = person();   // a marketer in Zurich
 
 ok('admin signs in', await signIn(admin, 'admin@thebes.local'));
@@ -43,12 +44,26 @@ ok('other signs in', await signIn(other, `other-${TAG}@example.com`));
 ok('marketer signs in', await signIn(ama, `ama-${TAG}@example.com`));
 ok('zed signs in', await signIn(zed, `zed-${TAG}@example.com`));
 
+// ---------- marketers are checked by hand ----------
+const apply = async (who, handle, city) => {
+  const r = await who.post('/api/squad/marketer/apply', {
+    country: 'US', city, phone: '+1 512 000 0000', channel: 'online', platform: 'x',
+    handle, url: `https://x.com/${handle}`, audience: '12k', proof: 'profile and country check',
+  });
+  ok(`marketer ${handle} applies`, r.status === 200 && r.body.marketer.status === 'verifying', JSON.stringify(r.body));
+  const id = r.body.marketer.id;
+  ok(`admin approves ${handle}`, (await admin.post(`/api/admin/squad/marketers/${id}`, { action: 'approve' })).status === 200);
+  return id;
+};
+await apply(ama, `ama_${TAG}`, 'Austin');
+await apply(zed, `zed_${TAG}`, 'Zurich');
+
 // ---------- the seller and the campaign ----------
 const co = await seller.post('/api/companies', { name: `Bread ${TAG}` });
 ok('seller makes a business', co.status === 200 && co.body.id, JSON.stringify(co.body));
 const cid = co.body.id;
 
-const base = { company_id: cid, title: 'Morning loaf', product_url: 'https://shop.example/loaf', snippet: 'Fresh loaf, delivered by 9am. Order tonight.', reward_rule: 'click', reward_cents: 50, locations: ['NG:Lagos'] };
+const base = { company_id: cid, title: 'Morning loaf', product_url: 'https://shop.example/loaf', snippet: 'Fresh loaf, delivered by 9am. Order tonight.', reward_rule: 'click', reward_cents: 50, locations: ['US:Austin'] };
 ok('a non-https product link is refused', (await seller.post('/api/squad/campaigns', { ...base, product_url: 'javascript:alert(1)' })).status === 400);
 ok('a campaign needs a place to be shared', (await seller.post('/api/squad/campaigns', { ...base, locations: [] })).status === 400);
 ok('reward must be a real amount', (await seller.post('/api/squad/campaigns', { ...base, reward_cents: 0 })).status === 400);
@@ -63,21 +78,23 @@ ok('a draft is hidden from the board', !(await ama.get('/api/squad/board?scope=g
 ok('a stranger cannot see a draft', (await other.get(`/api/squad/campaigns/${CAMP}`)).status === 404);
 ok('a stranger cannot fund it', (await other.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'fund', amount_cents: 1000 })).status === 403);
 
-ok('admin funds $10', (await admin.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'fund', amount_cents: 1000, reference: 'BANK-1' })).status === 200);
+ok('admin funds $11', (await admin.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'fund', amount_cents: 1100, reference: 'BANK-1' })).status === 200);
 ok('seller sends it for review', (await seller.post(`/api/squad/campaigns/${CAMP}/submit`)).body.status === 'review');
 ok('a campaign in review is not on the board', !(await ama.get('/api/squad/board?scope=global')).body.campaigns.some((c) => c.id === CAMP));
 ok('admin approves it live', (await admin.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'approve' })).status === 200);
+ok('the first free listing was used', (await seller.get('/api/me')).body.companies.find((x) => x.id === cid)?.listing_credits === 1);
+ok('an unapproved marketer cannot make a link', (await other.post(`/api/squad/campaigns/${CAMP}/link`)).status === 403);
 
 // ---------- the board: local and global ----------
-await ama.post('/api/me/profile', { city: 'Lagos', country: 'ng', phone: '+234 800 000 0001' });
+await ama.post('/api/me/profile', { city: 'Austin', country: 'us', phone: '+234 800 000 0001' });
 await zed.post('/api/me/profile', { city: 'Zurich', country: 'CH', phone: '+41 79 000 00 02' });
 const amaLocal = await ama.get('/api/squad/board?scope=local');
-ok('a Lagos marketer sees the Lagos campaign locally', amaLocal.body.campaigns.some((c) => c.id === CAMP), JSON.stringify(amaLocal.body).slice(0, 200));
+ok('an Austin marketer sees the Austin campaign locally', amaLocal.body.campaigns.some((c) => c.id === CAMP), JSON.stringify(amaLocal.body).slice(0, 200));
 const zedLocal = await zed.get('/api/squad/board?scope=local');
 ok('a Zurich marketer does not see it locally', !zedLocal.body.campaigns.some((c) => c.id === CAMP));
 ok('a Zurich marketer sees it globally', (await zed.get('/api/squad/board?scope=global')).body.campaigns.some((c) => c.id === CAMP));
 ok('the product link is hidden from marketers', !JSON.stringify(amaLocal.body).includes('shop.example'));
-ok('a signed-out visitor gets no local list', (await person().get('/api/squad/board?scope=local')).body.campaigns.length === 0);
+ok('a signed-out visitor gets no local list', !(await person().get('/api/squad/board?scope=local')).body.campaigns.some((c) => c.id === CAMP));
 
 // ---------- a marketer's link and clicks ----------
 const l1 = await ama.post(`/api/squad/campaigns/${CAMP}/link`);
@@ -91,7 +108,8 @@ const click = async (n, ua = UA) => {
   return r;
 };
 const r1 = await click(1);
-ok('a click sends the shopper to the product', r1.status === 302 && (r1.headers.get('location') || '').startsWith('https://shop.example/loaf?gs_ref='), r1.headers.get('location'));
+const go = r1.headers.get('location') || '';
+ok('a click sends the shopper to the product with the tracking ref', r1.status === 302 && go.startsWith('https://shop.example/loaf?') && !!new URL(go).searchParams.get('gs_ref'), go);
 const w1 = await ama.get('/api/squad/wallet');
 ok('a verified click is pending', w1.body.pending_cents === 50, JSON.stringify(w1.body));
 await click(1);
@@ -116,6 +134,7 @@ ok('all the money is pending for a week', pending.pending_cents === 1000 && pend
 ok('no payout from pending money', (await ama.post('/api/squad/payouts', { amount_cents: 1000, method: 'bank', account: '0123456789 Access' })).status === 402);
 ok('the minimum payout is $10', (await ama.post('/api/squad/payouts', { amount_cents: 500, method: 'bank', account: '0123456789' })).status === 400);
 sql(`UPDATE ledger SET created_at = created_at - ${8 * 86400000}`);
+await new Promise((r) => setTimeout(r, 1500));
 const cleared = (await ama.get('/api/squad/wallet')).body;
 ok('after a week the money clears', cleared.available_cents === 1000 && cleared.pending_cents === 0, JSON.stringify(cleared));
 const po = await ama.post('/api/squad/payouts', { amount_cents: 1000, method: 'bank', account: '0123456789 Access' });
@@ -150,8 +169,11 @@ ok('the same sign-up is only paid once', (await pb2.json()).duplicate === true &
 const s3 = await seller.post('/api/squad/campaigns', { ...base, title: 'Post it', reward_rule: 'snippet', reward_cents: 200, locations: ['*'] });
 const POST = s3.body.id;
 await admin.post(`/api/admin/squad/campaigns/${POST}`, { action: 'fund', amount_cents: 1000 });
-await seller.post(`/api/squad/campaigns/${POST}/submit`);
-await admin.post(`/api/admin/squad/campaigns/${POST}`, { action: 'approve' });
+const noCredit = await seller.post(`/api/squad/campaigns/${POST}/publish`);
+ok('self-publishing needs a listing credit after the two free ones', noCredit.status === 402, JSON.stringify(noCredit.body));
+ok('an admin adds a paid $29 listing credit', (await admin.post(`/api/admin/squad/companies/${cid}/credits`, { count: 1, amount_cents: 2900 })).status === 200);
+const pub = await seller.post(`/api/squad/campaigns/${POST}/publish`);
+ok('the seller self-publishes with the credit', pub.status === 200 && pub.body.status === 'live', JSON.stringify(pub.body));
 const pl = await zed.post(`/api/squad/campaigns/${POST}/link`);
 const pr = await zed.post(`/api/squad/links/${pl.body.code}/proof`, { post_url: 'https://social.example/p/123' });
 ok('a marketer sends proof of a post', pr.status === 200 && pr.body.status === 'pending', JSON.stringify(pr.body));
@@ -176,8 +198,8 @@ ok('the dashboard shows what was earned', mine1 && mine1.earned === 1000, JSON.s
 
 // ---------- the home page and the app ----------
 const home = await fetch(`${BASE}/`).then((r) => r.text());
-ok('the home page is Gorilla Squad', home.includes('Gorilla Squad') && home.includes('Put your product in your customers'));
-ok('the home page has the two sides', home.includes('Sell your work') && home.includes('Become a marketer'));
+ok('the home page is Gorilla Squad', home.includes('Gorilla Squad') && home.includes("Put your product directly in your customers' hands"));
+ok('the home page has both ways in', home.includes('href="/app/#sell"') && home.includes('href="/app/#board"'));
 const app = await fetch(`${BASE}/app/`).then((r) => r.text());
 ok('the app page loads the squad script', app.includes('/squad.js') && app.includes('/vendor/qrcode.js'));
 

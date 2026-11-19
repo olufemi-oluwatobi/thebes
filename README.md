@@ -10,11 +10,14 @@ Squad home page and app do not link to it.
 
 ## Gorilla Squad MVP
 
-- **Home** (`/`): split screen, sell on one side, become a marketer on the other.
+- **Home** (`/`): carousel of live campaign cards, then how results are checked and paid.
 - **Sign-in** (`/app/#signin`): email link, no password. Marketers add city, country and phone (`/app/#me`).
+- **Join** (`/app/#join`): a marketer applies with their channel (online or offline), platform, handle, audience and
+  proof. An admin checks and approves each one by hand; links and offline QR codes are then sent by DM or in person.
 - **Sell** (`/app/#sell`): a business, then a campaign: product link, pitch, flyer, reward rule and reward, where it can
-  be shared (`Lagos, NG`, `NG`, or `*`). Fund it, send it for review, and see live stats. Sign-up campaigns get a
-  postback URL for the seller's thank-you page.
+  be shared (`Austin, US`, `US`, or `*`). Fund it and send it for review, or self-publish with one of the two free
+  listing credits. After that an admin adds a paid $29 listing credit. Sign-up campaigns get a postback URL for the
+  seller's thank-you page.
 - **Board** (`/app/#board`): full-screen cards, local or global, with the exact reward and budget left. One tap copies
   the snippet and the marketer's link together. The details page has the QR code.
 - **Links** (`/app/#links`): live counters per link (today, verified, not counted, earned), refreshed every 15 seconds.
@@ -23,8 +26,10 @@ Squad home page and app do not link to it.
   last 24 hours. Budgets are never overspent.
 - **Wallet** (`/app/#wallet`): available vs pending (earnings are pending for 7 days), the ledger, and payout requests
   (bank, PayPal or USDT; minimum $10; above $50 an ID check is flagged).
-- **Admin** (`/app/#admin`, admins only): review and approve campaigns, add funds after a confirmed transfer, approve
-  posts for per-snippet rewards, mark payouts paid or reject them, and see fraud flags.
+- **Admin** (`/app/#admin`, admins only): approve marketers, review campaigns, pause/resume out-of-budget campaigns,
+  attach affiliate accounts and fees, add affiliate sales, issue links, add listing credits, add funds after a confirmed
+  transfer, approve posts for per-snippet rewards, mark payouts paid or reject them, and see fraud flags.
+- **Launch**: the United States first (`SQUAD_COUNTRIES`, default `US`). Platform fee is 10% of each result by default.
 
 **Not built yet:** card and local-payment funding (Stripe, Paystack, Flutterwave), instant WhatsApp, SMS or push alerts,
 automated phone verification, automated ID checks, and automated payouts. Funding and payouts are done by hand from the
@@ -37,7 +42,7 @@ npm install
 npm run db:local        # create the local database and seed it
 npm run dev             # builds the browser runtime, starts the Worker on http://localhost:8787
 npm test                # the games engine: 91 end-to-end checks
-node test/squad.mjs     # Gorilla Squad: 65 end-to-end checks, against the same running Worker
+node test/squad.mjs     # Gorilla Squad: 74 end-to-end checks, against the same running Worker
 ```
 
 Locally, sign-in links are shown on screen instead of emailed, and `admin@thebes.local` is an admin.
