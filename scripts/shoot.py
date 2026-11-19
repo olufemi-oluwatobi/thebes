@@ -10,14 +10,14 @@ TAG = str(int(time.time()))[-6:]
 UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148 Safari/604.1'
 
 FLYERS = [
-  ('Fresh bread, at your door by 9am', 'Mama Tola Bakery', '#E9C46A', '#26331F'),
-  ('Handmade candles, poured in Lagos', 'Ember & Wick', '#CBD6A8', '#26331F'),
-  ('Learn guitar in 8 weeks', 'Strings Academy', '#E9E6D2', '#26331F'),
+  ('Hand-poured candles, made in Lagos', 'Ember & Wick', '#E9C46A', '#26331F'),
+  ('Learn guitar in 8 weeks', 'Strings Academy', '#CBD6A8', '#26331F'),
+  ('Skin that feels like you', 'Ritual Skin', '#E9E6D2', '#26331F'),
 ]
 CAMPS = [
-  dict(title='Fresh bread, delivered', product_url='https://example.com/bread', snippet='Warm bread at your door by 9am. Order before 8pm tonight.', reward_rule='click', reward_cents=50, locations=['NG:Lagos']),
   dict(title='Ember & Wick candles', product_url='https://example.com/candles', snippet='Hand-poured soy candles made in Lagos. Gift boxes from $12.', reward_rule='signup', reward_cents=300, locations=['NG:Lagos', 'NG']),
   dict(title='Guitar in 8 weeks', product_url='https://example.com/guitar', snippet='Small classes, real songs from week one. First lesson free.', reward_rule='snippet', reward_cents=200, locations=['*']),
+  dict(title='Ritual Skin', product_url='https://example.com/skin', snippet='Simple skincare made for humid weather. First order ships free.', reward_rule='click', reward_cents=50, locations=['NG:Lagos']),
 ]
 
 def flyer_html(t, brand, bg, fg):
@@ -59,7 +59,7 @@ with sync_playwright() as p:
         api(sel, f'/api/squad/campaigns/{r["id"]}/submit')
         api(adm, f'/api/admin/squad/campaigns/{r["id"]}', dict(action='approve'))
 
-    camp.reverse()   # camp[0] is the bread campaign, created last so it is first on the board
+    camp.reverse()   # camp[0] is the candles campaign, created last so it is first on the board
     # a marketer link with real clicks
     link = api(mk, f'/api/squad/campaigns/{camp[0]}/link')
     code = link['code']

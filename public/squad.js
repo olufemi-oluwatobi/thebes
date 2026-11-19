@@ -260,7 +260,7 @@ async function viewNew(id) {
       ${companies}
       <label>Product name<input name="title" required maxlength="80" value="${esc(c?.title || '')}" placeholder="Spring menu special"></label>
       <label>Your product or affiliate link<input name="product_url" type="url" required value="${esc(c?.product_url || '')}" placeholder="https://"></label>
-      <label>Pitch marketers copy and share<textarea name="snippet" required minlength="10" maxlength="500" rows="4" placeholder="Fresh bread, delivered by 9am. Order tonight.">${esc(c?.snippet || '')}</textarea></label>
+      <label>Pitch marketers copy and share<textarea name="snippet" required minlength="10" maxlength="500" rows="4" placeholder="Hand-poured candles, made in Lagos. Gift boxes from $12.">${esc(c?.snippet || '')}</textarea></label>
       <label>Flyer (optional, up to 5 MB)<input name="flyer" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label>
       <fieldset><legend>Reward rule</legend>
         ${['click', 'signup', 'snippet'].map((r) => `<label class="radio-row"><input type="radio" name="reward_rule" value="${r}" ${r === cur ? 'checked' : ''}> ${esc(rule(r))}</label>`).join('')}

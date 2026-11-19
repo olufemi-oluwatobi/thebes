@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gorilla Squad · Put your product in your customers' hands</title>
-<meta name="description" content="List a product. People in your city share it. You pay only for results that are checked.">
+<title>Gorilla Squad · Find people who will share your work</title>
+<meta name="description" content="Post your product. Local people share it to their network. You pay only for results that are checked.">
 <meta name="theme-color" content="#26331F">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/libre-baskerville-latin-700-normal.woff2" crossorigin>
 <style>
@@ -12,102 +12,464 @@
 @font-face{font-family:Inter;font-weight:600;font-display:swap;src:url(/fonts/inter-latin-600-normal.woff2) format("woff2")}
 @font-face{font-family:Inter;font-weight:700;font-display:swap;src:url(/fonts/inter-latin-700-normal.woff2) format("woff2")}
 @font-face{font-family:"Libre Baskerville";font-weight:700;font-display:swap;src:url(/fonts/libre-baskerville-latin-700-normal.woff2) format("woff2")}
-:root{--army:#26331F;--sage:#CBD6A8;--cream:#F1F0E4;--ink:#26331F;--muted:#6b6e60}
+:root{--army:#26331F;--army-deep:#1D2A16;--sage:#CBD6A8;--sage-light:#E2E9D1;--cream:#F1F0E4;--gold:#E9C46A;--ink:#1D2A16;--muted:#6B6E60}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--cream)}
-h1,h2,p{margin:0}
+h1,h2,p,figure{margin:0}
 a{color:inherit;text-decoration:none}
+.wrap{width:min(1080px,calc(100% - 40px));margin-inline:auto}
+.on-army{background:var(--army);color:#fff}
+.on-cream{background:var(--cream);color:var(--ink)}
+section{padding:clamp(64px,9vw,108px) 0;overflow:hidden}
+.hero{padding-top:clamp(26px,4vw,40px);padding-bottom:0}
+.hero .wrap{display:flex;flex-direction:column;align-items:center;text-align:center}
 
-nav{position:absolute;top:0;left:0;right:0;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:22px 5%}
+nav{display:flex;justify-content:space-between;align-items:center;width:100%;padding-bottom:clamp(48px,7vw,80px)}
 .word{font:700 18px "Libre Baskerville",Georgia,serif;letter-spacing:.06em;text-transform:uppercase;color:#fff}
 nav a.in{font-weight:600;font-size:15px;color:var(--sage)}
+nav a.in:hover{color:#fff}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font:600 16px Inter,sans-serif;padding:15px 30px;border:2px solid transparent;transition:background .2s,color .2s,border-color .2s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font:600 16px Inter,sans-serif;padding:15px 30px;border:2px solid transparent;transition:background .2s,color .2s,border-color .2s;white-space:nowrap;cursor:pointer}
 .btn:focus-visible,nav a:focus-visible{outline:3px solid var(--sage);outline-offset:3px}
 .on-army .btn.solid{background:var(--sage);color:var(--army)}
 .on-army .btn.solid:hover{background:#fff}
 .on-army .btn.line{border-color:rgba(255,255,255,.45);color:#fff}
 .on-army .btn.line:hover{border-color:#fff}
 .on-cream .btn.solid{background:var(--army);color:#fff}
-.on-cream .btn.solid:hover{background:#3b4d30}
+.on-cream .btn.solid:hover{background:#3B4D30}
 .on-cream .btn.line{border-color:var(--army);color:var(--army)}
 .on-cream .btn.line:hover{background:var(--army);color:#fff}
 
-section{display:flex;flex-direction:column;align-items:center;text-align:center;padding:clamp(72px,9vw,120px) 6% 0;overflow:hidden}
-.on-army{background:var(--army);color:#fff}
-.on-cream{background:var(--cream);color:var(--ink)}
-section.hero{padding-top:clamp(100px,11vw,130px)}
-h1,h2,.line1{text-wrap:balance}
+h1,h2,.lead{text-wrap:balance}
 h1,h2{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;line-height:1.14}
-h1{font-size:clamp(34px,5vw,62px);max-width:18ch}
-h2{font-size:clamp(30px,4.4vw,56px);max-width:16ch}
-.line1{font-size:clamp(16px,1.5vw,20px);line-height:1.6;max-width:36ch;margin-top:18px;color:var(--muted)}
-.on-army .line1{color:rgba(255,255,255,.72)}
+h1{font-size:clamp(34px,5.4vw,66px);max-width:17ch}
+h2{font-size:clamp(29px,4.4vw,54px);max-width:16ch}
+.lead{font-size:clamp(16px,1.5vw,20px);line-height:1.6;max-width:38ch;margin-top:18px;color:var(--muted)}
+.on-army .lead{color:rgba(255,255,255,.72)}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:30px}
+.center{display:flex;flex-direction:column;align-items:center;text-align:center}
+.center .lead{margin-inline:auto}
 
-/* one phone per section: only the app, nothing else */
-.phone{margin-top:clamp(40px,6vw,64px);width:min(330px,78vw);height:clamp(420px,56vw,560px);border-radius:38px 38px 0 0;border:9px solid #0f170c;border-bottom:0;overflow:hidden;background:#fff;box-shadow:0 30px 80px rgba(0,0,0,.28)}
-.on-cream .phone{border-color:#26331F}
-.phone img{display:block;width:100%;height:auto}
-.end{padding-bottom:clamp(72px,9vw,120px)}
-footer{background:var(--army);color:rgba(255,255,255,.6);padding:36px 5%;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:14px}
+/* ── product categories ─────────────────────────────────────────────── */
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,16px);width:100%;max-width:900px;margin-top:clamp(30px,4vw,46px)}
+.card{background:var(--sage-light);color:var(--army);border-radius:14px;padding:clamp(14px,2.4vw,26px) clamp(10px,1.6vw,18px);display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:clamp(104px,15vw,150px)}
+.card:nth-child(2){background:var(--cream)}
+.card:nth-child(3){background:var(--gold)}
+.card:nth-child(4){background:var(--army-deep);color:var(--cream);border:1px solid rgba(255,255,255,.16)}
+.card b{font:700 clamp(13px,1.15vw,17px)/1.2 Inter,sans-serif}
+.card span{font-size:clamp(10px,1vw,13px);line-height:1.35;opacity:.72}
+.card .dot{width:clamp(18px,2.4vw,28px);height:clamp(18px,2.4vw,28px);border-radius:50%;background:currentColor;opacity:.16;margin-bottom:auto}
+
+/* ── reward rules ───────────────────────────────────────────────────── */
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(8px,1.4vw,16px);width:100%;max-width:760px;margin-top:clamp(28px,4vw,42px)}
+.rule{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:clamp(10px,1.5vw,14px) clamp(12px,2vw,22px);text-align:center}
+.rule b{display:block;font-size:clamp(12px,1.2vw,15px);color:#fff}
+.rule span{font-size:clamp(10px,.95vw,12px);color:rgba(255,255,255,.62)}
+
+/* ── verified split ─────────────────────────────────────────────────── */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:clamp(32px,6vw,80px);align-items:center}
+.checks{list-style:none;margin:26px 0 0;padding:0;display:grid;gap:14px}
+.checks li{display:flex;gap:12px;align-items:flex-start;font-size:clamp(14px,1.4vw,17px);line-height:1.5;color:rgba(255,255,255,.82)}
+.checks svg{flex:none;width:22px;height:22px;margin-top:1px;color:var(--sage)}
+.split .phone{margin-top:0;justify-self:center}
+
+/* ── phone mockups ──────────────────────────────────────────────────── */
+.phone{position:relative;width:min(330px,82vw);aspect-ratio:390/790;margin-top:clamp(40px,6vw,64px);border:9px solid #0F170C;border-radius:44px;background:#0F170C;box-shadow:0 30px 80px rgba(0,0,0,.30);overflow:hidden;flex:none}
+.phone.mid{aspect-ratio:390/710}
+.phone.short{aspect-ratio:390/680}
+.on-cream .phone{border-color:var(--army)}
+.screen{width:100%;height:100%;border-radius:35px;overflow:hidden;background:var(--cream);container-type:inline-size;font-family:Inter,system-ui,sans-serif}
+.app{height:100%;display:flex;flex-direction:column;font-size:3.5cqw;line-height:1.4;overflow:hidden}
+
+.board{background:var(--army);color:#fff;padding:4.5cqw;gap:3.2cqw}
+.board-top{display:flex;justify-content:space-between;align-items:center}
+.slides{position:relative;flex:1;min-height:0;display:grid}
+.slide{grid-area:1/1;display:flex;flex-direction:column;gap:3.2cqw;opacity:0;visibility:hidden;transition:opacity .5s ease,visibility .5s ease}
+.slide.is-on{opacity:1;visibility:visible;z-index:1}
+.board-dots{display:flex;gap:8px;justify-content:center;margin-top:22px}
+.board-dots button{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.28);cursor:pointer;transition:width .25s,background .25s}
+.board-dots button[aria-current="true"]{width:24px;border-radius:999px;background:var(--sage)}
+.board-dots button:focus-visible{outline:3px solid var(--sage);outline-offset:4px}
+.seg{display:flex;background:#3B4A30;border-radius:999px;padding:.9cqw;font-size:3.2cqw}
+.seg span{padding:1.5cqw 4.2cqw;border-radius:999px;color:rgba(255,255,255,.8)}
+.seg .on{background:#fff;color:var(--army);font-weight:600}
+.loc{background:#3B4A30;border-radius:999px;padding:1.5cqw 3.6cqw;font-size:3.1cqw;color:var(--sage)}
+.flyer{flex:1;background:var(--gold);color:var(--army);border-radius:2.4cqw;padding:5.5cqw 4.5cqw;display:flex;flex-direction:column;min-height:0}
+.flyer.tech{background:var(--army-deep);color:var(--cream)}
+.flyer.tech .brand{color:var(--sage);opacity:1}
+.flyer.tech .fine{color:rgba(255,255,255,.62)}
+.flyer.playlist{background:var(--sage);color:var(--army)}
+.flyer .brand{font-weight:700;font-size:3.2cqw;letter-spacing:.14em;text-transform:uppercase;opacity:.72}
+.flyer .name{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:8cqw;line-height:1.12;margin-top:auto}
+.flyer .fine{font-size:3cqw;opacity:.7;margin-top:2.4cqw}
+.deal{display:flex;flex-direction:column;gap:2cqw}
+.deal-top{display:flex;justify-content:space-between;align-items:center;font-size:3cqw}
+.reward{background:var(--sage);color:var(--army);border-radius:999px;padding:1.4cqw 3cqw;font-weight:700}
+.left{color:rgba(255,255,255,.6)}
+.deal-title{font-family:"Libre Baskerville",Georgia,serif;font-size:5.6cqw;line-height:1.15}
+.deal-sub{font-size:3cqw;color:var(--sage)}
+.pitch{font-size:3.2cqw;color:rgba(255,255,255,.84);line-height:1.45}
+.chips{display:flex;gap:2cqw;flex-wrap:wrap}
+.chip{border-radius:999px;padding:2.2cqw 3.4cqw;font-size:3.1cqw;font-weight:600;white-space:nowrap}
+.chip.solid{background:var(--sage);color:var(--army)}
+.chip.line{border:1px solid rgba(255,255,255,.34);color:#fff}
+.tabs{margin:2cqw -4.5cqw -4.5cqw;padding:2.6cqw 3.4cqw 3.4cqw;background:var(--army-deep);display:flex;justify-content:space-between;font-size:2.9cqw;color:rgba(255,255,255,.55)}
+.tabs .on{background:var(--sage);color:var(--army);border-radius:999px;padding:.8cqw 2.6cqw;margin:-.8cqw -1.4cqw;font-weight:700}
+
+.form,.qr,.dash{background:var(--cream);padding:5cqw;gap:4cqw}
+.app-head{font-family:"Libre Baskerville",Georgia,serif;font-size:5.8cqw;line-height:1.2;color:var(--army)}
+.app-sub{font-size:3.2cqw;color:var(--muted);margin-top:-2.6cqw}
+.field{display:flex;flex-direction:column;gap:1.6cqw}
+.field label{font-size:3cqw;color:var(--muted)}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);background:#E5E3D6;border-radius:2.2cqw;padding:.9cqw;font-size:3cqw;text-align:center}
+.seg3 span{padding:2cqw 1cqw;border-radius:1.6cqw;color:#6B6E60}
+.seg3 .on{background:var(--army);color:#fff;font-weight:600}
+.input{border:1px solid #D8D6C8;background:#fff;border-radius:2.2cqw;padding:2.6cqw 3cqw;font-size:3.6cqw;color:var(--army)}
+.rows{display:grid;gap:0;border:1px solid #D8D6C8;border-radius:2.4cqw;background:#fff;overflow:hidden;font-size:3.1cqw;color:var(--army)}
+.rows div{padding:2.6cqw 3cqw;display:flex;justify-content:space-between;align-items:center}
+.rows div+div{border-top:1px solid #EDEBDD}
+.rows b{color:#4C7A3F;font-weight:700}
+.save{margin-top:auto;background:var(--army);color:#fff;border:0;border-radius:999px;padding:3.2cqw;font:700 3.5cqw Inter,sans-serif}
+.hint{font-size:2.9cqw;line-height:1.4;color:var(--muted)}
+.receipt{border:1px solid #DFDDCE;background:#fff;border-radius:2.4cqw;overflow:hidden;font-size:2.9cqw}
+.receipt div{display:flex;justify-content:space-between;gap:2cqw;padding:2.3cqw 3cqw}
+.receipt div+div{border-top:1px solid #EDEBDD}
+.receipt span{color:var(--muted)}
+.receipt b{color:var(--army);text-align:right}
+
+.qr-card{background:#fff;border:1px solid #DFDDCE;border-radius:3cqw;padding:4.5cqw;display:flex;flex-direction:column;align-items:center;gap:2.6cqw;text-align:center}
+.qr-name{font-weight:700;font-size:3.4cqw;color:var(--army)}
+.qr-card svg{width:78%;height:auto;border-radius:1cqw}
+.qr-code{font-size:3cqw;color:var(--muted);word-break:break-all}
+.stat-line{display:flex;justify-content:space-between;font-size:3.1cqw;color:var(--muted);padding:0 1cqw}
+.stat-line b{color:var(--army)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2cqw}
+.stats div{background:#fff;border:1px solid #E0DED0;border-radius:2.4cqw;padding:3cqw 2cqw;text-align:center}
+.stats b{display:block;font-size:5.2cqw;font-family:"Libre Baskerville",Georgia,serif;color:var(--army)}
+.stats span{font-size:2.7cqw;color:var(--muted)}
+.list{background:#fff;border:1px solid #E0DED0;border-radius:2.4cqw;overflow:hidden}
+.list .row{display:flex;align-items:center;gap:2cqw;padding:3cqw;font-size:3.1cqw;color:var(--army)}
+.list .row+.row{border-top:1px solid #EDEBDD}
+.list .row span{flex:1}
+.list .row b{font-size:3.3cqw}
+.list .row i{font-style:normal;width:4.4cqw;height:4.4cqw;border-radius:50%;background:var(--sage);color:var(--army);display:grid;place-items:center;font-size:2.8cqw;font-weight:700}
+.payout{display:flex;justify-content:space-between;align-items:center;background:var(--army);color:#fff;border-radius:2.4cqw;padding:3.4cqw;font-size:3.2cqw}
+.payout b{font-size:4.6cqw;font-family:"Libre Baskerville",Georgia,serif;color:var(--sage)}
+
+footer{background:var(--army);color:rgba(255,255,255,.6);padding:36px 0;font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 footer .word{font-size:16px}
 footer a{color:var(--sage);font-weight:600}
+footer a:hover{color:#fff}
+
+@media(max-width:760px){
+  .split{grid-template-columns:1fr;text-align:center;gap:0}
+  .checks{justify-items:center;text-align:left;max-width:420px;margin-inline:auto}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));max-width:480px}
+  .card{min-height:104px}
+  .rules{max-width:520px}
+}
+@media(max-width:430px){
+  .btn{padding:14px 22px;font-size:15px}
+  .cta{gap:10px}
+}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
 
 <section class="on-army hero">
-  <nav>
-    <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
-    <a class="in" href="/app/#signin">Sign in</a>
-  </nav>
-  <h1>Put your product in your customers' hands</h1>
-  <p class="line1">Local people share it. You pay only for results that are checked.</p>
-  <div class="cta">
-    <a class="btn solid" href="/app/#sell">List a product</a>
-    <a class="btn line" href="/app/#board">Join the squad</a>
+  <div class="wrap">
+    <nav>
+      <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
+      <a class="in" href="/app/#signin">Sign in</a>
+    </nav>
+    <h1>Find people who will share your work to their local network</h1>
+    <p class="lead">Post your product. Local people share it. You pay only for results that are checked.</p>
+    <div class="cta">
+      <a class="btn solid" href="/app/#sell">Get started</a>
+      <a class="btn line" href="/app/#board">Browse campaigns</a>
+    </div>
+
+    <div class="phone" role="img" aria-label="The Gorilla Squad board cycling through campaigns for a tech product, a candle brand and a playlist">
+      <div class="screen">
+        <div class="app board">
+          <div class="board-top">
+            <div class="seg"><span class="on" data-scope="local">Local</span><span data-scope="global">Global</span></div>
+            <div class="loc">Lagos, NG</div>
+          </div>
+
+          <div class="slides">
+            <div class="slide is-on" data-loc="Lagos, NG" data-scope="local">
+              <div class="flyer tech">
+                <div class="brand">Nimbus Audio</div>
+                <div class="name">Quiet earbuds for the whole day</div>
+                <div class="fine">40-hour battery · USB-C</div>
+              </div>
+              <div class="deal">
+                <div class="deal-top"><span class="reward">$4.00 per purchase</span><span class="left">$248.00 left</span></div>
+                <div class="deal-title">Nimbus Air earbuds</div>
+                <div class="deal-sub">Nimbus Audio · Lagos, NG</div>
+                <p class="pitch">Wireless earbuds with noise cancelling, 40 hours of play time and USB-C.</p>
+                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
+                <div class="chips"><span class="chip line">Details and QR</span></div>
+              </div>
+            </div>
+
+            <div class="slide" data-loc="Lagos, NG" data-scope="local">
+              <div class="flyer">
+                <div class="brand">Ember &amp; Wick</div>
+                <div class="name">Hand-poured candles, made in Lagos</div>
+                <div class="fine">Small batches · Gift boxes</div>
+              </div>
+              <div class="deal">
+                <div class="deal-top"><span class="reward">$3.00 per sign-up</span><span class="left">$181.50 left</span></div>
+                <div class="deal-title">Ember &amp; Wick candles</div>
+                <div class="deal-sub">Lagos Makers · Lagos, NG</div>
+                <p class="pitch">Hand-poured soy candles made in Lagos. Gift boxes from $12.</p>
+                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
+                <div class="chips"><span class="chip line">Details and QR</span></div>
+              </div>
+            </div>
+
+            <div class="slide" data-loc="Global" data-scope="global">
+              <div class="flyer playlist">
+                <div class="brand">Studio Bloom</div>
+                <div class="name">A playlist for slow mornings</div>
+                <div class="fine">30 tracks · Curated weekly</div>
+              </div>
+              <div class="deal">
+                <div class="deal-top"><span class="reward">$1.50 per click</span><span class="left">$96.00 left</span></div>
+                <div class="deal-title">Sunday Slow playlist</div>
+                <div class="deal-sub">Studio Bloom · Global</div>
+                <p class="pitch">A curated Afrobeats and soul playlist, refreshed every week. Share it anywhere.</p>
+                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
+                <div class="chips"><span class="chip line">Details and QR</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs"><span class="on">Board</span><span>Links</span><span>Sell</span><span>Wallet</span><span>Me</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="board-dots" role="group" aria-label="Show a product on the board">
+      <button type="button" aria-label="Show Nimbus earbuds" aria-current="true"></button>
+      <button type="button" aria-label="Show Ember &amp; Wick candles"></button>
+      <button type="button" aria-label="Show Sunday Slow playlist"></button>
+    </div>
   </div>
-  <div class="phone"><img src="/img/squad-board.jpg" width="780" height="1688" alt="The Gorilla Squad board: a local campaign with its reward and a button to copy the snippet and link"></div>
 </section>
 
 <section class="on-cream">
-  <h2>List it in two minutes</h2>
-  <p class="line1">A link, a pitch, a flyer, and the reward.</p>
-  <div class="phone"><img src="/img/squad-list.jpg" width="780" height="1688" loading="lazy" alt="The new campaign form: product name, link, pitch, flyer upload and reward rule"></div>
+  <div class="wrap center">
+    <h2>Put your product directly in your customers' hands</h2>
+    <p class="lead">Skip the ads. People hear about it from someone they already trust.</p>
+  </div>
 </section>
 
 <section class="on-army">
-  <h2>Every share gets its own link and QR</h2>
-  <p class="line1">One tap to copy. Or let them scan it.</p>
-  <div class="phone"><img src="/img/squad-link.jpg" width="780" height="1688" loading="lazy" alt="A campaign page with the marketer's personal link and QR code"></div>
+  <div class="wrap center">
+    <h2>Works for any type of product</h2>
+    <p class="lead">If it sells, it can be shared.</p>
+    <div class="cards">
+      <div class="card"><span class="dot"></span><b>Food &amp; drink</b><span>Bakeries, restaurants, groceries</span></div>
+      <div class="card"><span class="dot"></span><b>Fashion</b><span>Clothing, shoes, accessories</span></div>
+      <div class="card"><span class="dot"></span><b>Beauty</b><span>Skincare, makeup, salons</span></div>
+      <div class="card"><span class="dot"></span><b>Services</b><span>Lessons, repairs, home help</span></div>
+    </div>
+  </div>
 </section>
 
 <section class="on-cream">
-  <h2>Watch the clicks come in</h2>
-  <p class="line1">Live counts. Repeat visits and bots are not counted.</p>
-  <div class="phone"><img src="/img/squad-live.jpg" width="780" height="1688" loading="lazy" alt="The links dashboard with verified clicks and earnings for each campaign"></div>
+  <div class="wrap center">
+    <h2>Pay for results, not impressions</h2>
+    <p class="lead">Set the reward once. Nothing is charged until a real click, sign-up or purchase is checked.</p>
+  </div>
 </section>
 
 <section class="on-army">
-  <h2>Paid for what's checked</h2>
-  <p class="line1">Cleared earnings, withdrawn to your bank, PayPal or USDT.</p>
-  <div class="phone"><img src="/img/squad-wallet.jpg" width="780" height="1688" loading="lazy" alt="The wallet with available and pending earnings and a payout request form"></div>
+  <div class="wrap center">
+    <h2>Control rewards</h2>
+    <p class="lead">Choose what you pay for, and how much.</p>
+    <div class="rules">
+      <div class="rule"><b>Per click</b><span>A real visit</span></div>
+      <div class="rule"><b>Per sign-up</b><span>A new account</span></div>
+      <div class="rule"><b>Per purchase</b><span>A paid order</span></div>
+    </div>
+
+    <div class="phone mid" role="img" aria-label="Reward settings for the Ember &amp; Wick campaign: pay per sign-up, $3.00 reward, $200.00 budget, Lagos, NG">
+      <div class="screen">
+        <div class="app form">
+          <div class="app-head">Reward settings</div>
+          <div class="app-sub">Ember &amp; Wick candles</div>
+          <div class="field">
+            <label>Pay per</label>
+            <div class="seg3"><span>Click</span><span class="on">Sign-up</span><span>Purchase</span></div>
+          </div>
+          <div class="field"><label>Reward</label><div class="input">$3.00</div></div>
+          <div class="field"><label>Budget</label><div class="input">$200.00</div></div>
+          <div class="field"><label>Where</label><div class="input">Lagos, NG</div></div>
+          <div class="field"><label>Limit per person</label><div class="input">1 reward</div></div>
+          <div class="rows">
+            <div>One reward per person <b>On</b></div>
+            <div>Verified results only <b>Always</b></div>
+            <div>Stop when budget ends <b>On</b></div>
+          </div>
+          <p class="hint">Nothing is charged until a result is verified.</p>
+          <button class="save" type="button" tabindex="-1">Save reward</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<section class="on-cream end">
-  <h2>Start with one product</h2>
-  <div class="cta">
-    <a class="btn solid" href="/app/#sell">List a product</a>
-    <a class="btn line" href="/app/#board">Join the squad</a>
+<section class="on-cream">
+  <div class="wrap center">
+    <h2>Share receipts</h2>
+    <p class="lead">Every share gets its own link and QR code. Receipts show what came from where.</p>
+
+    <div class="phone short" role="img" aria-label="A share receipt for the Ember &amp; Wick campaign with a QR code for the marketer's personal link">
+      <div class="screen">
+        <div class="app qr">
+          <div class="app-head">Share receipt</div>
+          <div class="app-sub">Every share has its own link</div>
+          <div class="qr-card">
+            <div class="qr-name">Ember &amp; Wick candles</div>
+            <svg viewBox="0 0 33 33" shape-rendering="crispEdges" role="img" aria-label="QR code for the campaign link"><rect width="33" height="33" fill="#fff"/><path fill="#1D2A16" d="M2 2h7v1h-7zM11 2h7v1h-7zM20 2h1v1h-1zM24 2h7v1h-7zM2 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM13 3h2v1h-2zM17 3h1v1h-1zM19 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM30 3h1v1h-1zM2 4h1v1h-1zM4 4h3v1h-3zM8 4h1v1h-1zM10 4h4v1h-4zM16 4h1v1h-1zM18 4h1v1h-1zM21 4h1v1h-1zM24 4h1v1h-1zM26 4h3v1h-3zM30 4h1v1h-1zM2 5h1v1h-1zM4 5h3v1h-3zM8 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM16 5h2v1h-2zM19 5h2v1h-2zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h3v1h-3zM30 5h1v1h-1zM2 6h1v1h-1zM4 6h3v1h-3zM8 6h1v1h-1zM12 6h6v1h-6zM19 6h4v1h-4zM24 6h1v1h-1zM26 6h3v1h-3zM30 6h1v1h-1zM2 7h1v1h-1zM8 7h1v1h-1zM15 7h2v1h-2zM18 7h2v1h-2zM24 7h1v1h-1zM30 7h1v1h-1zM2 8h7v1h-7zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1zM24 8h7v1h-7zM10 9h1v1h-1zM12 9h4v1h-4zM21 9h2v1h-2zM2 10h1v1h-1zM8 10h1v1h-1zM10 10h2v1h-2zM16 10h2v1h-2zM19 10h1v1h-1zM21 10h1v1h-1zM23 10h2v1h-2zM27 10h3v1h-3zM2 11h4v1h-4zM7 11h1v1h-1zM11 11h4v1h-4zM16 11h1v1h-1zM21 11h2v1h-2zM25 11h2v1h-2zM28 11h2v1h-2zM3 12h2v1h-2zM6 12h3v1h-3zM11 12h1v1h-1zM19 12h2v1h-2zM24 12h3v1h-3zM2 13h1v1h-1zM4 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h2v1h-2zM16 13h3v1h-3zM22 13h1v1h-1zM27 13h1v1h-1zM3 14h2v1h-2zM8 14h4v1h-4zM15 14h2v1h-2zM18 14h1v1h-1zM20 14h3v1h-3zM24 14h2v1h-2zM30 14h1v1h-1zM3 15h1v1h-1zM5 15h2v1h-2zM11 15h2v1h-2zM15 15h2v1h-2zM19 15h4v1h-4zM24 15h3v1h-3zM29 15h2v1h-2zM2 16h1v1h-1zM5 16h2v1h-2zM8 16h1v1h-1zM11 16h9v1h-9zM22 16h1v1h-1zM24 16h1v1h-1zM27 16h2v1h-2zM3 17h5v1h-5zM10 17h1v1h-1zM13 17h1v1h-1zM15 17h4v1h-4zM22 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM6 18h3v1h-3zM12 18h3v1h-3zM16 18h1v1h-1zM19 18h1v1h-1zM25 18h1v1h-1zM27 18h2v1h-2zM2 19h1v1h-1zM4 19h1v1h-1zM6 19h1v1h-1zM9 19h3v1h-3zM13 19h1v1h-1zM17 19h2v1h-2zM20 19h3v1h-3zM24 19h3v1h-3zM28 19h3v1h-3zM2 20h2v1h-2zM6 20h1v1h-1zM8 20h4v1h-4zM15 20h3v1h-3zM19 20h1v1h-1zM21 20h1v1h-1zM23 20h2v1h-2zM27 20h1v1h-1zM30 20h1v1h-1zM2 21h1v1h-1zM4 21h2v1h-2zM7 21h1v1h-1zM9 21h1v1h-1zM16 21h2v1h-2zM22 21h2v1h-2zM25 21h1v1h-1zM2 22h1v1h-1zM4 22h8v1h-8zM13 22h2v1h-2zM17 22h3v1h-3zM22 22h5v1h-5zM28 22h3v1h-3zM10 23h4v1h-4zM15 23h1v1h-1zM17 23h6v1h-6zM26 23h2v1h-2zM2 24h7v1h-7zM12 24h2v1h-2zM15 24h3v1h-3zM21 24h2v1h-2zM24 24h1v1h-1zM26 24h3v1h-3zM2 25h1v1h-1zM8 25h1v1h-1zM12 25h1v1h-1zM15 25h1v1h-1zM17 25h1v1h-1zM21 25h2v1h-2zM26 25h1v1h-1zM29 25h1v1h-1zM2 26h1v1h-1zM4 26h3v1h-3zM8 26h1v1h-1zM13 26h3v1h-3zM17 26h1v1h-1zM21 26h7v1h-7zM29 26h2v1h-2zM2 27h1v1h-1zM4 27h3v1h-3zM8 27h1v1h-1zM12 27h2v1h-2zM17 27h2v1h-2zM20 27h2v1h-2zM23 27h1v1h-1zM27 27h2v1h-2zM30 27h1v1h-1zM2 28h1v1h-1zM4 28h3v1h-3zM8 28h1v1h-1zM11 28h2v1h-2zM14 28h1v1h-1zM16 28h5v1h-5zM24 28h6v1h-6zM2 29h1v1h-1zM8 29h1v1h-1zM11 29h2v1h-2zM14 29h3v1h-3zM20 29h2v1h-2zM24 29h2v1h-2zM27 29h2v1h-2zM30 29h1v1h-1zM2 30h7v1h-7zM10 30h1v1h-1zM13 30h5v1h-5zM19 30h1v1h-1zM21 30h1v1h-1zM24 30h3v1h-3zM28 30h1v1h-1z"/></svg>
+            <div class="qr-code">gorillasquad.co/s/ember3k</div>
+          </div>
+          <div class="chips"><span class="chip solid">Copy link</span><span class="chip line">Share</span></div>
+          <div class="stat-line"><span>Scanned 128 times</span><b>112 verified</b></div>
+          <div class="receipt">
+            <div><span>Link created</span><b>12 Nov</b></div>
+            <div><span>Owner</span><b>Ama · Lagos</b></div>
+            <div><span>Proof</span><b>Saved per result</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="on-army">
+  <div class="wrap split">
+    <div>
+      <h2>Every result is verified</h2>
+      <p class="lead">Real people, counted once. Everything else is filtered out.</p>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Real browsers only. Bots and datacenter traffic are not counted.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>One reward per person, per link, every 24 hours.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Budgets stop the moment they run out. Never overspent.</span></li>
+      </ul>
+    </div>
+
+    <div class="phone short" role="img" aria-label="A results dashboard with clicks, verified results and not-counted traffic, plus the cleared payout">
+      <div class="screen">
+        <div class="app dash">
+          <div class="app-head">Your results</div>
+          <div class="app-sub">Last 7 days</div>
+          <div class="stats">
+            <div><b>1,284</b><span>Clicks</span></div>
+            <div><b>1,106</b><span>Verified</span></div>
+            <div><b>178</b><span>Not counted</span></div>
+          </div>
+          <div class="list">
+            <div class="row"><span>Ember &amp; Wick</span><b>612</b><i>✓</i></div>
+            <div class="row"><span>Strings Academy</span><b>318</b><i>✓</i></div>
+            <div class="row"><span>Ritual Skin</span><b>176</b><i>✓</i></div>
+            <div class="row"><span>Harbor Coffee</span><b>94</b><i>✓</i></div>
+            <div class="row"><span>Bloom Studio</span><b>52</b><i>✓</i></div>
+          </div>
+          <div class="stat-line"><span>Flagged for review</span><b>0</b></div>
+          <div class="payout"><span>Payout cleared</span><b>$184.50</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="on-cream">
+  <div class="wrap center">
+    <h2>Start with one product</h2>
+    <div class="cta">
+      <a class="btn solid" href="/app/#sell">Get started</a>
+      <a class="btn line" href="/app/#board">Browse campaigns</a>
+    </div>
   </div>
 </section>
 
 <footer>
-  <span class="word">Gorilla Squad</span>
-  <a href="/app/#signin">Sign in</a>
+  <div class="wrap">
+    <span class="word">Gorilla Squad</span>
+    <a href="/app/#signin">Sign in</a>
+  </div>
 </footer>
+
+<script>
+(() => {
+  const board = document.querySelector('.board');
+  if (!board) return;
+  const slides = [...board.querySelectorAll('.slide')];
+  const dots = [...document.querySelectorAll('.board-dots button')];
+  const segs = [...board.querySelectorAll('.seg [data-scope]')];
+  const loc = board.querySelector('.loc');
+  const phone = board.closest('.phone');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let at = 0;
+  let timer;
+
+  function go(next) {
+    at = (next + slides.length) % slides.length;
+    slides.forEach((slide, i) => slide.classList.toggle('is-on', i === at));
+    dots.forEach((dot, i) => dot.setAttribute('aria-current', i === at ? 'true' : 'false'));
+    loc.textContent = slides[at].dataset.loc;
+    segs.forEach((seg) => seg.classList.toggle('on', seg.dataset.scope === slides[at].dataset.scope));
+  }
+
+  function stop() {
+    window.clearInterval(timer);
+    timer = undefined;
+  }
+
+  function start() {
+    stop();
+    if (reduce.matches) return;
+    timer = window.setInterval(() => go(at + 1), 5500);
+  }
+
+  dots.forEach((dot, i) => dot.addEventListener('click', () => {
+    go(i);
+    start();
+  }));
+
+  phone.addEventListener('mouseenter', stop);
+  phone.addEventListener('mouseleave', start);
+  phone.addEventListener('focusin', stop);
+  phone.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  let from = null;
+  phone.addEventListener('pointerdown', (event) => { from = event.clientX; });
+  phone.addEventListener('pointerup', (event) => {
+    if (from === null) return;
+    const dx = event.clientX - from;
+    from = null;
+    if (Math.abs(dx) > 40) {
+      go(at + (dx < 0 ? 1 : -1));
+      start();
+    }
+  });
+
+  reduce.addEventListener('change', start);
+  go(0);
+  start();
+})();
+</script>
 </body>
 </html>
