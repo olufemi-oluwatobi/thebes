@@ -119,14 +119,13 @@ app.post('/api/auth/signout', async (c) => {
 app.get('/api/me', async (c) => {
   const u = user(c);
   if (!u) return c.json({ user: null });
-  const companies = (await c.env.DB.prepare(`SELECT co.id, co.name, co.slug, co.brand, co.listing_credits, m.role, a.r2_key logo_key FROM company_members m JOIN companies co ON co.id = m.company_id
+  const companies = (await c.env.DB.prepare(`SELECT co.id, co.name, co.slug, co.brand, m.role, a.r2_key logo_key FROM company_members m JOIN companies co ON co.id = m.company_id
     LEFT JOIN assets a ON a.id = co.logo_asset_id WHERE m.user_id = ? AND co.deleted_at IS NULL ORDER BY m.joined_at`).bind(u.id).all()).results
     .map((r) => ({ ...r, brand: json(r.brand), logo: r.logo_key ? '/files/' + r.logo_key : null }));
   const p = await c.env.DB.prepare('SELECT id FROM players WHERE user_id = ?').bind(u.id).first();
   const stats = p ? await c.env.DB.prepare("SELECT COUNT(*) played, SUM(status = 'won') wins, MIN(CASE WHEN status = 'won' THEN tries END) best FROM plays WHERE player_id = ?").bind(p.id).first() : {};
-  return c.json({ user: { id: u.id, email: u.email, handle: u.handle, display_name: u.display_name, role: u.role, city: u.city, country: u.country, phone: u.phone, prefs: json(u.prefs),
-    squad_status: u.squad_status || 'none', squad_channel: u.squad_channel || null, social_platform: u.social_platform || null,
-    social_handle: u.social_handle || null, social_url: u.social_url || null, audience: u.audience || null, squad_note: u.squad_note || null }, companies, stats });
+  return c.json({ user: { id: u.id, email: u.email, handle: u.handle, display_name: u.display_name, role: u.role, first_name: u.first_name, last_name: u.last_name,
+    is_verified: !!u.is_verified, is_blocked: !!u.is_blocked }, companies, stats });
 });
 
 app.patch('/api/me', async (c) => {
@@ -819,8 +818,8 @@ app.post('/api/admin/reports/:id', async (c) => {
   return c.json({ ok: true });
 });
 
-// Gorilla Squad: campaigns, tracked links, proof, wallet and payouts (see src/squad-routes.js)
-squadRoutes(app, { needUser, needAdmin, needMember, memberRole, fail, uid, now, rand, sha, json });
+// Gorilla Squad: offers, interests, relationships, deliveries and messages (see src/squad-routes.js)
+squadRoutes(app, { needUser, needAdmin, fail, uid, now, json, HttpError });
 
 app.all('/api/*', (c) => fail(c, 404, 'no such endpoint'));
 

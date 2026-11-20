@@ -8,32 +8,36 @@ everything: the site (`/`), the app (`/app/`), tracked links (`/s/<code>`) and t
 The games engine (godtongue, the Thebes contests and `/play/:id`) is still in this repo and still works. The Gorilla
 Squad home page and app do not link to it.
 
-## Gorilla Squad MVP
+## Gorilla Squad API (offer model)
 
-- **Home** (`/`): carousel of live campaign cards, then how results are checked and paid.
-- **Sign-in** (`/app/#signin`): email link, no password. Marketers add city, country and phone (`/app/#me`).
-- **Join** (`/app/#join`): a marketer applies with their channel (online or offline), platform, handle, audience and
-  proof. An admin checks and approves each one by hand; links and offline QR codes are then sent by DM or in person.
-- **Sell** (`/app/#sell`): a business, then a campaign: product link, pitch, flyer, reward rule and reward, where it can
-  be shared (`Austin, US`, `US`, or `*`). Fund it and send it for review, or self-publish with one of the two free
-  listing credits. After that an admin adds a paid $29 listing credit. Sign-up campaigns get a postback URL for the
-  seller's thank-you page.
-- **Board** (`/app/#board`): full-screen cards, local or global, with the exact reward and budget left. One tap copies
-  the snippet and the marketer's link together. The details page has the QR code.
-- **Links** (`/app/#links`): live counters per link (today, verified, not counted, earned), refreshed every 15 seconds.
-- **Clicks** (`/s/<code>`): each visit is logged and the shopper goes on to the product with `gs_ref`. A click pays only
-  if it comes from a real browser (not a bot or a datacenter) and the same device has not clicked the same link in the
-  last 24 hours. Budgets are never overspent.
-- **Wallet** (`/app/#wallet`): available vs pending (earnings are pending for 7 days), the ledger, and payout requests
-  (bank, PayPal or USDT; minimum $10; above $50 an ID check is flagged).
-- **Admin** (`/app/#admin`, admins only): approve marketers, review campaigns, pause/resume out-of-budget campaigns,
-  attach affiliate accounts and fees, add affiliate sales, issue links, add listing credits, add funds after a confirmed
-  transfer, approve posts for per-snippet rewards, mark payouts paid or reject them, and see fraud flags.
-- **Launch**: the United States first (`SQUAD_COUNTRIES`, default `US`). Platform fee is 10% of each result by default.
+Sellers list **products** (optionally under a **company**) and post **offers** of an **offer type**
+(commission, sponsored post, introduction, or a type a user proposed and an admin approved). Marketers add their
+**socials** and show **interest** in an offer; the seller accepts or denies it. Accepting starts a **relationship**
+with the terms frozen. The marketer reports **deliveries** (of a **delivery type**), the seller or an admin verifies
+them, and both sides **message** each other on the relationship. Users, companies, sellers, marketers, socials,
+products, offers and deliveries carry `is_verified`, `is_deleted` and `is_blocked`.
 
-**Not built yet:** card and local-payment funding (Stripe, Paystack, Flutterwave), instant WhatsApp, SMS or push alerts,
-automated phone verification, automated ID checks, and automated payouts. Funding and payouts are done by hand from the
-admin page for now.
+Schema: `db/migrations/0011_squad_offers.sql`. Routes: `src/squad-routes.js`. Tests: `node test/squad.mjs` (141 checks).
+
+- Me: `GET/PATCH/DELETE /api/squad/me` (first and last name optional)
+- Companies: `POST /api/squad/companies`, `GET/PATCH /api/squad/companies/:id`
+- Sides: `POST /api/squad/sellers`, `POST /api/squad/marketers`, `GET /api/squad/marketers/:id`
+- Socials: `GET/POST /api/squad/socials`, `PATCH/DELETE /api/squad/socials/:id` (edits undo verification)
+- Products: `GET/POST /api/squad/products`, `GET/PATCH/DELETE /api/squad/products/:id`
+- Types: `GET/POST /api/squad/offer-types`, `GET/POST /api/squad/delivery-types`
+- Offers: `GET /api/squad/offers?type=&country=&q=&eligible=1`, `POST /api/squad/offers`, `GET /api/squad/seller/offers`,
+  `GET/PATCH/DELETE /api/squad/offers/:id`, `POST /api/squad/offers/:id/status` (open, paused, closed)
+- Interests: `POST/GET /api/squad/offers/:id/interests`, `GET /api/squad/interests`,
+  `POST /api/squad/interests/:id/accept|deny|withdraw`
+- Relationships: `GET /api/squad/relationships?as=seller|marketer`, `GET /api/squad/relationships/:id`,
+  `POST /api/squad/relationships/:id/status` (paused, active, ended)
+- Deliveries: `GET/POST /api/squad/relationships/:id/deliveries`, `POST /api/squad/deliveries/:id/verify|reject`, `DELETE /api/squad/deliveries/:id`
+- Messages: `GET/POST /api/squad/relationships/:id/messages?after=`, `POST /api/squad/relationships/:id/read`, `DELETE /api/squad/messages/:id`
+- Admin: `GET /api/admin/squad/queue`, `GET /api/admin/squad/:kind?flag=`, `POST /api/admin/squad/:kind/:id`
+  (`verify`, `unverify`, `block`, `unblock`, `delete`, `restore`, `flag`, `unflag`, `approve`, `unapprove`, `reject`)
+
+Errors are `{ error, code }` with codes such as `no_seller`, `no_marketer`, `blocked`, `not_eligible` (with `reasons`),
+`duplicate`, `full`, `decided`, `has_relationships`, `bad_transition`, `invalid_terms`.
 
 ## Run it locally
 

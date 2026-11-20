@@ -1,207 +1,282 @@
-// Gorilla Squad end to end, against a running dev Worker (npm run dev, then node test/squad.mjs).
-//   BASE=http://127.0.0.1:8787 node test/squad.mjs
-// The admin is admin@thebes.local (ADMIN_EMAILS in the local config). Local mode returns sign-in links instead of emailing them.
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
-
-const BASE = process.env.BASE || 'http://127.0.0.1:8787';
-let pass = 0, fail = 0;
-const ok = (name, cond, info = '') => { cond ? pass++ : fail++; console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ' + info}`); };
+// Gorilla Squad API, end to end, against a running dev Worker:  BASE=http://localhost:8787 node test/squad.mjs
+// admin@thebes.local is an admin locally. Local mode returns sign-in links instead of emailing them.
+const BASE = process.env.BASE || 'http://localhost:8787';
+let pass = 0, failed = 0;
+const ok = (name, cond, info = '') => { cond ? pass++ : failed++; console.log(`${cond ? '✓' : '✗'} ${name}${cond ? '' : '  ' + String(info).slice(0, 300)}`); };
 const TAG = Date.now().toString(36);
 
 function person() {
   const jar = new Map();
   const req = async (p, opts = {}) => {
-    const r = await fetch(BASE + p, {
-      redirect: 'manual', ...opts,
-      headers: { cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; '), ...(opts.body && typeof opts.body === 'string' ? { 'content-type': 'application/json' } : {}), ...(opts.headers || {}) },
-    });
+    const r = await fetch(BASE + p, { redirect: 'manual', ...opts,
+      headers: { cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; '), ...(typeof opts.body === 'string' ? { 'content-type': 'application/json' } : {}), ...(opts.headers || {}) } });
     for (const c of r.headers.getSetCookie?.() || []) { const [kv] = c.split(';'); const [k, ...v] = kv.split('='); v.join('=') ? jar.set(k.trim(), v.join('=')) : jar.delete(k.trim()); }
     return r;
   };
-  const j = async (p, opts) => { const r = await req(p, opts); return { status: r.status, body: await r.json().catch(() => ({})) }; };
-  return { req, j, get: (p) => j(p), post: (p, b) => j(p, { method: 'POST', body: JSON.stringify(b || {}) }), patch: (p, b) => j(p, { method: 'PATCH', body: JSON.stringify(b || {}) }) };
+  const j = async (p, opts) => { const r = await req(p, opts); const b = await r.json().catch(() => ({})); return { status: r.status, body: b, ...b }; };
+  const call = (m) => (p, b) => j(p, { method: m, body: JSON.stringify(b || {}) });
+  return { req, get: (p) => j(p), post: call('POST'), patch: call('PATCH'), del: (p) => j(p, { method: 'DELETE' }) };
 }
 async function signIn(who, email) {
   const s = await who.post('/api/auth/start', { email });
   const link = new URL(s.body.link);
-  const r = await who.req(link.pathname + link.search);
-  return r.status === 302;
+  return (await who.req(link.pathname + link.search)).status === 302;
 }
-const sql = (q) => execFileSync(process.execPath, [resolve('node_modules/wrangler/bin/wrangler.js'), 'd1', 'execute', 'thebes', '--local', '--env', 'local', '--command', q], { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-const ip = (n) => `10.20.${Math.floor(n / 250)}.${(n % 250) + 1}`;
-const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) Mobile/15E148 Safari/604.1';
 
-const admin = person();
-const seller = person();
-const other = person();
-const ama = person();   // a marketer in Austin
-const zed = person();   // a marketer in Zurich
+const admin = person(), sel = person(), sel2 = person(), mk = person(), mk2 = person(), mk3 = person(), anon = person();
+ok('everyone signs in', (await Promise.all([signIn(admin, 'admin@thebes.local'), signIn(sel, `sel-${TAG}@ex.com`), signIn(sel2, `sel2-${TAG}@ex.com`),
+  signIn(mk, `mk-${TAG}@ex.com`), signIn(mk2, `mk2-${TAG}@ex.com`), signIn(mk3, `mk3-${TAG}@ex.com`)])).every(Boolean));
 
-ok('admin signs in', await signIn(admin, 'admin@thebes.local'));
-ok('seller signs in', await signIn(seller, `seller-${TAG}@example.com`));
-ok('other signs in', await signIn(other, `other-${TAG}@example.com`));
-ok('marketer signs in', await signIn(ama, `ama-${TAG}@example.com`));
-ok('zed signs in', await signIn(zed, `zed-${TAG}@example.com`));
+// ---------- me ----------
+ok('signed out has no profile', (await anon.get('/api/squad/me')).status === 401);
+let r = await sel.patch('/api/squad/me', { first_name: '  Ada ', last_name: 'Obi' });
+ok('first and last name are saved, trimmed', r.user?.first_name === 'Ada' && r.user?.last_name === 'Obi', JSON.stringify(r.body));
+r = await sel.patch('/api/squad/me', { last_name: '' });
+ok('names are optional and can be cleared', r.user?.last_name === null);
+ok('names have a length limit', (await sel.patch('/api/squad/me', { first_name: 'x'.repeat(61) })).status === 400);
+r = await sel.get('/api/squad/me');
+ok('a new user is neither seller nor marketer', r.seller === null && r.marketer === null && r.user.is_verified === false && r.user.is_blocked === false);
 
-// ---------- marketers are checked by hand ----------
-const apply = async (who, handle, city) => {
-  const r = await who.post('/api/squad/marketer/apply', {
-    country: 'US', city, phone: '+1 512 000 0000', channel: 'online', platform: 'x',
-    handle, url: `https://x.com/${handle}`, audience: '12k', proof: 'profile and country check',
-  });
-  ok(`marketer ${handle} applies`, r.status === 200 && r.body.marketer.status === 'verifying', JSON.stringify(r.body));
-  const id = r.body.marketer.id;
-  ok(`admin approves ${handle}`, (await admin.post(`/api/admin/squad/marketers/${id}`, { action: 'approve' })).status === 200);
-  return id;
-};
-await apply(ama, `ama_${TAG}`, 'Austin');
-await apply(zed, `zed_${TAG}`, 'Zurich');
+// ---------- companies and sellers ----------
+ok('a product needs a seller profile', (await sel.post('/api/squad/products', { name: 'X', description: 'long enough text' })).code === 'no_seller');
+r = await sel.post('/api/squad/sellers', {});
+ok('becoming a seller', r.status === 201 && r.seller.id, JSON.stringify(r.body));
+ok('becoming a seller twice is safe', (await sel.post('/api/squad/sellers', {})).status === 200);
+r = await sel.post('/api/squad/companies', { name: `Acme ${TAG}`, website: 'https://acme.example', country: 'us' });
+ok('a company is its own table', r.status === 201 && r.company.country === 'US', JSON.stringify(r.body));
+const CO = r.company.id;
+ok('the seller is attached to their first company', (await sel.get('/api/squad/me')).seller.company_id === CO);
+ok('a bad website is refused', (await sel.post('/api/squad/companies', { name: 'Bad', website: 'javascript:alert(1)' })).status === 400);
+ok('someone else cannot edit the company', (await mk.patch(`/api/squad/companies/${CO}`, { name: 'Hacked' })).status === 403);
+ok('a stranger cannot join a company as seller', (await sel2.post('/api/squad/sellers', { company_id: CO })).status === 403);
+await sel2.post('/api/squad/sellers', {});
 
-// ---------- the seller and the campaign ----------
-const co = await seller.post('/api/companies', { name: `Bread ${TAG}` });
-ok('seller makes a business', co.status === 200 && co.body.id, JSON.stringify(co.body));
-const cid = co.body.id;
+// ---------- products ----------
+ok('product needs a name', (await sel.post('/api/squad/products', { description: 'A long enough description' })).status === 400);
+ok('product needs a description', (await sel.post('/api/squad/products', { name: 'Widget' })).status === 400);
+r = await sel.post('/api/squad/products', { name: 'Ledgerly', description: 'Accounting software for small teams.', url: 'https://ledgerly.example', details: { price: '$49/mo', category: 'tech' } });
+ok('seller lists a product', r.status === 201 && r.product.details.price === '$49/mo' && r.product.company_id === CO, JSON.stringify(r.body));
+const P = r.product.id;
+ok('another seller cannot edit it', (await sel2.patch(`/api/squad/products/${P}`, { name: 'Mine' })).status === 404);
+ok('details must be an object', (await sel.patch(`/api/squad/products/${P}`, { details: [1, 2] })).status === 400);
 
-const base = { company_id: cid, title: 'Morning loaf', product_url: 'https://shop.example/loaf', snippet: 'Fresh loaf, delivered by 9am. Order tonight.', reward_rule: 'click', reward_cents: 50, locations: ['US:Austin'] };
-ok('a non-https product link is refused', (await seller.post('/api/squad/campaigns', { ...base, product_url: 'javascript:alert(1)' })).status === 400);
-ok('a campaign needs a place to be shared', (await seller.post('/api/squad/campaigns', { ...base, locations: [] })).status === 400);
-ok('reward must be a real amount', (await seller.post('/api/squad/campaigns', { ...base, reward_cents: 0 })).status === 400);
-ok('reward rule must be one of the three', (await seller.post('/api/squad/campaigns', { ...base, reward_rule: 'lottery' })).status === 400);
+// ---------- types ----------
+r = await anon.get('/api/squad/offer-types');
+ok('built-in offer types are listed', ['commission', 'attention', 'introduction'].every((s) => r.types.some((t) => t.slug === s)), JSON.stringify(r.body).slice(0, 200));
+r = await anon.get('/api/squad/delivery-types');
+ok('built-in delivery types are listed', r.types.length >= 6);
+r = await mk.post('/api/squad/offer-types', { name: `Bounty ${TAG}`, description: 'Paid per qualified lead found.', criteria: { terms: { per_lead_cents: { type: 'number', min: 1 } } } });
+ok('a user proposes an offer type', r.status === 201 && r.type.is_approved === false, JSON.stringify(r.body));
+const OT = r.type;
+ok('a proposed type with bad fields is refused', (await mk.post('/api/squad/offer-types', { name: `Bad ${TAG}`, description: 'Has a broken criteria field.', criteria: { terms: { 'Bad Key': { type: 'number' } } } })).status === 400);
+ok('the same type name twice is refused', (await mk.post('/api/squad/offer-types', { name: `Bounty ${TAG}`, description: 'Paid per qualified lead found.' })).status === 409);
+ok('others do not see an unapproved type', !(await anon.get('/api/squad/offer-types')).types.some((t) => t.id === OT.id));
+ok('the proposer sees their own pending type', (await mk.get('/api/squad/offer-types')).types.some((t) => t.id === OT.id));
+ok('an offer cannot use an unapproved type', (await sel.post('/api/squad/offers', { product_id: P, offer_type: OT.slug, title: 'Leads', terms: { per_lead_cents: 500 } })).code === 'type_pending');
+ok('admin approves the type', (await admin.post(`/api/admin/squad/offer-types/${OT.id}`, { action: 'approve' })).status === 200);
+ok('a non-admin cannot approve', (await mk.post(`/api/admin/squad/offer-types/${OT.id}`, { action: 'approve' })).status === 403);
 
-const c1 = await seller.post('/api/squad/campaigns', base);
-ok('seller creates a draft campaign', c1.status === 200 && c1.body.id, JSON.stringify(c1.body));
-const CAMP = c1.body.id;
+// ---------- offers ----------
+ok('terms are checked against the type', (await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell Ledgerly', terms: { percent: 95 } })).code === 'invalid_terms');
+ok('required terms are enforced', (await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell Ledgerly', terms: {} })).code === 'invalid_terms');
+ok('an enum term is enforced', (await sel.post('/api/squad/offers', { product_id: P, offer_type: 'attention', title: 'Post', terms: { rate_cents: 100, per: 'like' } })).code === 'invalid_terms');
+ok('unknown platform in requirements is refused', (await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell', terms: { percent: 20 }, requirements: { platforms: ['myspace'] } })).status === 400);
+ok('unknown delivery type in requirements is refused', (await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell', terms: { percent: 20 }, requirements: { delivery_types: ['skywriting'] } })).status === 400);
+ok('someone else\'s product cannot get an offer', (await sel2.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell', terms: { percent: 20 } })).status === 404);
+r = await sel.post('/api/squad/offers', { product_id: P, offer_type: 'attention', title: 'Post about Ledgerly on YouTube', terms: { rate_cents: 2000, per: 'post' },
+  requirements: { platforms: ['youtube'], min_followers: 5000, countries: ['US'], delivery_types: ['video'] }, max_relationships: 2 });
+ok('seller creates a draft offer with requirements', r.status === 201 && r.offer.status === 'draft' && r.offer.requirements.min_followers === 5000, JSON.stringify(r.body));
+const OF = r.offer.id;
+ok('a draft is hidden from browse', !(await anon.get('/api/squad/offers')).offers.some((o) => o.id === OF));
+ok('a draft is hidden from strangers', (await mk.get(`/api/squad/offers/${OF}`)).status === 404);
+ok('a draft cannot be paused', (await sel.post(`/api/squad/offers/${OF}/status`, { status: 'paused' })).code === 'bad_transition');
+ok('seller opens the offer', (await sel.post(`/api/squad/offers/${OF}/status`, { status: 'open' })).offer?.status === 'open');
+r = await anon.get('/api/squad/offers?type=attention');
+ok('an open offer is in browse, filtered by type', r.offers.some((o) => o.id === OF && o.type.slug === 'attention' && o.company?.name));
+ok('the country filter applies', !(await anon.get('/api/squad/offers?country=NG')).offers.some((o) => o.id === OF) && (await anon.get('/api/squad/offers?country=US')).offers.some((o) => o.id === OF));
+ok('the search filter applies', (await anon.get('/api/squad/offers?q=Ledgerly')).offers.some((o) => o.id === OF));
+r = await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Sell Ledgerly to your network', terms: { percent: 20, cookie_days: 30 }, status: 'open' });
+const OF2 = r.offer.id;
+ok('an offer can open straight away', r.offer.status === 'open');
 
-ok('an unfunded campaign cannot be sent for review', (await seller.post(`/api/squad/campaigns/${CAMP}/submit`)).status === 402);
-ok('a draft is hidden from the board', !(await ama.get('/api/squad/board?scope=global')).body.campaigns.some((c) => c.id === CAMP));
-ok('a stranger cannot see a draft', (await other.get(`/api/squad/campaigns/${CAMP}`)).status === 404);
-ok('a stranger cannot fund it', (await other.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'fund', amount_cents: 1000 })).status === 403);
+// ---------- marketers and socials ----------
+ok('marketer needs a country', (await mk.post('/api/squad/marketers', {})).status === 400);
+ok('country is two letters', (await mk.post('/api/squad/marketers', { country: 'USA' })).status === 400);
+r = await mk.post('/api/squad/marketers', { country: 'us', city: 'Austin' });
+ok('becoming a marketer', r.status === 201 && r.marketer.country === 'US');
+const M = r.marketer.id;
+await mk2.post('/api/squad/marketers', { country: 'NG' });
+await mk3.post('/api/squad/marketers', { country: 'US' });
+ok('a social needs a known platform', (await mk.post('/api/squad/socials', { platform: 'myspace', handle: 'x' })).status === 400);
+r = await mk.post('/api/squad/socials', { platform: 'youtube', handle: `@ada${TAG}`, followers: 12000, audience_countries: ['US', 'ca'] });
+ok('marketer adds a social; @ is stripped', r.status === 201 && r.social.handle === `ada${TAG}` && r.social.audience_countries.includes('CA'), JSON.stringify(r.body));
+const S = r.social.id;
+ok('the same account cannot be claimed twice', (await mk3.post('/api/squad/socials', { platform: 'youtube', handle: `ADA${TAG}` })).code === 'duplicate');
+r = await mk3.post('/api/squad/socials', { platform: 'youtube', handle: `small${TAG}`, followers: 300 });
+const S3 = r.social.id;
+ok('negative followers are refused', (await mk.post('/api/squad/socials', { platform: 'x', handle: `neg${TAG}`, followers: -5 })).status === 400);
 
-ok('admin funds $11', (await admin.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'fund', amount_cents: 1100, reference: 'BANK-1' })).status === 200);
-ok('seller sends it for review', (await seller.post(`/api/squad/campaigns/${CAMP}/submit`)).body.status === 'review');
-ok('a campaign in review is not on the board', !(await ama.get('/api/squad/board?scope=global')).body.campaigns.some((c) => c.id === CAMP));
-ok('admin approves it live', (await admin.post(`/api/admin/squad/campaigns/${CAMP}`, { action: 'approve' })).status === 200);
-ok('the first free listing was used', (await seller.get('/api/me')).body.companies.find((x) => x.id === cid)?.listing_credits === 1);
-ok('an unapproved marketer cannot make a link', (await other.post(`/api/squad/campaigns/${CAMP}/link`)).status === 403);
+// ---------- eligibility and interests ----------
+r = await mk.get(`/api/squad/offers/${OF}`);
+ok('a qualifying marketer sees they are eligible', r.offer?.eligible === true, JSON.stringify(r.body).slice(0, 300));
+r = await mk3.get(`/api/squad/offers/${OF}`);
+ok('a small account is told why not', r.offer?.eligible === false && /5000\+ followers/.test(r.offer.reasons.join(' ')), JSON.stringify(r.offer?.reasons));
+ok('a marketer in the wrong country is not eligible', (await mk2.get(`/api/squad/offers/${OF}`)).offer?.eligible === false);
+r = await mk3.post(`/api/squad/offers/${OF}/interests`, { social_id: S3 });
+ok('an ineligible marketer cannot ask', r.status === 403 && r.code === 'not_eligible', JSON.stringify(r.body));
+ok('the eligible filter hides offers you do not fit', !(await mk3.get('/api/squad/offers?eligible=1')).offers.some((o) => o.id === OF));
+ok('a seller cannot ask for their own offer', (await sel.post(`/api/squad/offers/${OF}/interests`, {})).code === 'no_marketer');
+ok('you cannot use someone else\'s account', (await mk3.post(`/api/squad/offers/${OF}/interests`, { social_id: S })).status === 400);
+r = await mk.post(`/api/squad/offers/${OF}/interests`, { social_id: S, message: 'I review tools for small teams.' });
+ok('marketer shows interest', r.status === 201 && r.interest.status === 'pending', JSON.stringify(r.body));
+const I1 = r.interest.id;
+ok('asking twice is refused', (await mk.post(`/api/squad/offers/${OF}/interests`, { social_id: S })).code === 'duplicate');
+ok('the seller sees it in the offer inbox', (await sel.get(`/api/squad/offers/${OF}/interests`)).interests.some((i) => i.id === I1 && i.social.handle === `ada${TAG}`));
+ok('the marketer sees it in their list', (await mk.get('/api/squad/interests')).interests.some((i) => i.id === I1));
+ok('another seller cannot read the inbox', (await sel2.get(`/api/squad/offers/${OF}/interests`)).status === 404);
+ok('the marketer cannot accept their own interest', (await mk.post(`/api/squad/interests/${I1}/accept`)).status === 403);
+ok('another seller cannot accept it', (await sel2.post(`/api/squad/interests/${I1}/accept`)).status === 404);
+ok('the seller sees a pending count', (await sel.get('/api/squad/me')).counts.pending_interests >= 1);
 
-// ---------- the board: local and global ----------
-await ama.post('/api/me/profile', { city: 'Austin', country: 'us', phone: '+234 800 000 0001' });
-await zed.post('/api/me/profile', { city: 'Zurich', country: 'CH', phone: '+41 79 000 00 02' });
-const amaLocal = await ama.get('/api/squad/board?scope=local');
-ok('an Austin marketer sees the Austin campaign locally', amaLocal.body.campaigns.some((c) => c.id === CAMP), JSON.stringify(amaLocal.body).slice(0, 200));
-const zedLocal = await zed.get('/api/squad/board?scope=local');
-ok('a Zurich marketer does not see it locally', !zedLocal.body.campaigns.some((c) => c.id === CAMP));
-ok('a Zurich marketer sees it globally', (await zed.get('/api/squad/board?scope=global')).body.campaigns.some((c) => c.id === CAMP));
-ok('the product link is hidden from marketers', !JSON.stringify(amaLocal.body).includes('shop.example'));
-ok('a signed-out visitor gets no local list', !(await person().get('/api/squad/board?scope=local')).body.campaigns.some((c) => c.id === CAMP));
+// withdraw, deny, and ask again
+r = await mk.post(`/api/squad/offers/${OF2}/interests`, {});
+const I2 = r.interest.id;
+ok('the marketer withdraws an interest', (await mk.post(`/api/squad/interests/${I2}/withdraw`)).interest?.status === 'withdrawn');
+ok('a withdrawn interest cannot be accepted', (await sel.post(`/api/squad/interests/${I2}/accept`)).code === 'decided');
+r = await mk.post(`/api/squad/offers/${OF2}/interests`, {});
+ok('after withdrawing you can ask again', r.status === 201);
+const I3 = r.interest.id;
+ok('the seller denies it with a note', (await sel.post(`/api/squad/interests/${I3}/deny`, { note: 'Looking for B2B only' })).interest?.decision_note === 'Looking for B2B only');
+ok('a denied interest cannot be denied again', (await sel.post(`/api/squad/interests/${I3}/deny`)).code === 'decided');
 
-// ---------- a marketer's link and clicks ----------
-const l1 = await ama.post(`/api/squad/campaigns/${CAMP}/link`);
-ok('marketer gets a short link', l1.status === 200 && /\/s\/[a-z0-9]+$/i.test(l1.body.url), JSON.stringify(l1.body));
-const l2 = await ama.post(`/api/squad/campaigns/${CAMP}/link`);
-ok('asking again gives the same link', l2.body.code === l1.body.code);
-const code = l1.body.code;
+// ---------- accept → relationship ----------
+r = await sel.post(`/api/squad/interests/${I1}/accept`, { note: 'Welcome aboard' });
+ok('the seller accepts: a relationship starts', r.status === 201 && r.relationship.status === 'active' && r.relationship.terms_snapshot.terms.rate_cents === 2000, JSON.stringify(r.body));
+const R = r.relationship.id;
+ok('accepting twice is refused', (await sel.post(`/api/squad/interests/${I1}/accept`)).code === 'decided');
+ok('an accepted interest cannot be withdrawn', (await mk.post(`/api/squad/interests/${I1}/withdraw`)).code === 'decided');
+ok('the marketer cannot ask again while working on it', (await mk.post(`/api/squad/offers/${OF}/interests`, { social_id: S })).code === 'duplicate');
+await sel.patch(`/api/squad/offers/${OF}`, { terms: { rate_cents: 500, per: 'post' } });
+ok('editing the offer does not change the agreed terms', (await mk.get(`/api/squad/relationships/${R}`)).relationship.terms_snapshot.terms.rate_cents === 2000);
+ok('the offer type is locked once taken', (await sel.patch(`/api/squad/offers/${OF}`, { offer_type: 'commission', terms: { percent: 10 } })).code === 'locked');
+ok('max relationships cannot go below the active count', (await sel.patch(`/api/squad/offers/${OF}`, { max_relationships: 1 })).status === 200 && (await sel.patch(`/api/squad/offers/${OF}`, { max_relationships: 0 })).status === 400);
 
-const click = async (n, ua = UA) => {
-  const r = await fetch(`${BASE}/s/${code}`, { redirect: 'manual', headers: { 'user-agent': ua, 'cf-connecting-ip': ip(n) } });
-  return r;
-};
-const r1 = await click(1);
-const go = r1.headers.get('location') || '';
-ok('a click sends the shopper to the product with the tracking ref', r1.status === 302 && go.startsWith('https://shop.example/loaf?') && !!new URL(go).searchParams.get('gs_ref'), go);
-const w1 = await ama.get('/api/squad/wallet');
-ok('a verified click is pending', w1.body.pending_cents === 50, JSON.stringify(w1.body));
-await click(1);
-const w2 = await ama.get('/api/squad/wallet');
-ok('the same device again in 24h does not pay', w2.body.total_cents === 50, JSON.stringify(w2.body));
-await click(2, 'Googlebot/2.1 (+http://www.google.com/bot.html)');
-ok('a bot does not pay', (await ama.get('/api/squad/wallet')).body.total_cents === 50);
-await click(3, '');
-ok('no user agent does not pay', (await ama.get('/api/squad/wallet')).body.total_cents === 50);
-ok('an unknown link is 404', (await fetch(`${BASE}/s/nope0000`, { redirect: 'manual' })).status === 404);
+// one offer, many relationships, up to the limit
+await mk3.patch(`/api/squad/socials/${S3}`, { followers: 9000 });
+r = await mk3.post(`/api/squad/offers/${OF}/interests`, { social_id: S3 });
+ok('a full offer refuses new interest', r.code === 'full', JSON.stringify(r.body));
+await sel.patch(`/api/squad/offers/${OF}`, { max_relationships: 3 });
+r = await mk3.post(`/api/squad/offers/${OF}/interests`, { social_id: S3 });
+ok('after raising the limit a second marketer can ask', r.status === 201, JSON.stringify(r.body));
+r = await sel.post(`/api/squad/interests/${r.interest.id}/accept`);
+ok('one offer has many relationships', r.status === 201 && (await sel.get(`/api/squad/relationships?offer_id=${OF}`)).relationships.length === 2);
+const R3 = r.relationship.id;
 
-// the rest of the budget ($10 at 50 cents = 20 clicks)
-for (let n = 10; n < 40; n++) await click(n);
-const mine = (await seller.get('/api/squad/mine')).body.campaigns.find((c) => c.id === CAMP);
-ok('the budget caps the clicks at 20 verified', mine?.stats?.verified === 20, JSON.stringify(mine?.stats));
-ok('spend never goes past the budget', mine && mine.spent_cents <= mine.budget_cents, JSON.stringify(mine));
-ok('an empty campaign leaves the board', !(await ama.get('/api/squad/board?scope=local')).body.campaigns.some((c) => c.id === CAMP));
+// ---------- relationships ----------
+r = await sel.get('/api/squad/relationships?as=seller');
+ok('the seller lists their relationships', r.relationships.some((x) => x.id === R && x.side === 'seller'));
+r = await mk.get('/api/squad/relationships?as=marketer');
+ok('the marketer lists theirs', r.relationships.some((x) => x.id === R && x.side === 'marketer'));
+ok('a stranger cannot open a relationship', (await mk2.get(`/api/squad/relationships/${R}`)).status === 404);
+ok('the admin can open any relationship', (await admin.get(`/api/squad/relationships/${R}`)).status === 200);
+ok('the marketer cannot pause it', (await mk.post(`/api/squad/relationships/${R}/status`, { status: 'paused' })).status === 403);
+ok('the seller pauses it', (await sel.post(`/api/squad/relationships/${R}/status`, { status: 'paused' })).relationship?.status === 'paused');
 
-// ---------- the wallet and payouts ----------
-const pending = (await ama.get('/api/squad/wallet')).body;
-ok('all the money is pending for a week', pending.pending_cents === 1000 && pending.available_cents === 0, JSON.stringify(pending));
-ok('no payout from pending money', (await ama.post('/api/squad/payouts', { amount_cents: 1000, method: 'bank', account: '0123456789 Access' })).status === 402);
-ok('the minimum payout is $10', (await ama.post('/api/squad/payouts', { amount_cents: 500, method: 'bank', account: '0123456789' })).status === 400);
-sql(`UPDATE ledger SET created_at = created_at - ${8 * 86400000}`);
-await new Promise((r) => setTimeout(r, 1500));
-const cleared = (await ama.get('/api/squad/wallet')).body;
-ok('after a week the money clears', cleared.available_cents === 1000 && cleared.pending_cents === 0, JSON.stringify(cleared));
-const po = await ama.post('/api/squad/payouts', { amount_cents: 1000, method: 'bank', account: '0123456789 Access' });
-ok('marketer requests a payout', po.status === 200 && po.body.status === 'requested', JSON.stringify(po.body));
-ok('the request takes the money off the balance', (await ama.get('/api/squad/wallet')).body.available_cents === 0);
-const queue = (await admin.get('/api/admin/squad')).body;
-ok('admin sees the payout to send', queue.payouts.some((p) => p.id === po.body.id));
-ok('admin pays it', (await admin.post(`/api/admin/squad/payouts/${po.body.id}`, { action: 'paid' })).status === 200);
-ok('it cannot be paid twice', (await admin.post(`/api/admin/squad/payouts/${po.body.id}`, { action: 'paid' })).status === 409);
+// ---------- deliveries ----------
+ok('no deliveries while paused', (await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/a1' })).code === 'not_active');
+await sel.post(`/api/squad/relationships/${R}/status`, { status: 'active' });
+ok('only types the offer accepts', (await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'newsletter', social_id: S, proof_url: 'https://x.example/1' })).code === 'type_not_allowed');
+ok('a video needs the account it went out on', (await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', proof_url: 'https://youtu.be/a1' })).code === 'needs_social');
+ok('a video needs a proof link', (await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S })).status === 400);
+ok('the seller cannot report a delivery', (await sel.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/a1' })).status === 403);
+r = await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/a1', note: 'Mention at 2:10' });
+ok('the marketer reports a delivery', r.status === 201 && r.delivery.status === 'submitted', JSON.stringify(r.body));
+const D1 = r.delivery.id;
+ok('the same proof link twice is refused', (await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/a1' })).code === 'duplicate');
+ok('the marketer cannot verify their own delivery', (await mk.post(`/api/squad/deliveries/${D1}/verify`)).status === 403);
+ok('another seller cannot verify it', (await sel2.post(`/api/squad/deliveries/${D1}/verify`)).status === 404);
+r = await sel.post(`/api/squad/deliveries/${D1}/verify`, { note: 'Seen it' });
+ok('the seller verifies the delivery', r.delivery?.status === 'verified' && r.delivery.is_verified === true, JSON.stringify(r.body));
+ok('a verified delivery cannot be rejected by the seller', (await sel.post(`/api/squad/deliveries/${D1}/reject`, { note: 'changed mind' })).code === 'decided');
+ok('a verified delivery cannot be removed by the marketer', (await mk.del(`/api/squad/deliveries/${D1}`)).code === 'decided');
+r = await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/b2' });
+const D2 = r.delivery.id;
+ok('a rejection needs a reason', (await sel.post(`/api/squad/deliveries/${D2}/reject`)).code === 'needs_note');
+ok('the seller rejects with a reason', (await sel.post(`/api/squad/deliveries/${D2}/reject`, { note: 'Video is private' })).delivery?.status === 'rejected');
+ok('the admin can overturn a decision', (await admin.post(`/api/squad/deliveries/${D2}/verify`, { note: 'Now public' })).delivery?.status === 'verified');
+r = await mk.post(`/api/squad/relationships/${R}/deliveries`, { delivery_type: 'video', social_id: S, proof_url: 'https://youtu.be/c3' });
+ok('the marketer can take back an unchecked delivery', (await mk.del(`/api/squad/deliveries/${r.delivery.id}`)).ok === true);
+ok('deliveries are listed for both sides', (await sel.get(`/api/squad/relationships/${R}/deliveries`)).deliveries.length === 2);
+ok('verified deliveries show on the public profile', (await anon.get(`/api/squad/marketers/${M}`)).verified_deliveries === 2);
 
-ok('a payout needs account details', (await ama.post('/api/squad/payouts', { amount_cents: 1000, method: 'bank', account: 'x' })).status === 400);
+// ---------- messages ----------
+ok('an empty message is refused', (await mk.post(`/api/squad/relationships/${R}/messages`, { body: '  ' })).status === 400);
+ok('a stranger cannot post', (await mk2.post(`/api/squad/relationships/${R}/messages`, { body: 'hi' })).status === 404);
+ok('the admin reads but does not post', (await admin.post(`/api/squad/relationships/${R}/messages`, { body: 'hi' })).status === 403);
+const m1 = await mk.post(`/api/squad/relationships/${R}/messages`, { body: 'Video goes up Friday.' });
+ok('the marketer sends a message', m1.status === 201);
+await sel.post(`/api/squad/relationships/${R}/messages`, { body: 'Great, thanks.' });
+r = await sel.get(`/api/squad/relationships/${R}/messages`);
+ok('both messages, oldest first', r.messages.length === 2 && r.messages[0].body === 'Video goes up Friday.');
+ok('the seller has one unread', (await sel.get('/api/squad/relationships?as=seller')).relationships.find((x) => x.id === R).counts.unread === 1);
+ok('marking read clears it', (await sel.post(`/api/squad/relationships/${R}/read`)).marked === 1 && (await sel.get('/api/squad/relationships?as=seller')).relationships.find((x) => x.id === R).counts.unread === 0);
+ok('polling with ?after returns only new ones', (await mk.get(`/api/squad/relationships/${R}/messages?after=${r.messages[1].created_at}`)).messages.length === 0);
+ok('you cannot delete someone else\'s message', (await sel.del(`/api/squad/messages/${m1.message.id}`)).status === 404);
+ok('you can delete your own', (await mk.del(`/api/squad/messages/${m1.message.id}`)).ok === true && (await sel.get(`/api/squad/relationships/${R}/messages`)).messages[0].body === null);
 
-// ---------- sign-up campaigns: a postback from the seller's site ----------
-const s2 = await seller.post('/api/squad/campaigns', { ...base, title: 'Sign up', reward_rule: 'signup', reward_cents: 300, locations: ['*'] });
-const SIGN = s2.body.id;
-await admin.post(`/api/admin/squad/campaigns/${SIGN}`, { action: 'fund', amount_cents: 1000 });
-await seller.post(`/api/squad/campaigns/${SIGN}/submit`);
-await admin.post(`/api/admin/squad/campaigns/${SIGN}`, { action: 'approve' });
-const sKey = (await seller.get(`/api/squad/campaigns/${SIGN}`)).body.campaign.postback_key;
-const sl = await zed.post(`/api/squad/campaigns/${SIGN}/link`);
-const sr = await fetch(`${BASE}${new URL(sl.body.url).pathname}`, { redirect: 'manual', headers: { 'user-agent': UA, 'cf-connecting-ip': ip(200) } });
-const gsRef = new URL(sr.headers.get('location')).searchParams.get('gs_ref');
-ok('a sign-up click is recorded and pays nothing yet', !!gsRef && (await zed.get('/api/squad/wallet')).body.total_cents === 0);
-ok('a postback with the wrong key is refused', (await fetch(`${BASE}/api/squad/postback?key=nope&ref=${gsRef}`)).status === 404);
-const pb = await fetch(`${BASE}/api/squad/postback?key=${sKey}&ref=${gsRef}`);
-ok('the seller reports the sign-up', pb.status === 200, String(pb.status));
-ok('the marketer is paid for the sign-up', (await zed.get('/api/squad/wallet')).body.total_cents === 300);
-const pb2 = await fetch(`${BASE}/api/squad/postback?key=${sKey}&ref=${gsRef}`);
-ok('the same sign-up is only paid once', (await pb2.json()).duplicate === true && (await zed.get('/api/squad/wallet')).body.total_cents === 300);
+// ---------- ending ----------
+ok('the marketer ends one relationship', (await mk3.post(`/api/squad/relationships/${R3}/status`, { status: 'ended', reason: 'Too busy' })).relationship?.status === 'ended');
+ok('an ended relationship cannot restart', (await sel.post(`/api/squad/relationships/${R3}/status`, { status: 'active' })).code === 'ended');
+ok('no messages after it ends', (await mk3.post(`/api/squad/relationships/${R3}/messages`, { body: 'hi' })).code === 'ended');
+ok('after it ends the marketer can ask again', (await mk3.post(`/api/squad/offers/${OF}/interests`, { social_id: S3 })).status === 201);
 
-// ---------- snippet campaigns: proof of a post ----------
-const s3 = await seller.post('/api/squad/campaigns', { ...base, title: 'Post it', reward_rule: 'snippet', reward_cents: 200, locations: ['*'] });
-const POST = s3.body.id;
-await admin.post(`/api/admin/squad/campaigns/${POST}`, { action: 'fund', amount_cents: 1000 });
-const noCredit = await seller.post(`/api/squad/campaigns/${POST}/publish`);
-ok('self-publishing needs a listing credit after the two free ones', noCredit.status === 402, JSON.stringify(noCredit.body));
-ok('an admin adds a paid $29 listing credit', (await admin.post(`/api/admin/squad/companies/${cid}/credits`, { count: 1, amount_cents: 2900 })).status === 200);
-const pub = await seller.post(`/api/squad/campaigns/${POST}/publish`);
-ok('the seller self-publishes with the credit', pub.status === 200 && pub.body.status === 'live', JSON.stringify(pub.body));
-const pl = await zed.post(`/api/squad/campaigns/${POST}/link`);
-const pr = await zed.post(`/api/squad/links/${pl.body.code}/proof`, { post_url: 'https://social.example/p/123' });
-ok('a marketer sends proof of a post', pr.status === 200 && pr.body.status === 'pending', JSON.stringify(pr.body));
-ok('the same post cannot be sent twice', (await zed.post(`/api/squad/links/${pl.body.code}/proof`, { post_url: 'https://social.example/p/123' })).status === 409);
-ok('someone else cannot send proof on your link', (await other.post(`/api/squad/links/${pl.body.code}/proof`, { post_url: 'https://social.example/p/999' })).status === 404);
-const proofId = (await admin.get('/api/admin/squad')).body.proofs.find((p) => p.post_url === 'https://social.example/p/123')?.id;
-ok('admin sees the post to check', !!proofId);
-ok('admin pays the post', (await admin.post(`/api/admin/squad/proofs/${proofId}`, { decision: 'approve' })).status === 200);
-ok('the post is paid into the wallet', (await zed.get('/api/squad/wallet')).body.total_cents === 300 + 200);
+// ---------- deletes with live work ----------
+ok('a product with live relationships cannot be deleted', (await sel.del(`/api/squad/products/${P}`)).code === 'has_relationships');
+ok('an offer with live relationships cannot be deleted', (await sel.del(`/api/squad/offers/${OF}`)).code === 'has_relationships');
+r = await sel.post(`/api/squad/offers/${OF}/status`, { status: 'closed' });
+ok('closing an offer denies pending interest', r.offer?.status === 'closed' && (await mk3.get('/api/squad/interests')).interests.some((i) => i.offer_id === OF && i.status === 'denied' && i.decision_note === 'offer closed'));
+ok('a closed offer cannot reopen', (await sel.post(`/api/squad/offers/${OF}/status`, { status: 'open' })).code === 'bad_transition');
+ok('live relationships carry on after closing', (await mk.get(`/api/squad/relationships/${R}`)).relationship.status === 'active');
 
-// ---------- access ----------
-ok('a marketer cannot open the admin list', (await ama.get('/api/admin/squad')).status === 403);
-ok('the wallet needs sign-in', (await person().get('/api/squad/wallet')).status === 401);
-ok('another seller does not see the campaign in their list', !((await other.get('/api/squad/mine')).body.campaigns || []).some((c) => c.id === CAMP));
-ok('a stranger cannot edit the campaign', (await other.patch(`/api/squad/campaigns/${CAMP}`, { title: 'Hacked title' })).status === 403);
+// ---------- verification, blocking and flags ----------
+ok('a social edit after verification needs checking again', await (async () => {
+  await admin.post(`/api/admin/squad/socials/${S}`, { action: 'verify' });
+  const v = (await mk.get('/api/squad/socials')).socials.find((s) => s.id === S).is_verified;
+  const e = await mk.patch(`/api/squad/socials/${S}`, { followers: 50000 });
+  return v === true && e.social.is_verified === false && e.needs_verification === true;
+})());
+r = await sel.post('/api/squad/offers', { product_id: P, offer_type: 'commission', title: 'Verified only', terms: { percent: 15 }, requirements: { verified_only: true }, status: 'open' });
+const OFV = r.offer.id;
+ok('verified-only offers refuse unverified marketers', (await mk2.post(`/api/squad/offers/${OFV}/interests`, {})).code === 'not_eligible');
+await admin.post(`/api/admin/squad/marketers/${(await mk2.get('/api/squad/me')).marketer.id}`, { action: 'verify' });
+ok('after the admin verifies them they can ask', (await mk2.post(`/api/squad/offers/${OFV}/interests`, {})).status === 201);
+const P2 = (await sel.post('/api/squad/products', { name: 'Shady pills', description: 'Miracle cure, guaranteed results.' })).product.id;
+const OFF = (await sel.post('/api/squad/offers', { product_id: P2, offer_type: 'commission', title: 'Sell pills', terms: { percent: 50 }, status: 'open' })).offer.id;
+await admin.post(`/api/admin/squad/products/${P2}`, { action: 'flag', note: 'Health claims' });
+ok('flagging a product pauses its offers and hides them', (await sel.get(`/api/squad/offers/${OFF}`)).offer.status === 'paused' && (await anon.get(`/api/squad/offers/${OFF}`)).status === 404);
+ok('a flagged product\'s offer cannot reopen', (await sel.post(`/api/squad/offers/${OFF}/status`, { status: 'open' })).code === 'flagged');
+ok('the admin queue lists the flagged product', (await admin.get('/api/admin/squad/queue')).products.some((p) => p.id === P2));
+const mk2Id = (await mk2.get('/api/squad/me')).marketer.id;
+await admin.post(`/api/admin/squad/marketers/${mk2Id}`, { action: 'block' });
+ok('a blocked marketer cannot act', (await mk2.post('/api/squad/socials', { platform: 'x', handle: `b${TAG}` })).code === 'blocked');
+ok('blocking withdraws their pending interests', (await sel.get(`/api/squad/offers/${OFV}/interests`)).interests.every((i) => i.status !== 'pending'));
+ok('blocked profiles are hidden publicly', (await anon.get(`/api/squad/marketers/${mk2Id}`)).status === 404);
+await admin.post(`/api/admin/squad/marketers/${mk2Id}`, { action: 'unblock' });
+ok('unblocking restores them', (await mk2.get('/api/squad/socials')).status === 200);
+const selUser = (await sel2.get('/api/squad/me')).user.id;
+await admin.post(`/api/admin/squad/users/${selUser}`, { action: 'block' });
+ok('blocking a user signs them out', (await sel2.get('/api/squad/me')).status === 401);
+ok('the admin cannot block themselves', (await admin.post(`/api/admin/squad/users/${(await admin.get('/api/squad/me')).user.id}`, { action: 'block' })).code === 'self');
+ok('admin actions are checked per kind', (await admin.post(`/api/admin/squad/offer-types/${OT.id}`, { action: 'flag' })).status === 400);
+ok('the admin lists blocked users', (await admin.get('/api/admin/squad/users?flag=blocked')).rows.some((u) => u.id === selUser));
 
-// ---------- the marketer's dashboard ----------
-const links = (await ama.get('/api/squad/me/links')).body.links;
-const mine1 = links.find((l) => l.code === code);
-ok('the dashboard shows verified and total clicks', mine1 && mine1.verified === 20 && mine1.total > mine1.verified, JSON.stringify(mine1));
-ok('the dashboard shows what was earned', mine1 && mine1.earned === 1000, JSON.stringify(mine1));
+// ---------- deleting your account ----------
+const del = person(); await signIn(del, `del-${TAG}@ex.com`);
+await del.post('/api/squad/marketers', { country: 'US' });
+const di = await del.post(`/api/squad/offers/${OF2}/interests`, {});
+ok('a member deletes their account', (await del.del('/api/squad/me')).ok === true);
+ok('they are signed out', (await del.get('/api/squad/me')).status === 401);
+ok('their pending interest is withdrawn', (await sel.get(`/api/squad/offers/${OF2}/interests`)).interests.find((i) => i.id === di.interest.id)?.status === 'withdrawn');
 
-// ---------- the home page and the app ----------
-const home = await fetch(`${BASE}/`).then((r) => r.text());
-ok('the home page is Gorilla Squad', home.includes('Gorilla Squad') && home.includes("Put your product directly in your customers' hands"));
-ok('the home page has both ways in', home.includes('href="/app/#sell"') && home.includes('href="/app/#board"'));
-const app = await fetch(`${BASE}/app/`).then((r) => r.text());
-ok('the app page loads the squad script', app.includes('/squad.js') && app.includes('/vendor/qrcode.js'));
-
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+console.log(`\n${pass} passed, ${failed} failed`);
+process.exit(failed ? 1 : 0);

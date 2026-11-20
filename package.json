@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-runtime.mjs",
-    "db:local": "wrangler d1 migrations apply thebes --local --env local && wrangler d1 execute thebes --local --env local --file db/seed/0001_plans_games.sql",
+    "db:local": "(wrangler d1 migrations apply thebes --local --env local || true) && wrangler d1 execute thebes --local --env local --file db/seed/0001_plans_games.sql && wrangler d1 migrations apply thebes --local --env local",
     "dev": "npm run build && wrangler dev --env local",
     "check:db": "python3 db/check.py",
     "test": "node test/smoke.mjs",
