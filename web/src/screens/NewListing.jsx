@@ -4,6 +4,7 @@ import { go } from '../lib/router.js';
 import { TYPES, GOALS, SYM, FEE, money, kindOf, bgFor, PLATFORMS, COUNTRIES } from '../lib/data.js';
 import { Page, PageTitle, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Select, Radio, Ic, ProductArt, Art, Sheet, Avatar, Chip, cx } from '../ui/index.jsx';
 import { Stepper, useGate, takeDraft, fileToData, dataToFile } from '../ui/wizard.jsx';
+import { CropSheet } from '../ui/crop.jsx';
 
 const GOAL_ICON = { attention: Ic.Share, commission: Ic.Wallet, introduction: Ic.Me };
 const DEFAULTS = { attention: { rate: '0.10', per: 'click' }, commission: { percent: '15', cookie_days: '30' }, introduction: { share_percent: '10', min_contract: '' } };
@@ -19,7 +20,7 @@ const cents = (v) => Math.round((+v || 0) * 100);
 
 export default function NewListing({ pid }) {
   const { S, a } = useStore(), gate = useGate();
-  const [L, setL] = useState(() => empty(pid)), [busy, setBusy] = useState(false), [prev, setPrev] = useState(false);
+  const [L, setL] = useState(() => empty(pid)), [busy, setBusy] = useState(false), [prev, setPrev] = useState(false), [cropFile, setCropFile] = useState(null);
   const set = (x) => setL(q => ({ ...q, ...x }));
   useEffect(() => { if (S.auth === 'in' && a.hasSeller && !S.myProductIds) a.loadSeller(); }, [S.auth, a.hasSeller]);
   useEffect(() => { if (pid && !prodOf(S, pid)?.full) a.loadProduct(pid); }, [pid]);
@@ -101,11 +102,11 @@ export default function NewListing({ pid }) {
               <Field label="What should creators do?" help="Where to share it, what to say, what to avoid." aside={<span className="text-caption text-ink-faint">{L.desc.length}/2000</span>}><Textarea maxLength={2000} value={L.desc} onChange={e => set({ desc: e.target.value })} placeholder={TODO[L.type]} /></Field>
             </div></Card>
             <Card title="Thumbnail" sub="What people see in the feed.">
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {[['product', p.img], ...(p.images || []).filter(u => u && u !== p.img).map(u => [u, u])].map(([key, src]) => (
-                  <button key={key} onClick={() => set({ thumb: key })} className={cx('relative aspect-square overflow-hidden rounded-2xl transition', L.thumb === key ? 'ring-2 ring-army ring-offset-2 ring-offset-white' : 'opacity-80 hover:opacity-100')}>{src ? <img src={src} alt="" className="h-full w-full object-cover" /> : <ProductArt p={p} fit="70%" className="h-full w-full" />}{key === 'product' && <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/50 px-1.5 text-[11px] font-semibold text-white">Cover</span>}</button>))}
-                {L.thumbUrl && <button onClick={() => set({ thumb: 'upload' })} className={cx('relative aspect-square overflow-hidden rounded-2xl', L.thumb === 'upload' ? 'ring-2 ring-army ring-offset-2 ring-offset-white' : 'opacity-80')}><img src={L.thumbUrl} alt="" className="h-full w-full object-cover" /></button>}
-                <label className="grid aspect-square cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-cream-300 text-center text-caption font-semibold text-ink-soft hover:border-army/40"><span className="flex flex-col items-center gap-1"><Ic.Up width="18" height="18" />Upload</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; if (f.size > 5 * 1048576) return a.toast('Images can be up to 5 MB'); set({ thumb: 'upload', thumbFile: f, thumbUrl: URL.createObjectURL(f) }); }} /></label>
+                  <button key={key} onClick={() => set({ thumb: key })} className={cx('relative aspect-[4/3] overflow-hidden rounded-2xl transition', L.thumb === key ? '' : 'opacity-70 hover:opacity-100')}>{L.thumb === key && <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-army text-white"><Ic.Check width="13" height="13" /></span>}{src ? <img src={src} alt="" className="h-full w-full object-cover" /> : <ProductArt p={p} fit="70%" className="h-full w-full" />}{key === 'product' && <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/50 px-1.5 text-[11px] font-semibold text-white">Cover</span>}</button>))}
+                {L.thumbUrl && <button onClick={() => set({ thumb: 'upload' })} className={cx('relative aspect-[4/3] overflow-hidden rounded-2xl', L.thumb === 'upload' ? '' : 'opacity-70 hover:opacity-100')}>{L.thumb === 'upload' && <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-army text-white"><Ic.Check width="13" height="13" /></span>}<img src={L.thumbUrl} alt="" className="h-full w-full object-cover" /></button>}
+                <label className="grid aspect-[4/3] cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-cream-300 text-center text-caption font-semibold text-ink-soft hover:border-army/40"><span className="flex flex-col items-center gap-1"><Ic.Up width="18" height="18" />Upload</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; if (f.size > 5 * 1048576) return a.toast('Images can be up to 5 MB'); setCropFile(f); }} /></label>
               </div>
             </Card>
           </>)}
@@ -119,6 +120,7 @@ export default function NewListing({ pid }) {
         <aside className="hidden lg:block"><div className="sticky top-0">{p && st > 1 ? <FeedPreview L={L} p={p} thumb={thumb} /> : null}</div></aside>
       </div>
       <Sheet open={prev} onClose={() => setPrev(false)} title="Feed preview">{p && <FeedPreview L={L} p={p} thumb={thumb} />}</Sheet>
+      <CropSheet file={cropFile} title="Fit your thumbnail" onCancel={(m) => { if (m) a.toast(m); setCropFile(null); }} onDone={(f, url) => { setCropFile(null); set({ thumb: 'upload', thumbFile: f, thumbUrl: url }); }} />
     </Page>
   );
 }

@@ -1,7 +1,7 @@
 // One icon set (Lucide), one weight. Size and stroke are set here so every screen matches.
 import { ChevronLeft, ChevronRight, Plus, X, Check, SendHorizontal, Forward, ArrowUpRight, Play as PlayI, Upload, Info as InfoI, ShieldCheck,
   Compass, MessageCircle, UserRound, MoreHorizontal, Tag as TagI, Package, AtSign, Search as SearchI, Bell as BellI, ArrowLeftRight, ImagePlus,
-  Globe as GlobeI, Wallet as WalletI, Clock as ClockI, SquarePlus, LogOut } from 'lucide-react';
+  Globe as GlobeI, Wallet as WalletI, Clock as ClockI, SquarePlus, LogOut, Minus as MinusI, Crop as CropI, Store as StoreI, Pencil } from 'lucide-react';
 const w = (C, extra = {}) => (p) => <C size={22} strokeWidth={1.75} aria-hidden {...extra} {...p} />;
 export const Back = w(ChevronLeft);
 export const Chev = w(ChevronRight);
@@ -34,3 +34,7 @@ export const Globe = w(GlobeI);
 export const Wallet = w(WalletI);
 export const Clock = w(ClockI);
 export const Out = w(LogOut);
+export const Minus = w(MinusI);
+export const Crop = w(CropI);
+export const Store = w(StoreI);
+export const Edit = w(Pencil);

@@ -6,9 +6,12 @@ import { Page, PageTitle, Ic, ProductArt, cx } from '../ui/index.jsx';
 import NewProduct from './NewProduct.jsx';
 import NewListing from './NewListing.jsx';
 import NewSocial from './NewSocial.jsx';
+import SellerAccount from './SellerAccount.jsx';
+import { sellerReady, afterSeller } from '../ui/wizard.jsx';
 
-// #plus → pick a product to list (or make one) · #plus/product → product wizard · #plus/listing or #plus/<productId> → listing wizard · #plus/social
+// #plus → pick a product to list (or make one) · #plus/seller → seller account (comes first) · #plus/product → product wizard · #plus/listing or #plus/<productId> → listing wizard · #plus/social
 export default function Create({ pid: arg }) {
+  if (arg === 'seller') return <SellerAccount />;
   if (arg === 'product') return <NewProduct />;
   if (arg === 'social') return <NewSocial />;
   if (arg === 'listing' || arg === 'offer') return <NewListing />;
@@ -20,12 +23,13 @@ function Start() {
   const { S, a } = useStore();
   useEffect(() => { if (S.auth === 'in' && a.hasSeller) a.loadSeller(); }, [S.auth, a.hasSeller]);
   const products = (S.myProductIds || []).map(id => prodOf(S, id)).filter(Boolean);
+  const newProduct = () => { if (sellerReady(S, a)) return go('plus/product'); afterSeller.set('plus/product'); go('plus/seller'); };
   const offersOn = (id) => (S.myOfferIds || []).map(x => S.offers[x]).filter(o => o && o.pid === id).length;
   return (
     <Page crumb="Create">
       <PageTitle h="What do you want to list?" p="Start with the product. Then create a listing that tells creators what you want them to do." />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <button onClick={() => go('plus/product')} className="group flex flex-col overflow-hidden rounded-3xl bg-army text-left text-white shadow-card transition hover:shadow-lift">
+        <button onClick={newProduct} className="group flex flex-col overflow-hidden rounded-3xl bg-army text-left text-white shadow-card transition hover:shadow-lift">
           <span className="grid aspect-[4/3] w-full place-items-center"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-sage text-army transition group-hover:scale-105"><Ic.Plus width="26" height="26" /></span></span>
           <span className="p-4"><span className="block font-semibold">New product</span><span className="text-small text-white/65">Add something to list</span></span>
         </button>

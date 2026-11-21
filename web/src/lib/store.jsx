@@ -95,7 +95,7 @@ export function StoreProvider({ children }) {
     const act = {
       toast, run,
       me: me ? { id: me.user.id, name: me.user.display_name || me.user.email.split('@')[0], email: me.user.email, handle: me.user.email.split('@')[0], verified: !!(seller ? me.seller?.is_verified : me.marketer?.is_verified),
-        company: me.companies?.[0]?.name || null, country: me.marketer?.country || null, city: me.marketer?.city || null,
+        company: me.companies?.[0]?.name || null, co: me.companies?.[0] || null, sellerBio: me.seller?.bio || '', country: me.marketer?.country || null, city: me.marketer?.city || null,
         followers: (me.socials || []).reduce((n, x) => n + (x.followers || 0), 0), socials: me.socials || [] } : null,
       userName,
       hasSeller: !!me?.seller, hasMarketer: !!me?.marketer,
@@ -121,6 +121,21 @@ export function StoreProvider({ children }) {
         });
         if (ok) { const then = ref.current.setupThen; await loadMe(); patch((s) => { s.setup = null; s.setupThen = null; s.role = kind; s.roleSet = true; s.deals = null; }); toast(kind === 'seller' ? 'Seller profile ready' : 'Marketer profile ready'); if (then) setTimeout(then, 60); }
         return ok;
+      },
+      // create or update the seller account: the brand (company) creators see, then the seller profile on top of it
+      async saveSeller(f) {
+        const had = !!me?.seller, co = me?.companies?.[0];
+        const brand = { name: f.company.trim(), website: f.website?.trim() || undefined, industry: f.industry?.trim() || undefined, description: f.description?.trim() || undefined, city: f.city?.trim() || undefined, country: f.country || undefined };
+        const ok = await run(async () => {
+          if (f.name?.trim() && f.name.trim() !== me?.user?.display_name) await api('/squad/me', { method: 'PATCH', body: { display_name: f.name.trim() } });
+          let company_id = co?.id;
+          if (co) await api('/squad/companies/' + co.id, { method: 'PATCH', body: { ...brand, website: f.website?.trim() || null, industry: f.industry?.trim() || null, description: f.description?.trim() || null, city: f.city?.trim() || null } });
+          else company_id = (await api('/squad/companies', { method: 'POST', body: brand })).company.id;
+          await api('/squad/sellers', { method: 'POST', body: { company_id } });
+          return true;
+        });
+        if (ok) { await loadMe(); patch((s) => { s.role = 'seller'; s.roleSet = true; s.deals = null; }); toast(had ? 'Seller account saved' : 'Seller account ready'); }
+        return !!ok;
       },
       async saveName(name) { const r = await run(() => api('/squad/me', { method: 'PATCH', body: { display_name: name } })); if (r) { await loadMe(); toast('Saved'); } return !!r; },
 

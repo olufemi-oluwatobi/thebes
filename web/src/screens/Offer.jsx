@@ -76,7 +76,7 @@ export default function Offer({ id }) {
             </Card>
           )}
           <Card title="About the product" action={<button onClick={() => go('product/' + o.pid)} className="text-small font-semibold text-sage-700 hover:underline">View</button>}>
-            <div className="flex items-start gap-4"><ProductArt p={p} fit="78%" className="h-16 w-16 shrink-0 rounded-2xl" /><div className="min-w-0"><div className="font-semibold">{p.name}</div><div className="text-small text-ink-soft">{kindOf(p.kind)[2]}</div>{p.desc && <p className="mt-2 line-clamp-3 text-small text-ink/80">{p.desc}</p>}</div></div>
+            <div className="flex items-start gap-4"><ProductArt p={p} fit="78%" className="h-16 w-[85px] shrink-0 rounded-2xl" /><div className="min-w-0"><div className="font-semibold">{p.name}</div><div className="text-small text-ink-soft">{kindOf(p.kind)[2]}</div>{p.desc && <p className="mt-2 line-clamp-3 text-small text-ink/80">{p.desc}</p>}</div></div>
             {factsOf(p).length > 0 && <div className="mt-4"><Rows rows={factsOf(p)} /></div>}
           </Card>
           <Card title="Terms"><Rows rows={Object.entries(o.terms).map(([k, v]) => [fieldLabel(k), fmtTerm(k, v, F.cur)])} /></Card>

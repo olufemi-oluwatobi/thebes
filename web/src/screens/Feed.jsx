@@ -38,8 +38,8 @@ function Slide({ o }) {
         {/* media + left rail */}
         <div className="relative flex min-h-0 flex-1 items-center justify-center lg:h-full lg:max-h-[560px]">
           
-          <div className="grid h-full max-h-[340px] w-full place-items-center lg:aspect-[4/3] lg:h-auto lg:max-h-none lg:rounded-[32px] lg:bg-black/15 lg:ring-1 lg:ring-inset lg:ring-white/10">
-            {(o.cover || p.img) ? <img src={o.cover || p.img} alt="" className="max-h-full max-w-full rounded-3xl object-contain shadow-pop" /> : <Art k={artFor(p.category)} className="h-full max-h-[300px] w-full max-w-[320px] lg:h-[72%] lg:max-h-none lg:max-w-[440px] [&>svg]:h-full [&>svg]:w-full" />}
+          <div className="grid h-full max-h-[340px] w-full place-items-center lg:aspect-[4/3] lg:h-auto lg:max-h-none">
+            {(o.cover || p.img) ? <img src={o.cover || p.img} alt="" className="max-h-full max-w-full rounded-3xl object-contain shadow-pop lg:aspect-[4/3] lg:h-full lg:w-full lg:rounded-[32px] lg:object-cover" /> : <Art k={artFor(p.category)} className="h-full max-h-[300px] w-full max-w-[320px] lg:h-[72%] lg:max-h-none lg:max-w-[440px] [&>svg]:h-full [&>svg]:w-full" />}
           </div>
         </div>
         {/* info */}

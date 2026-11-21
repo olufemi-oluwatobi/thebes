@@ -4,11 +4,12 @@ import { go } from '../lib/router.js';
 import { CATS, TYPES, PLATFORMS, money } from '../lib/data.js';
 import { Page, Card, StatGroup, Tabs, Button, Status, Avatar, Ic, ProductArt, Verified, Segmented, Empty, Sheet, Field, Input, cx } from '../ui/index.jsx';
 import { Bar } from './Offer.jsx';
+import { afterSeller } from '../ui/wizard.jsx';
 
 const Row = ({ onClick, lead, title, sub, trail, first }) => (
   <button onClick={onClick} className={cx('flex min-h-[76px] w-full items-center gap-4 px-5 py-3 text-left transition hover:bg-cream-50 sm:px-6', !first && 'border-t border-cream-100')}>{lead}<div className="min-w-0 flex-1"><div className="truncate font-semibold">{title}</div><div className="mt-0.5 truncate text-small text-ink-soft">{sub}</div></div>{trail}</button>
 );
-const Thumb = ({ p }) => <ProductArt p={p || { category: 'other' }} fit="80%" className="h-12 w-12 shrink-0 rounded-xl" />;
+const Thumb = ({ p }) => <ProductArt p={p || { category: 'other' }} fit="80%" className="h-12 w-16 shrink-0 rounded-xl" />;
 const SOC = { instagram: '#C13584', youtube: '#C4302B', tiktok: '#111', x: '#111', linkedin: '#0A66C2', facebook: '#1877F2' };
 const Spinner = () => <div className="grid h-32 place-items-center"><span className="h-7 w-7 animate-spin rounded-full border-2 border-cream-200 border-t-army" /></div>;
 
@@ -52,18 +53,19 @@ export default function Profile() {
               <div className="flex items-center gap-2.5"><Ic.Shield width="16" height="16" />{u.verified ? 'Verified ' + (seller ? 'seller' : 'marketer') : 'Not verified yet'}</div>
             </div>
             <Button tone="secondary" size="sm" block className="mt-5" onClick={() => { setName(u.name); setEdit(true); }}>Edit profile</Button>
+            {a.hasSeller && <Button tone="ghost" size="sm" block className="mt-2" onClick={() => go('plus/seller')}><Ic.Store width="16" height="16" />Edit seller account</Button>}
           </Card>
         </aside>
         <div className="flex min-w-0 flex-col gap-6">
           {a.hasSeller && a.hasMarketer && <Card className="lg:hidden"><div className="mb-2 text-caption font-semibold uppercase tracking-wider text-ink-faint">Working as</div><Segmented value={S.role} onChange={(v) => v !== S.role && a.setRole(v)} items={[['marketer', 'Marketer'], ['seller', 'Seller']]} /></Card>}
           {!hasRole ? (
-            <Card><Empty icon={seller ? <Ic.Box /> : <Ic.Tag />} title={seller ? 'Sell with Gorilla Squad' : 'Promote offers and get paid'} text={seller ? 'Set up a seller profile to add products and post offers.' : 'Set up a marketer profile to apply to offers.'} action={<Button onClick={() => a.openSetup(seller ? 'seller' : 'marketer')}>Set up {seller ? 'selling' : 'promoting'}</Button>} /></Card>
+            <Card><Empty icon={seller ? <Ic.Box /> : <Ic.Tag />} title={seller ? 'Sell with Gorilla Squad' : 'Promote offers and get paid'} text={seller ? 'Create a seller account to add products and post listings.' : 'Set up a marketer profile to apply to offers.'} action={<Button onClick={() => seller ? (afterSeller.set('plus/product'), go('plus/seller')) : a.openSetup('marketer')}>{seller ? 'Create seller account' : 'Create marketer account'}</Button>} /></Card>
           ) : (<>
             <StatGroup items={[[money(earned), seller ? 'Paid out' : 'Earned'], [deals.filter(d => d.status === 'active').length, 'Active deals'], seller ? [pend, 'To review'] : [sent.filter(i => i.status === 'pending').length, 'Pending']]} />
             <div><Tabs value={t} onChange={setTab} items={tabs} className="mb-3" /><Card pad={false} className="overflow-hidden">{list}</Card></div>
           </>)}
           <div className="flex flex-wrap gap-3">
-            {!(a.hasSeller && a.hasMarketer) && hasRole && <Button tone="secondary" onClick={() => a.openSetup(seller ? 'marketer' : 'seller')}>{seller ? 'Also promote offers' : 'Also sell products'}</Button>}
+            {!(a.hasSeller && a.hasMarketer) && hasRole && <Button tone="secondary" onClick={() => seller ? a.openSetup('marketer') : go('plus/seller')}>{seller ? 'Also promote offers' : 'Create a seller account'}</Button>}
             <Button tone="ghost" onClick={a.signOut}><Ic.Out width="18" height="18" />Sign out</Button>
           </div>
         </div>

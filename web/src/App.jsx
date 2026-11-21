@@ -48,7 +48,7 @@ export default function App() {
             <button onClick={() => go('me')} className="flex w-full items-center gap-3 text-left"><Avatar name={u.name} size={36} /><div className="min-w-0"><div className="truncate text-small font-semibold">{u.name}</div><div className="truncate text-caption text-ink-soft">{u.email}</div></div></button>
             {both ? <><div className="mt-3 text-caption font-semibold uppercase tracking-wider text-ink-faint">Working as</div>
               <div className="mt-1.5 [&>div]:h-9 [&_button]:text-caption"><Segmented value={S.role} onChange={(v) => v !== S.role && a.setRole(v)} items={[['marketer', 'Marketer'], ['seller', 'Seller']]} /></div></>
-              : <button onClick={() => a.openSetup(a.hasSeller ? 'marketer' : 'seller')} className="mt-3 text-caption font-semibold text-sage-700 hover:underline">{a.hasSeller ? 'Also promote offers' : a.hasMarketer ? 'Also sell products' : 'Set up your profile'}</button>}
+              : <button onClick={() => a.hasSeller ? a.openSetup('marketer') : go('plus/seller')} className="mt-3 text-caption font-semibold text-sage-700 hover:underline">{a.hasSeller ? 'Also promote offers' : a.hasMarketer ? 'Create a seller account' : 'Set up your profile'}</button>}
           </div>
         ) : (
           <div className="rounded-2xl bg-white p-4 shadow-card"><div className="text-small font-semibold">Join Gorilla Squad</div><p className="mt-1 text-caption text-ink-soft">Post offers or promote them and get paid.</p><Button size="sm" block className="mt-3" onClick={() => a.openSignin()}>Sign in</Button></div>

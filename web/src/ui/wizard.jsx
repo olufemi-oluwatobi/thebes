@@ -1,6 +1,7 @@
 import { useStore } from '../lib/store.jsx';
 import { Ic, cx } from './index.jsx';
 import { kindOf, SYM } from '../lib/data.js';
+import { go } from '../lib/router.js';
 
 export function Stepper({ steps, st }) {
   return (<>
@@ -13,20 +14,32 @@ export function Stepper({ steps, st }) {
   </>);
 }
 
-/* Ask for sign-in, then a seller/marketer profile, only when something is saved.
-   Before the sign-in email, the draft is kept in this browser and restored when the person comes back. */
+/* Ask for sign-in, then a seller/marketer account, only when something is saved.
+   Before the sign-in email, the draft is kept in this browser and restored when the person comes back.
+   A seller account is its own full page (#plus/seller); details filled in before signing in are kept and
+   turned into the account the first time something is saved. */
 export function useGate() {
   const { S, a } = useStore();
+  const keep = async (draft) => { try { const d = draft ? await draft() : null; if (d) localStorage.setItem('gs_draft', JSON.stringify({ hash: location.hash, ...d })); } catch {} };
   return (kind, then, draft) => {
     if (S.auth !== 'in') {
-      (async () => { try { const d = draft ? await draft() : null; if (d) localStorage.setItem('gs_draft', JSON.stringify({ hash: location.hash, ...d })); localStorage.setItem('gs_next', location.hash); } catch {} })();
+      keep(draft).then(() => localStorage.setItem('gs_next', location.hash));
       a.openSignin('Sign in to save this'); return false;
     }
-    if (kind === 'seller' && !a.hasSeller) { a.openSetup('seller', then); return false; }
+    if (kind === 'seller' && !a.hasSeller) {
+      const d = sellerDraft.get();
+      if (d) { a.saveSeller(d).then((ok) => { if (ok) { sellerDraft.clear(); then?.(); } }); return false; }
+      const here = location.hash; keep(draft).then(() => { afterSeller.set(here); go('plus/seller'); }); return false;
+    }
     if (kind === 'marketer' && !a.hasMarketer) { a.openSetup('marketer', then); return false; }
     return true;
   };
 }
+const kept = (k, store = localStorage) => ({ get: () => { try { return JSON.parse(store.getItem(k) || 'null'); } catch { return null; } }, set: (v) => { try { store.setItem(k, JSON.stringify(v)); } catch {} }, clear: () => { try { store.removeItem(k); } catch {} } });
+export const sellerDraft = kept('gs_seller');            // seller details filled in before signing in
+export const afterSeller = kept('gs_after_seller', sessionStorage); // where to go once the seller account is done
+/* does this person have (or have started) a seller account? */
+export const sellerReady = (S, a) => S.auth === 'in' ? a.hasSeller || !!sellerDraft.get() : !!sellerDraft.get();
 export function takeDraft() {
   try { const d = JSON.parse(localStorage.getItem('gs_draft') || 'null'); if (!d || d.hash !== location.hash) return null; localStorage.removeItem('gs_draft'); return d; } catch { return null; }
 }

@@ -30,7 +30,7 @@ export function SetupSheet() {
   const submit = async (e) => { e.preventDefault(); setBusy(true); await a.setupProfile(kind, f); setBusy(false); };
   const need = seller ? f.name.trim() && (a.me?.company || f.company.trim().length >= 2) : f.name.trim() && f.country;
   return (
-    <Sheet open={!!kind} onClose={a.closeSetup} title={seller ? 'Set up selling' : 'Set up promoting'} sub={seller ? 'Tell marketers who they are working with.' : 'Sellers see this when you apply.'}>
+    <Sheet open={!!kind} onClose={a.closeSetup} title={seller ? 'Create seller account' : 'Create marketer account'} sub={seller ? 'Tell marketers who they are working with.' : 'Sellers see this when you apply.'}>
       <form onSubmit={submit} className="flex flex-col gap-5">
         <Field label="Your name"><Input autoFocus placeholder="e.g. Ada Okafor" value={f.name} onChange={set('name')} /></Field>
         {seller ? (!a.me?.company && <>
