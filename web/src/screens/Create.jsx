@@ -1,52 +1,54 @@
 import { useState } from 'react';
 import { useStore } from '../lib/store.jsx';
-import { go, back, useRoute } from '../lib/router.js';
+import { go, useRoute } from '../lib/router.js';
 import { CATS, TYPES, SYM, FEE, money, artFor, prodOf } from '../lib/data.js';
-import { ART } from '../lib/art.js';
-import { Page, Heading, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Ic, ProductArt, Art, cx } from '../ui/index.jsx';
+import { Page, PageTitle, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Select, Radio, Ic, ProductArt, Art, Sheet, cx } from '../ui/index.jsx';
 
 const STEPS = ['Type', 'Product', 'Details', 'Budget', 'Review'];
 const FIELDS = { percent: ['Commission', null, '%', 15], cookie_days: ['Attribution window', null, 'days', 30], rate_cents: ['Rate', 'cur', null, 0.05], per: ['Paid per'], share_percent: ['Your share', null, '%', 10], min_contract_cents: ['Minimum contract', 'cur', null, 20000] };
+const CUR_NAME = { USD: 'US dollar', EUR: 'Euro', GBP: 'British pound', NGN: 'Nigerian naira', GHS: 'Ghanaian cedi', KES: 'Kenyan shilling', ZAR: 'South African rand' };
 const newP = (pid) => ({ step: pid ? 3 : 1, type: 'commission', pid: pid || null, newProd: false, np: { name: '', category: 'software', desc: '', img: null, video: null, sample: false }, title: '', desc: '', terms: {}, minf: 1000, countries: [], verified: false, cur: 'USD', budget: '', cap: '', nocap: false });
 const tv = (P, k) => P.terms[k] ?? FIELDS[k]?.[3] ?? (k === 'per' ? 'click' : '');
-const termsOf = (P) => Object.fromEntries(Object.keys(TYPES[P.type].fields.reduce((o, f) => ({ ...o, [f[0]]: 1 }), {})).map(k => [k, k.endsWith('_cents') ? Math.round(+tv(P, k) * 100) : k === 'per' ? tv(P, k) : +tv(P, k)]));
+const termsOf = (P) => Object.fromEntries(TYPES[P.type].fields.map(([k]) => [k, k.endsWith('_cents') ? Math.round(+tv(P, k) * 100) : k === 'per' ? tv(P, k) : +tv(P, k)]));
 const bC = (P) => P.nocap ? null : Math.round((+P.budget || 0) * 100);
 const cC = (P) => P.nocap || !P.cap ? null : Math.round((+P.cap || 0) * 100);
 
 function Stepper({ st }) {
-  return (
-    <>
-      <ol className="mb-8 hidden items-center md:flex">{STEPS.map((l, i) => { const n = i + 1, done = n < st, cur = n === st; return (
-        <li key={l} className={cx('flex items-center gap-3 text-sm font-semibold', i < 4 && 'flex-1', cur || done ? 'text-army' : 'text-ink-soft')}>
-          <span className={cx('grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold', cur ? 'bg-army text-white' : done ? 'bg-sage text-army' : 'bg-cream-100')}>{done ? '✓' : n}</span>{l}
-          {i < 4 && <span className={cx('mx-2 h-0.5 flex-1 rounded-full', done ? 'bg-sage' : 'bg-cream-100')} />}
-        </li>); })}</ol>
-      <div className="mb-6 md:hidden"><div className="mb-2 text-xs font-semibold text-ink-soft">Step {st} of 5 · {STEPS[st - 1]}</div><div className="h-1.5 overflow-hidden rounded-full bg-cream-100"><i className="block h-full rounded-full bg-army transition-all" style={{ width: st * 20 + '%' }} /></div></div>
-    </>
-  );
+  return (<>
+    <ol className="hidden h-14 items-center sm:flex">{STEPS.map((l, i) => { const n = i + 1, done = n < st, cur = n === st; return (
+      <li key={l} className={cx('flex items-center gap-2.5 text-small font-semibold', i < 4 && 'flex-1', cur ? 'text-ink' : done ? 'text-ink' : 'text-ink-faint')}>
+        <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-caption font-bold', cur ? 'bg-army text-white' : done ? 'bg-sage text-army' : 'bg-cream-100 text-ink-faint')}>{done ? <Ic.Check width="14" height="14" /> : n}</span>{l}
+        {i < 4 && <span className={cx('mx-3 h-px flex-1', done ? 'bg-sage-700/40' : 'bg-cream-200')} />}
+      </li>); })}</ol>
+    <div className="flex h-12 items-center gap-3 sm:hidden"><span className="text-small font-semibold">{STEPS[st - 1]}</span><span className="text-caption text-ink-faint">Step {st} of 5</span><div className="ml-auto flex gap-1">{STEPS.map((_, i) => <span key={i} className={cx('h-1.5 w-6 rounded-full', i < st ? 'bg-army' : 'bg-cream-200')} />)}</div></div>
+  </>);
 }
 
 function ProductForm({ P, set }) {
   const n = P.np, up = (k, v) => set({ np: { ...n, [k]: v } });
   const file = (e, k) => { const f = e.target.files[0]; if (!f) return; if (k === 'img') { const r = new FileReader(); r.onload = () => set({ np: { ...n, img: r.result, sample: false } }); r.readAsDataURL(f); } else up('video', f.name); };
   return (
-    <Card title="New product" sub="Add a placement image so marketers can see what they are promoting.">
-      <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
+      <Card title="Product"><div className="flex flex-col gap-5">
         <Field label="Name"><Input placeholder="e.g. Pepper Tracker" value={n.name} onChange={e => up('name', e.target.value)} /></Field>
-        <Field label="Category"><div className="grid grid-cols-2 gap-3 md:grid-cols-4">{Object.entries(CATS).map(([k, l]) => <button key={k} type="button" onClick={() => up('category', k)} className={cx('flex h-24 flex-col items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition', n.category === k ? 'bg-sage-100 ring-2 ring-army' : 'bg-cream-50 hover:bg-cream-100')}><Art k={artFor(k)} className="h-9 w-12 [&>svg]:h-full [&>svg]:w-full" />{l}</button>)}</div></Field>
-        <Field label="Description"><Textarea placeholder="What is it, and who is it for?" value={n.desc} onChange={e => up('desc', e.target.value)} /></Field>
-        <Field label="Placement image" help="PNG, JPEG, WebP or GIF up to 5 MB.">
-          <div className="relative grid h-44 place-items-center overflow-hidden rounded-2xl bg-cream-50 text-sm text-ink-soft ring-1 ring-inset ring-cream-200">
-            {n.img ? <img src={n.img} alt="" className="h-full w-full object-cover" /> : n.sample ? <ProductArt p={{ category: n.category, art: artFor(n.category) }} className="h-full w-full" /> : <div className="flex flex-col items-center gap-2"><Ic.Up /><span>Add a screenshot, product photo or cover</span></div>}
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="absolute inset-0 cursor-pointer opacity-0" onChange={e => file(e, 'img')} />
-          </div>
-          <button type="button" className="self-start text-sm font-semibold underline" onClick={() => up('sample', true)}>Use a sample</button>
-        </Field>
-        <Field label="Demo video (optional)" help="MP4, MOV or WebM up to 30 MB.">
-          <div className="relative flex h-14 items-center justify-center gap-2 rounded-xl bg-cream-50 text-sm text-ink-soft ring-1 ring-inset ring-cream-200">{n.video ? <><Ic.Play width="16" height="16" />{n.video}</> : <><Ic.Up width="18" height="18" />Add a demo video</>}<input type="file" accept="video/mp4,video/quicktime,video/webm" className="absolute inset-0 cursor-pointer opacity-0" onChange={e => file(e, 'video')} /></div>
-        </Field>
-      </div>
-    </Card>
+        <Field label="Category"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{Object.entries(CATS).map(([k, l]) => <button key={k} type="button" onClick={() => up('category', k)} className={cx('flex h-[88px] flex-col items-center justify-center gap-2 rounded-2xl text-small font-semibold ring-1 ring-inset transition', n.category === k ? 'bg-sage-50 ring-2 ring-army' : 'bg-white ring-cream-300 hover:ring-army/40')}><Art k={artFor(k)} className="h-8 w-11 [&>svg]:h-full [&>svg]:w-full" />{l}</button>)}</div></Field>
+        <Field label="Description" aside={<span className="text-caption text-ink-faint">{n.desc.length}/280</span>}><Textarea maxLength={280} placeholder="What is it, and who is it for?" value={n.desc} onChange={e => up('desc', e.target.value)} /></Field>
+      </div></Card>
+      <Card title="Media" sub="Marketers decide from the image, so make it count.">
+        <div className="flex flex-col gap-5">
+          <Field label="Placement image" help="PNG, JPEG or WebP up to 5 MB. 4:3 works best.">
+            <label className={cx('relative grid aspect-[16/9] cursor-pointer place-items-center overflow-hidden rounded-2xl transition sm:aspect-[21/9]', n.img || n.sample ? '' : 'border-2 border-dashed border-cream-300 bg-cream-50 hover:border-army/40')}>
+              {n.img ? <img src={n.img} alt="" className="h-full w-full object-cover" /> : n.sample ? <ProductArt p={{ category: n.category, art: artFor(n.category) }} fit="70%" className="h-full w-full" /> : <span className="flex flex-col items-center gap-2 text-small text-ink-soft"><span className="grid h-11 w-11 place-items-center rounded-full bg-white shadow-card text-army"><Ic.Image width="20" height="20" /></span><span><b className="text-ink">Upload an image</b> or drag it here</span></span>}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => file(e, 'img')} />
+            </label>
+            {!n.img && <button type="button" className="self-start text-small font-semibold text-sage-700 hover:underline" onClick={() => up('sample', true)}>Use a sample image</button>}
+          </Field>
+          <Field label="Demo video" aside={<span className="text-caption text-ink-faint">Optional</span>}>
+            <label className="flex h-14 cursor-pointer items-center gap-3 rounded-xl px-4 ring-1 ring-inset ring-cream-300 transition hover:ring-army/40"><span className="grid h-8 w-8 place-items-center rounded-full bg-cream-100 text-army">{n.video ? <Ic.Play width="12" height="12" /> : <Ic.Up width="16" height="16" />}</span><span className="flex-1 text-small">{n.video || <span className="text-ink-soft">MP4, MOV or WebM up to 30 MB</span>}</span><span className="text-small font-semibold">{n.video ? 'Replace' : 'Choose'}</span><input type="file" accept="video/mp4,video/quicktime,video/webm" className="sr-only" onChange={e => file(e, 'video')} /></label>
+          </Field>
+        </div>
+      </Card>
+    </div>
   );
 }
 
@@ -54,87 +56,102 @@ function Preview({ P, p }) {
   const T = TYPES[P.type], t = termsOf(P), b = bC(P);
   return (
     <Card>
-      <div className="mb-3 text-xs font-bold uppercase tracking-wider text-ink-soft">Live preview</div>
-      {p ? <ProductArt p={p} className="mb-4 aspect-[16/10] w-full rounded-2xl" /> : <div className="mb-4 grid aspect-[16/10] place-items-center rounded-2xl bg-cream-50 px-6 text-center text-sm text-ink-soft">Pick a product and its placement image shows here.</div>}
+      <div className="mb-4 flex items-center justify-between"><span className="text-caption font-semibold uppercase tracking-wider text-ink-faint">Feed preview</span><span className="h-2 w-2 rounded-full bg-sage-700" /></div>
+      {p ? <ProductArt p={p} fit="72%" className="mb-4 aspect-[4/3] w-full rounded-2xl" />
+        : <div className="mb-4 flex aspect-[4/3] flex-col justify-end gap-2 rounded-2xl bg-cream-50 p-4"><span className="mb-auto grid h-10 w-10 place-items-center rounded-xl bg-white text-ink-faint shadow-card"><Ic.Image width="20" height="20" /></span><span className="h-2.5 w-2/3 rounded-full bg-cream-200" /><span className="h-2.5 w-1/3 rounded-full bg-cream-200" /></div>}
       <div className="font-semibold leading-5">{P.title || (p ? 'Promote ' + p.name : 'Your offer title')}</div>
-      <div className="mb-4 mt-1 font-serif text-3xl">{T.reward(t)}<span className="ml-2 font-sans text-sm font-semibold text-ink-soft">{T.sub(t)}</span></div>
-      <Rows rows={[['Budget', b ? money(b, P.cur) : P.nocap ? 'None' : 'Not set'], ['Max per marketer', cC(P) ? money(cC(P), P.cur) : 'None'], ['Who can apply', (+P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone') + (P.verified ? ' · verified' : '')]]} />
+      <div className="mb-4 mt-2 flex items-baseline gap-2"><span className="font-serif text-[32px] leading-none">{T.reward(t)}</span><span className="text-small text-ink-soft">{T.sub(t)}</span></div>
+      <Rows rows={[['Budget', b ? money(b, P.cur) : P.nocap ? 'Open' : '—'], ['Max per marketer', cC(P) ? money(cC(P), P.cur) : '—'], ['Who can apply', +P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone']]} />
     </Card>
   );
 }
+
+const OptionCard = ({ on, onClick, title, text, icon }) => (
+  <button onClick={onClick} className={cx('flex min-h-[84px] items-center gap-4 rounded-3xl bg-white p-5 text-left shadow-card transition hover:shadow-lift', on && 'ring-2 ring-army')}>
+    {icon}<span className="min-w-0 flex-1"><span className="block text-subhead font-semibold">{title}</span><span className="text-small text-ink-soft">{text}</span></span>{on !== undefined ? <Radio on={on} /> : <Ic.Chev width="20" height="20" className="text-ink-faint" />}
+  </button>
+);
+const TypeIcon = { commission: Ic.Wallet, attention: Ic.Share, introduction: Ic.Me };
 
 export default function Create() {
   const { S, a } = useStore();
   const r = useRoute();
   const [mode, setMode] = useState(r.a ? 'offer' : null);
   const [P, setP] = useState(() => newP(r.a));
-  const set = (x) => setP(prev => ({ ...prev, ...x }));
+  const [prev, setPrev] = useState(false);
+  const set = (x) => setP(q => ({ ...q, ...x }));
   const p = P.pid ? prodOf(S, P.pid) : null, T = TYPES[P.type], st = P.step;
   const mineProducts = S.products.filter(x => x.owner === 'u-kofi' || x.mine);
 
   if (!mode) return (
-    <Page title="Create" crumb="New">
-      <Heading h="What do you want to add?" p="Offers are what marketers see in the feed." />
-      <div className="flex flex-col gap-4">{[['offer', 'Post an offer', 'Pick a type, a product and a budget'], ['product', 'Add a product', 'Software, digital, physical or a service'], ['social', 'Add a social', 'Get verified to apply for offers']].map(([k, h, s]) => (
-        <button key={k} onClick={() => { setMode(k); setP(newP()); }} className="flex min-h-[88px] items-center gap-4 rounded-3xl bg-white p-5 text-left shadow-card transition hover:shadow-pop"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-sage-100 text-army"><Ic.Plus /></span><span className="flex-1"><span className="block text-[17px] font-semibold">{h}</span><span className="text-sm text-ink-soft">{s}</span></span><Ic.Chev className="text-ink-soft" /></button>))}</div>
+    <Page crumb="Create" width="narrow">
+      <PageTitle h="What do you want to add?" p="Offers are what marketers see in the feed. Each offer is for one of your products." />
+      <div className="flex flex-col gap-4">
+        <OptionCard onClick={() => { setMode('offer'); setP(newP()); }} title="Post an offer" text="Pick a type, a product and a budget" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-army text-sage"><Ic.Tag /></span>} />
+        <OptionCard onClick={() => { setMode('product'); setP(newP()); }} title="Add a product" text="Software, digital, physical or a service" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-100 text-army"><Ic.Box /></span>} />
+        <OptionCard onClick={() => setMode('social')} title="Add a social" text="Connect an account to qualify for offers" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cream-100 text-army"><Ic.At /></span>} />
+      </div>
     </Page>
   );
 
+  const saveProduct = () => { const n = P.np; if (!n.name.trim()) { a.toast('Give the product a name'); return null; } if (!n.img && !n.sample) { a.toast('Add a placement image'); return null; } return a.addProduct(n); };
   if (mode === 'product') return (
-    <Page title="Add a product" crumb="Create" onBack={() => setMode(null)}>
-      <Heading h="Add a product" p="Marketers decide from the image, so make it count." />
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button onClick={() => saveProduct() && go('me')}>Save product</Button></>}>
+      <PageTitle h="Add a product" p="Add it once, then post as many offers for it as you like." />
       <ProductForm P={P} set={set} />
-      <div className="mt-6 flex justify-end"><Button size="lg" onClick={() => { if (!P.np.name.trim()) return a.toast('Give the product a name'); if (!P.np.img && !P.np.sample) return a.toast('Add a placement image'); a.addProduct(P.np); go('me'); }}>Save product</Button></div>
     </Page>
   );
   if (mode === 'social') return (
-    <Page title="Add a social" crumb="Create" onBack={() => setMode(null)}>
-      <Heading h="Add a social" p="An admin verifies each social before it counts." />
-      <Card><div className="flex flex-col gap-5"><Field label="Platform"><Pills value="Instagram" onChange={() => {}} items={['Instagram', 'TikTok', 'YouTube', 'Newsletter'].map(x => [x, x])} /></Field><Field label="Handle or link"><Input placeholder="@yourhandle" /></Field></div></Card>
-      <div className="mt-6 flex justify-end"><Button size="lg" onClick={() => { a.toast('Saved'); setMode(null); }}>Save</Button></div>
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button onClick={() => { a.toast('Sent for verification'); setMode(null); }}>Submit for review</Button></>}>
+      <PageTitle h="Add a social" p="An admin checks each account before it counts toward offer requirements." />
+      <Card><div className="flex flex-col gap-5"><Field label="Platform"><Pills value="Instagram" onChange={() => {}} items={['Instagram', 'TikTok', 'YouTube', 'Newsletter'].map(x => [x, x])} /></Field><Field label="Handle or link"><Input pre="@" placeholder="yourhandle" /></Field></div></Card>
     </Page>
   );
 
   const b = bC(P), fee = b ? Math.round(b * FEE / 10000) : 0, t = termsOf(P);
   const next = () => {
-    if (st === 2 && P.newProd) { const n = P.np; if (!n.name.trim()) return a.toast('Give the product a name'); if (!n.img && !n.sample) return a.toast('Add a placement image'); const id = a.addProduct(n); return set({ pid: id, newProd: false }); }
+    if (st === 2 && P.newProd) { const id = saveProduct(); return id && set({ pid: id, newProd: false }); }
     if (st === 2 && !P.pid) return a.toast('Pick a product first');
     if (st === 4 && !P.nocap) { if (!(+P.budget >= 1)) return a.toast('Enter a budget, or turn it off'); if (P.cap && +P.cap > +P.budget) return a.toast('The cap cannot be more than the budget'); }
     if (st < 5) return set({ step: st + 1 });
-    const id = a.addOffer(P, p, t, b, cC(P)); go('feed');
+    a.addOffer(P, p, t, b, cC(P)); go('feed');
   };
-  const prev = () => { if (P.newProd) set({ newProd: false }); else if (st > 1) set({ step: st - 1 }); else setMode(null); };
-  const label = st === 5 ? (b ? 'Pay ' + money(b + fee, P.cur) + ' and publish' : 'Publish offer') : st === 2 && P.newProd ? 'Save product' : 'Continue';
+  const back_ = () => { if (P.newProd) set({ newProd: false }); else if (st > 1) set({ step: st - 1 }); else setMode(null); };
+  const label = st === 5 ? (b ? 'Pay ' + money(b + fee, P.cur) + ' & publish' : 'Publish offer') : st === 2 && P.newProd ? 'Save product' : 'Continue';
+  const titles = { 1: ['What kind of offer?', 'This decides how marketers get paid.'], 2: [P.newProd ? 'New product' : 'Which product?', P.newProd ? 'Add it once and reuse it for future offers.' : 'Marketers see its placement image first.'], 3: ['Offer details', T.name + ' offer for ' + (p ? p.name : 'your product')], 4: ['Budget', 'The total you will spend. Verified results draw it down.'], 5: ['Review and publish', b ? 'Pay to fund the budget. Your offer goes live once it is received.' : 'No payment needed. Your offer goes live right away.'] }[st];
 
   return (
-    <Page title="Post an offer" crumb="Create" onBack={prev} wide>
-      <Stepper st={st} />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <Page crumb="Create" onBack={back_} sub={<Stepper st={st} />} barDesktop
+      bar={<><Button tone="secondary" onClick={back_}>Back</Button>{st < 5 && !P.newProd && <Button tone="ghost" className="lg:hidden" onClick={() => setPrev(true)}>Preview</Button>}<span className="flex-1" /><Button onClick={next}>{label}</Button></>}>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
-          {st === 1 && (<><Heading h="What kind of offer?" p="This decides how marketers get paid." />
-            <div className="flex flex-col gap-4">{Object.entries(TYPES).map(([k, v]) => <button key={k} onClick={() => set({ type: k, terms: {} })} className={cx('flex min-h-[88px] items-center gap-4 rounded-3xl bg-white p-5 text-left shadow-card transition', P.type === k && 'ring-2 ring-army')}><span className="flex-1"><span className="block text-[17px] font-semibold">{v.name}</span><span className="text-sm text-ink-soft">{v.blurb}</span></span><span className={cx('grid h-7 w-7 place-items-center rounded-full', P.type === k ? 'bg-army text-white' : 'bg-cream-100')}>{P.type === k && <Ic.Check width="16" height="16" />}</span></button>)}</div></>)}
-          {st === 2 && (<><Heading h="Which product?" p="Marketers see its placement image first." />
-            {P.newProd ? <ProductForm P={P} set={set} /> : (
-              <Card><div className="grid grid-cols-2 gap-4 md:grid-cols-3">{mineProducts.map(x => <button key={x.id} onClick={() => set({ pid: x.id })} className={cx('relative overflow-hidden rounded-2xl bg-cream-50 text-left transition', P.pid === x.id && 'ring-2 ring-army')}><ProductArt p={x} className="aspect-[4/3] w-full" /><div className="p-3"><div className="line-clamp-1 text-sm font-semibold">{x.name}</div><div className="text-xs text-ink-soft">{CATS[x.category]}{x.video ? ' · demo' : ''}</div></div>{P.pid === x.id && <span className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-army text-white"><Ic.Check width="16" height="16" /></span>}</button>)}
-                <button onClick={() => set({ newProd: true })} className="grid min-h-[170px] place-items-center rounded-2xl bg-cream-50 text-sm font-semibold text-ink-soft hover:bg-cream-100"><span className="flex flex-col items-center gap-2"><span className="grid h-11 w-11 place-items-center rounded-full bg-white shadow-card text-army"><Ic.Plus /></span>Add a new product</span></button></div></Card>)}</>)}
-          {st === 3 && (<><Heading h="Offer details" p={T.name + ' offer for ' + (p ? p.name : 'your product')} />
-            <Card title="The basics"><div className="flex flex-col gap-5"><Field label="Title"><Input value={P.title} onChange={e => set({ title: e.target.value })} placeholder={'Promote ' + (p ? p.name : 'my product')} /></Field><Field label="What should marketers do?"><Textarea value={P.desc} onChange={e => set({ desc: e.target.value })} placeholder="Where to share it, what to say, what to avoid" /></Field></div></Card>
-            <Card title="Payout terms" sub="What a marketer earns."><div className="grid gap-5 md:grid-cols-2">{T.fields.map(([k]) => k === 'per' ? <Field key={k} label="Paid per"><Segmented value={tv(P, 'per')} onChange={v => set({ terms: { ...P.terms, per: v } })} items={['click', 'view', 'post'].map(x => [x, x])} /></Field> : <Field key={k} label={FIELDS[k][0]}><Input type="number" min="0" step="any" pre={FIELDS[k][1] ? SYM[P.cur] : null} suf={FIELDS[k][2]} value={tv(P, k)} onChange={e => set({ terms: { ...P.terms, [k]: e.target.value } })} /></Field>)}</div></Card>
-            <Card title="Who can apply" sub="Leave open to get more applications."><div className="flex flex-col gap-5"><div className="grid gap-5 md:grid-cols-2"><Field label="Minimum followers"><Input type="number" min="0" value={P.minf} onChange={e => set({ minf: e.target.value })} /></Field><Field label="Countries" help="None selected means anywhere."><Pills multi value={P.countries} onChange={c => set({ countries: P.countries.includes(c) ? P.countries.filter(x => x !== c) : [...P.countries, c] })} items={[['NG', 'Nigeria'], ['GH', 'Ghana'], ['KE', 'Kenya'], ['ZA', 'S. Africa']]} /></Field></div><Switch on={P.verified} onChange={v => set({ verified: v })} label="Verified marketers only" sub="Only marketers an admin has verified can apply." /></div></Card></>)}
-          {st === 4 && (<><Heading h="Budget" p="What you will spend in total. Results draw it down as they are verified." />
-            <Card title="Spend"><div className="flex flex-col gap-5"><Switch on={!P.nocap} onChange={v => set({ nocap: !v })} label="Set a budget" sub="Off means you settle payouts directly with each marketer." />
-              {!P.nocap && (<><Field label="Currency"><Pills value={P.cur} onChange={v => set({ cur: v })} items={Object.keys(SYM).map(c => [c, c])} /></Field>
-                <div className="grid gap-5 md:grid-cols-2"><Field label="Total budget"><Input type="number" min="1" pre={SYM[P.cur]} suf={P.cur} placeholder="1,000" value={P.budget} onChange={e => set({ budget: e.target.value })} /></Field><Field label="Max per marketer" help="Stops one marketer taking it all."><Input type="number" min="1" pre={SYM[P.cur]} suf={P.cur} placeholder="Optional" value={P.cap} onChange={e => set({ cap: e.target.value })} /></Field></div></>)}</div></Card>
-            <Card title="What it costs">{b ? <><Rows rows={[['Budget', money(b, P.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, P.cur)], ['Total to pay', <span className="text-lg">{money(b + fee, P.cur)}</span>]]} /><p className="mt-3 text-xs text-ink-soft">{P.type === 'attention' ? 'Pays for about ' + Math.floor(b / Math.max(1, t.rate_cents)).toLocaleString() + ' ' + t.per + 's.' : P.type === 'commission' ? 'At ' + t.percent + '%, this covers ' + money(Math.round(b / (t.percent / 100)), P.cur) + ' in sales.' : 'Covers ' + money(b, P.cur) + ' in shares of signed contracts.'}</p></> : <p className="text-sm text-ink-soft">{P.nocap ? 'No budget, so no payment is needed to go live.' : 'Enter a budget to see what it costs.'}</p>}</Card></>)}
-          {st === 5 && (<><Heading h="Review and publish" p={b ? 'Pay to put the budget in. Your offer goes live once it is received.' : 'No payment needed. Your offer goes live right away.'} />
-            <Card title="Offer"><Rows rows={[['Title', P.title || 'Promote ' + p.name], ['Product', p.name], ['Type', T.name], ['Reward', T.reward(t) + ' ' + T.sub(t)], ['Who can apply', (+P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone') + (P.countries.length ? ' · ' + P.countries.join(', ') : '') + (P.verified ? ' · verified' : '')]]} /></Card>
-            <Card title="Payment">{b ? <Rows rows={[['Budget', money(b, P.cur)], ...(cC(P) ? [['Max per marketer', money(cC(P), P.cur)]] : []), ['Listing fee (' + FEE / 100 + '%)', money(fee, P.cur)], ['Total to pay', <span className="text-lg">{money(b + fee, P.cur)}</span>]]} /> : <Rows rows={[['Budget', 'None']]} />}</Card></>)}
-          <div className="sticky bottom-0 -mx-4 mt-2 flex items-center justify-between gap-3 bg-gradient-to-t from-cream-50 via-cream-50 to-transparent px-4 pb-4 pt-8 md:static md:mx-0 md:bg-none md:px-0 md:pb-0 md:pt-2">
-            <Button tone="soft" onClick={prev}>Back</Button><Button size="lg" onClick={next}>{label}</Button>
-          </div>
+          <PageTitle h={titles[0]} p={titles[1]} className="!mb-2" />
+          {st === 1 && <div className="flex flex-col gap-4">{Object.entries(TYPES).map(([k, v]) => { const I = TypeIcon[k]; return <OptionCard key={k} on={P.type === k} onClick={() => set({ type: k, terms: {} })} title={v.name} text={v.blurb} icon={<span className={cx('grid h-12 w-12 shrink-0 place-items-center rounded-2xl transition', P.type === k ? 'bg-army text-sage' : 'bg-cream-100 text-army')}><I /></span>} />; })}</div>}
+          {st === 2 && (P.newProd ? <ProductForm P={P} set={set} /> : (
+            <div className="grid auto-rows-fr grid-cols-2 gap-4 sm:grid-cols-3">
+              {mineProducts.map(x => <button key={x.id} onClick={() => set({ pid: x.id })} className={cx('relative flex flex-col overflow-hidden rounded-3xl bg-white text-left shadow-card transition hover:shadow-lift', P.pid === x.id && 'ring-2 ring-army')}><ProductArt p={x} fit="72%" className="aspect-[4/3] w-full" /><div className="flex flex-1 flex-col p-4"><div className="line-clamp-2 text-small font-semibold leading-5">{x.name}</div><div className="mt-1 text-caption text-ink-soft">{CATS[x.category]}{x.video ? ' · demo' : ''}</div></div>{P.pid === x.id && <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-white text-army shadow-lift"><Ic.Check width="16" height="16" /></span>}</button>)}
+              <button onClick={() => set({ newProd: true })} className="flex flex-col overflow-hidden rounded-3xl border-2 border-dashed border-cream-300 text-left transition hover:border-army/40 hover:bg-white"><span className="grid aspect-[4/3] w-full place-items-center"><span className="grid h-11 w-11 place-items-center rounded-full bg-white text-army shadow-card"><Ic.Plus width="20" height="20" /></span></span><span className="p-4"><span className="block text-small font-semibold">New product</span><span className="text-caption text-ink-soft">Add one now</span></span></button>
+            </div>))}
+          {st === 3 && (<>
+            <Card title="The basics"><div className="flex flex-col gap-5"><Field label="Title"><Input value={P.title} onChange={e => set({ title: e.target.value })} placeholder={'Promote ' + (p ? p.name : 'my product')} /></Field><Field label="What should marketers do?" help="Where to share it, what to say, what to avoid."><Textarea value={P.desc} onChange={e => set({ desc: e.target.value })} placeholder="e.g. Share your link in food groups and stories. Please don't post in unrelated groups." /></Field></div></Card>
+            <Card title="Payout" sub="What a marketer earns."><div className="grid gap-5 sm:grid-cols-2">{T.fields.map(([k]) => k === 'per' ? <Field key={k} label="Paid per"><Segmented value={tv(P, 'per')} onChange={v => set({ terms: { ...P.terms, per: v } })} items={['click', 'view', 'post'].map(x => [x, x])} /></Field> : <Field key={k} label={FIELDS[k][0]}><Input type="number" min="0" step="any" pre={FIELDS[k][1] ? SYM[P.cur].trim() : null} suf={FIELDS[k][2]} value={tv(P, k)} onChange={e => set({ terms: { ...P.terms, [k]: e.target.value } })} /></Field>)}</div></Card>
+            <Card title="Who can apply" sub="Fewer rules means more applications."><div className="flex flex-col gap-5"><div className="grid gap-5 sm:grid-cols-2"><Field label="Minimum followers"><Input type="number" min="0" value={P.minf} onChange={e => set({ minf: e.target.value })} /></Field></div><Field label="Countries" help="Leave all off to accept marketers anywhere."><Pills multi value={P.countries} onChange={c => set({ countries: P.countries.includes(c) ? P.countries.filter(x => x !== c) : [...P.countries, c] })} items={[['NG', 'Nigeria'], ['GH', 'Ghana'], ['KE', 'Kenya'], ['ZA', 'South Africa']]} /></Field><div className="h-px bg-cream-100" /><Switch on={P.verified} onChange={v => set({ verified: v })} label="Verified marketers only" sub="Only accounts an admin has checked can apply." /></div></Card>
+          </>)}
+          {st === 4 && (<>
+            <Card><div className="flex flex-col gap-5"><Switch on={!P.nocap} onChange={v => set({ nocap: !v })} label="Set a budget" sub="Off means you pay each marketer directly." />
+              {!P.nocap && (<><div className="h-px bg-cream-100" /><div className="grid gap-5 sm:grid-cols-2"><Field label="Currency"><Select value={P.cur} onChange={v => set({ cur: v })} options={Object.keys(SYM).map(c => [c, c + ' · ' + CUR_NAME[c]])} /></Field><Field label="Total budget"><Input type="number" min="1" pre={SYM[P.cur].trim()} placeholder="1,000" value={P.budget} onChange={e => set({ budget: e.target.value })} /></Field></div>
+                <div className="grid gap-5 sm:grid-cols-2"><Field label="Max per marketer" aside={<span className="text-caption text-ink-faint">Optional</span>} help="Stops one marketer using it all."><Input type="number" min="1" pre={SYM[P.cur].trim()} placeholder="No limit" value={P.cap} onChange={e => set({ cap: e.target.value })} /></Field></div></>)}</div></Card>
+            {!P.nocap && <Card title="What it costs"><Rows rows={[['Budget', b ? money(b, P.cur) : '—'], ['Listing fee (' + FEE / 100 + '%)', b ? money(fee, P.cur) : '—'], ['Total to pay', <span className="text-heading">{b ? money(b + fee, P.cur) : '—'}</span>]]} />{b ? <p className="mt-4 rounded-2xl bg-sage-50 p-4 text-small text-sage-700">{P.type === 'attention' ? 'Pays for about ' + Math.floor(b / Math.max(1, t.rate_cents)).toLocaleString() + ' ' + t.per + 's.' : P.type === 'commission' ? 'At ' + t.percent + '% commission, this covers ' + money(Math.round(b / (t.percent / 100)), P.cur) + ' in sales.' : 'Covers ' + money(b, P.cur) + ' in shares of signed contracts.'}</p> : null}</Card>}
+          </>)}
+          {st === 5 && (<>
+            <div className="lg:hidden"><Preview P={P} p={p} /></div>
+            <Card title="Offer" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}><Rows rows={[['Title', P.title || 'Promote ' + p.name], ['Product', p.name], ['Type', T.name], ['Reward', T.reward(t) + ' ' + T.sub(t).split(' · ')[0]], ['Who can apply', (+P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone') + (P.countries.length ? ' · ' + P.countries.join(', ') : '') + (P.verified ? ' · verified' : '')]]} /></Card>
+            <Card title="Payment" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 4 })}>Edit</button>}>{b ? <Rows rows={[['Budget', money(b, P.cur)], cC(P) && ['Max per marketer', money(cC(P), P.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, P.cur)], ['Total to pay', <span className="text-heading">{money(b + fee, P.cur)}</span>]]} /> : <Rows rows={[['Budget', 'Open, paid directly']]} />}</Card>
+          </>)}
         </div>
         <aside className="hidden lg:block"><div className="sticky top-0"><Preview P={P} p={p} /></div></aside>
       </div>
+      <Sheet open={prev} onClose={() => setPrev(false)} title="Feed preview"><div className="-mx-6 -mt-2 [&>section]:shadow-none"><Preview P={P} p={p} /></div></Sheet>
     </Page>
   );
 }

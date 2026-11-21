@@ -2,13 +2,21 @@ import { useState } from 'react';
 import { useStore } from '../lib/store.jsx';
 import { go } from '../lib/router.js';
 import { CATS, TYPES, money, bgFor, prodOf, elig } from '../lib/data.js';
-import { Ic, Chip, Avatar, Art, cx } from '../ui/index.jsx';
+import { Ic, Chip, Avatar, Art, Button, Verified, LogoMark, cx } from '../ui/index.jsx';
 
-function RailButton({ label, on, disabled, onClick, children }) {
+const TONE = {
+  apply: 'bg-[#6E9A2F] text-white shadow-[0_8px_20px_-6px_rgb(110_154_47/.7)]',
+  applied: 'bg-sage text-army shadow-[0_8px_20px_-6px_rgb(203_214_168/.6)]',
+  visit: 'bg-[#2F6FA3] text-white shadow-[0_8px_20px_-6px_rgb(47_111_163/.7)]',
+  details: 'bg-[#E0B06A] text-army shadow-[0_8px_20px_-6px_rgb(224_176_106/.6)]',
+  share: 'bg-white text-army shadow-[0_8px_20px_-6px_rgb(0_0_0/.45)]',
+  manage: 'bg-army text-sage ring-1 ring-sage/40 shadow-[0_8px_20px_-6px_rgb(0_0_0/.5)]',
+};
+function RailButton({ label, tone, disabled, onClick, children }) {
   return (
-    <button onClick={(e) => { e.stopPropagation(); onClick(); }} disabled={disabled} className="group flex w-14 flex-col items-center gap-1.5 disabled:opacity-40" aria-label={label}>
-      <span className={cx('grid h-12 w-12 place-items-center rounded-full transition group-active:scale-95', on ? 'bg-sage text-army' : 'bg-black/30 text-white backdrop-blur')}>{children}</span>
-      <span className={cx('text-[11px] font-semibold', on ? 'text-sage' : 'text-white/80')}>{label}</span>
+    <button onClick={(e) => { e.stopPropagation(); onClick(); }} disabled={disabled} className="group flex flex-col items-center gap-1.5 disabled:opacity-40" aria-label={label}>
+      <span className={cx('grid h-[52px] w-[52px] place-items-center rounded-full transition group-hover:scale-105 group-active:scale-95', TONE[tone])}>{children}</span>
+      <span className="text-[11px] font-semibold text-white [text-shadow:0_1px_3px_rgb(0_0_0/.5)]">{label}</span>
     </button>
   );
 }
@@ -16,37 +24,44 @@ function RailButton({ label, on, disabled, onClick, children }) {
 function Slide({ o }) {
   const { S, a } = useStore();
   const p = prodOf(S, o.pid), T = TYPES[o.type], mine = a.isMine(o), e = elig(o);
-  const applied = !!a.myInterest(o) || !!a.dealFor(o);
+  const deal = a.dealFor(o), applied = !!a.myInterest(o) || !!deal;
   const left = o.fin.budget == null ? null : Math.max(0, o.fin.budget - o.fin.spent);
-  const visit = () => { if (p.url) { try { window.open(p.url, '_blank', 'noopener'); } catch {} a.toast('Opening ' + p.url.replace('https://', '')); } else a.toast('This product has no link yet'); };
+  const visit = () => { if (p.url) { try { window.open(p.url, '_blank', 'noopener'); } catch {} } a.toast(p.url ? 'Opening ' + p.url.replace('https://', '') : 'No website yet'); };
+  const apply = () => applied ? (deal ? go('chats-' + deal.id) : a.withdraw(o)) : a.apply(o);
+  const miss = e.res.filter(x => !x.ok);
   return (
     <article onClick={() => go('offer-' + o.id)} className="relative h-full w-full cursor-pointer overflow-hidden text-white" style={{ background: bgFor(p) }}>
-      <div className="absolute inset-0 opacity-[.18] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:22px_22px]" />
-      <div className="relative mx-auto flex h-full w-full max-w-[560px] flex-col px-5 pb-6 pt-24">
-        <div className="mb-2 text-center text-[11px] font-bold uppercase tracking-[.14em] text-white/60">{o.co} · {CATS[p.category]}</div>
-        <div className="flex min-h-0 flex-1 items-center justify-center pl-14">
-          {p.img ? <img src={p.img} alt="" className="max-h-[300px] rounded-3xl object-cover" /> : <Art k={p.art} className="h-full max-h-[300px] w-full max-w-[340px] [&>svg]:h-full [&>svg]:w-full" />}
+      <div className="absolute inset-0 opacity-[.12] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:22px_22px]" />
+      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 to-transparent lg:hidden" />
+      <div className="relative mx-auto flex h-full w-full max-w-[1120px] flex-col px-5 pb-6 pt-[72px] lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center lg:gap-14 lg:px-10 lg:pb-10 lg:pt-24">
+        {/* media + left rail */}
+        <div className="relative flex min-h-0 flex-1 items-center justify-center lg:h-full lg:max-h-[560px]">
+          
+          <div className="grid h-full max-h-[340px] w-full place-items-center lg:aspect-[4/3] lg:h-auto lg:max-h-none lg:rounded-[32px] lg:bg-black/15 lg:ring-1 lg:ring-inset lg:ring-white/10">
+            {p.img ? <img src={p.img} alt="" className="max-h-full rounded-3xl object-cover" /> : <Art k={p.art} className="h-full max-h-[300px] w-full max-w-[320px] lg:h-[72%] lg:max-h-none lg:max-w-[440px] [&>svg]:h-full [&>svg]:w-full" />}
+          </div>
         </div>
-        <div className="text-center">
-          <div className="font-serif text-[44px] leading-none">{T.reward(o.terms)}</div>
-          <div className="mt-1 text-sm text-white/70">{T.sub(o.terms)}</div>
-        </div>
-        <div className="mt-5 flex items-center gap-3"><Avatar name={o.co} size={36} tone="dark" /><div className="min-w-0 text-sm font-bold">{o.co}{o.coV ? ' ✓' : ''}</div></div>
-        <h2 className="mt-2 text-xl font-bold leading-6">{o.title}</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Chip tone="sage">{T.name}</Chip>
-          <Chip tone="glass">{left == null ? 'No cap' : money(left, o.fin.cur) + ' left'}</Chip>
-          {e.res.map(x => <Chip key={x.t} tone="glass">{x.ok ? '✓' : '✕'} {x.t}</Chip>)}
-        </div>
-        {/* action rail, left side, no counts */}
-        <div className="absolute left-3 top-1/2 flex -translate-y-1/2 flex-col gap-5">
-          <RailButton label="Visit" onClick={visit}><Ic.Visit /></RailButton>
-          {mine ? <RailButton label="Manage" onClick={() => go('offer-' + o.id)}><Ic.Check /></RailButton>
-            : <RailButton label={applied ? 'Applied' : 'Apply'} on={applied} disabled={!applied && !e.ok} onClick={() => applied ? a.dealFor(o) ? go('chats-' + a.dealFor(o).id) : a.withdraw(o) : a.apply(o)}><Ic.Check width="24" height="24" /></RailButton>}
-          {p.video && <RailButton label="Demo" onClick={() => go('product-' + p.id)}><Ic.Play /></RailButton>}
-          <RailButton label="Share" onClick={() => a.toast('Link copied')}><Ic.Share /></RailButton>
+        {/* info */}
+        <div className="relative mt-4 pr-[76px] lg:mt-0 lg:pr-0">
+          <div className="flex items-center gap-2.5"><Avatar name={o.co} size={32} ring /><span className="truncate text-small font-semibold">{o.co}</span>{o.coV && <Verified />}<span className="text-small text-white/50">· {CATS[p.category]}</span></div>
+          <h2 className="mt-3 text-[22px] font-semibold leading-7 lg:font-serif lg:text-title lg:font-normal">{o.title}</h2>
+          <div className="mt-3 flex items-baseline gap-2"><span className="font-serif text-[40px] leading-none lg:text-[56px]">{T.reward(o.terms)}</span><span className="text-small text-white/75">{T.sub(o.terms)}</span></div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Chip tone="sage">{T.name}</Chip>
+            <Chip tone="glass" icon={<Ic.Wallet width="14" height="14" />}>{left == null ? 'Open budget' : money(left, o.fin.cur) + ' left'}</Chip>
+            {!mine && (e.ok ? <Chip tone="glass" icon={<Ic.Check width="14" height="14" />}>You qualify</Chip> : <Chip tone="glass" className="!text-[#F6C9B6]" icon={<Ic.X width="14" height="14" />}>{miss[0].t}</Chip>)}
+          </div>
+          
         </div>
       </div>
+        {/* action stack: bottom right, colour-coded */}
+        <div className="absolute bottom-6 right-4 z-10 flex flex-col items-center gap-4 lg:bottom-10 lg:right-8" onClick={e => e.stopPropagation()}>
+          {mine ? <RailButton label="Manage" tone="manage" onClick={() => go('offer-' + o.id)}><Ic.Tag width="22" height="22" /></RailButton>
+            : <RailButton label={deal ? 'Chat' : applied ? 'Applied' : 'Apply'} tone={applied ? 'applied' : 'apply'} disabled={!applied && !e.ok} onClick={apply}>{deal ? <Ic.Chat width="22" height="22" /> : <Ic.Check width="24" height="24" />}</RailButton>}
+          <RailButton label="Visit" tone="visit" onClick={visit}><Ic.Visit width="22" height="22" /></RailButton>
+          <RailButton label="Details" tone="details" onClick={() => go('offer-' + o.id)}><Ic.Info width="22" height="22" /></RailButton>
+          <RailButton label="Share" tone="share" onClick={() => a.toast('Link copied')}><Ic.Share width="22" height="22" /></RailButton>
+        </div>
     </article>
   );
 }
@@ -58,8 +73,13 @@ export default function Feed() {
   const cats = [['all', 'For you'], ...Object.entries(CATS)];
   return (
     <div className="relative h-full bg-army-900">
-      <div className="no-scrollbar absolute inset-x-0 top-0 z-10 flex gap-6 overflow-x-auto bg-gradient-to-b from-black/50 to-transparent px-5 pb-6 pt-5">
-        {cats.map(([k, l]) => <button key={k} onClick={() => setFc(k)} className={cx('relative shrink-0 pb-2 text-[15px] font-bold transition', fc === k ? 'text-white' : 'text-white/55')}>{l}{fc === k && <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-sage" />}</button>)}
+      <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/45 to-transparent">
+        <div className="mx-auto flex max-w-[1120px] items-center gap-4 px-5 pb-6 pt-4 lg:px-10 lg:pt-6">
+          <span className="lg:hidden"><LogoMark size={30} /></span>
+          <div className="no-scrollbar fade-r flex min-w-0 flex-1 gap-1 overflow-x-auto lg:[mask-image:none]">
+            {cats.map(([k, l]) => <button key={k} onClick={() => setFc(k)} className={cx('h-9 shrink-0 rounded-full px-3.5 text-small font-semibold transition', fc === k ? 'bg-white text-army' : 'text-white/70 hover:text-white')}>{l}</button>)}
+          </div>
+        </div>
       </div>
       <div className="snap-feed no-scrollbar h-full overflow-y-auto">
         {list.length ? list.map(o => <div key={o.id} className="h-full"><Slide o={o} /></div>) : <div className="grid h-full place-items-center text-white/60">Nothing here yet</div>}

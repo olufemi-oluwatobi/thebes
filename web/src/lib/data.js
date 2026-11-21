@@ -14,6 +14,7 @@ export const PEOPLE={
  chidi:{name:'Chidi Eze',followers:2800,country:'NG',verified:true,socials:'Instagram @chidicooks · 2.8k'},
  mira:{name:'Mira Bello',followers:640,country:'GH',verified:false,socials:'TikTok @mirabites · 640'},
  zainab:{name:'Zainab Yusuf',followers:9100,country:'NG',verified:true,socials:'Instagram @zeeeats · 9.1k · YouTube Zee Kitchen · 4k'},
+ tola:{name:'Tola Adebayo',followers:5400,country:'NG',verified:true,socials:'TikTok @tolacooks · 5.4k'},
  'u-ada':{name:'Ada Okafor',followers:4200,country:'NG',verified:true,socials:'Instagram @ada.eats · 3.1k · YouTube Ada Eats Lagos · 1.1k'}
 };
 export const seed=()=>({role:'marketer',tab:'deals',dtab:'chat',fc:'all',from:'feed',pf:null,n:20,gal:{},
@@ -41,7 +42,10 @@ export const seed=()=>({role:'marketer',tab:'deals',dtab:'chat',fc:'all',from:'f
  ],
  deals:[
   {id:'d1',offer:'o4',marketer:'u-ada',status:'active',terms:{percent:30,cookie_days:60},since:'12 Nov',msgs:[{f:'u-nia',t:'Welcome Ada! Your link is live. Tell me if you need review copies.'},{f:'u-ada',t:'Thanks Nia. Posting to my reading group tonight.'}],dels:[{id:'x1',kind:'Social post',proof:'instagram.com/p/Cz8k2',status:'verified',amount:1200}]},
-  {id:'d2',offer:'o1',marketer:'zainab',status:'active',terms:{percent:15,cookie_days:30},since:'9 Nov',msgs:[{f:'zainab',t:'Posted the reel! 14k views so far.'},{f:'u-kofi',t:'Looks great Zainab, verifying now.'}],dels:[{id:'x2',kind:'Creator video',proof:'zainab-reel.mp4',video:'0:45',by:'Zainab Yusuf',status:'pending',amount:null},{id:'x3',kind:'Social post',proof:'instagram.com/p/Dk3a1',status:'verified',amount:18000}]}
+  {id:'d2',offer:'o1',marketer:'zainab',status:'active',terms:{percent:15,cookie_days:30},since:'9 Nov',msgs:[{f:'zainab',t:'Posted the reel! 14k views so far.'},{f:'u-kofi',t:'Looks great Zainab, verifying now.'}],dels:[{id:'x2',kind:'Creator video',proof:'zainab-reel.mp4',video:'0:45',by:'Zainab Yusuf',status:'pending',amount:null},{id:'x3',kind:'Social post',proof:'instagram.com/p/Dk3a1',status:'verified',amount:18000}]},
+  {id:'d3',offer:'o6',marketer:'u-ada',status:'active',terms:{percent:25,cookie_days:60},since:'15 Nov',msgs:[{f:'u-notely',t:'Hi Ada, your Notely link is live. We can send a promo code for your followers.'},{f:'u-ada',t:'That would be great. I am filming a short review this week.'},{f:'u-notely',t:'Perfect. Code ADA20 gives 20% off the first month.'}],dels:[{id:'x6',kind:'Social post',proof:'instagram.com/p/Nt4k1',status:'verified',amount:4800},{id:'x7',kind:'Creator video',proof:'notely-review.mp4',video:'1:12',by:'Ada Okafor',status:'pending',amount:null}]},
+  {id:'d4',offer:'o2',marketer:'u-ada',status:'paused',terms:{rate_cents:4,per:'view'},since:'2 Nov',msgs:[{f:'u-tunde',t:'Pausing for a week while we finish the next track.'},{f:'u-ada',t:'No problem, ping me when you are back.'}],dels:[{id:'x8',kind:'Social post',proof:'tiktok.com/@ada.eats/v/91',status:'verified',amount:2100}]},
+  {id:'d5',offer:'o7',marketer:'tola',status:'active',terms:{percent:40,cookie_days:45},since:'17 Nov',msgs:[{f:'u-kofi',t:'Welcome Tola! Your course link is ready.'},{f:'tola',t:'Thanks! Posting a teaser tomorrow.'}],dels:[]},
  ]});
 
 export const prodOf=(S,id)=>S.products.find(p=>p.id===id);

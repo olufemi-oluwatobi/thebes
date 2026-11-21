@@ -4,5 +4,5 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig({
   base: './',
   plugins: [react(), ...(process.env.SINGLE ? [viteSingleFile()] : [])],
-  build: { outDir: 'dist', emptyOutDir: true },
+  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 100000000 },
 });

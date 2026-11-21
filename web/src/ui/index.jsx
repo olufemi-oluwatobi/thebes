@@ -5,139 +5,185 @@ import * as Ic from './icons.jsx';
 export { Ic };
 export const cx = (...a) => a.filter(Boolean).join(' ');
 
-/* ---- Button: height is fixed by size, never by content ---- */
+/* ---------- brand ---------- */
+export const LogoMark = ({ size = 36 }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden>
+    <rect width="40" height="40" rx="11" fill="#26331F" />
+    <path d="M27.5 15.5A9 9 0 1 0 29 21h-8" fill="none" stroke="#CBD6A8" strokeWidth="4" strokeLinecap="round" />
+    <circle cx="29" cy="11" r="2.4" fill="#E0B06A" />
+  </svg>
+);
+export const Logo = ({ light }) => (
+  <div className="flex items-center gap-2.5"><LogoMark /><span className={cx('font-serif text-[18px] font-bold leading-none tracking-tight', light ? 'text-white' : 'text-army')}>Gorilla Squad</span></div>
+);
+
+/* ---------- buttons: height fixed by size ---------- */
 const B = {
-  base: 'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition active:scale-[.98] disabled:opacity-40 disabled:pointer-events-none select-none',
-  size: { md: 'h-12 px-5 text-[15px]', sm: 'h-10 px-4 text-sm', lg: 'h-14 px-6 text-base' },
+  base: 'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition duration-150 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 select-none',
+  size: { sm: 'h-9 px-3.5 text-small', md: 'h-11 px-5 text-[15px]', lg: 'h-12 px-6 text-[15px]' },
   tone: {
-    primary: 'bg-army text-white hover:bg-army-600',
+    primary: 'bg-army text-white shadow-sm hover:bg-army-600',
     sage: 'bg-sage text-army hover:bg-sage-200',
+    secondary: 'bg-white text-army ring-1 ring-inset ring-cream-300 hover:bg-cream-50',
     soft: 'bg-cream-100 text-army hover:bg-cream-200',
     ghost: 'text-army hover:bg-cream-100',
-    danger: 'bg-[#FBE6DF] text-[#8A2E12] hover:bg-[#f6d6cb]',
-    dark: 'bg-white/15 text-white hover:bg-white/25 backdrop-blur',
+    danger: 'bg-white text-[#A23B17] ring-1 ring-inset ring-[#EBC2B3] hover:bg-[#FCF1EC]',
   },
 };
-export const Button = ({ tone = 'primary', size = 'md', block, className, ...p }) => (
-  <button className={cx(B.base, B.size[size], B.tone[tone], block && 'w-full', className)} {...p} />
-);
-/* Round icon button: always a perfect circle (h = w) */
-export const IconButton = ({ tone = 'soft', size = 'md', className, label, children, ...p }) => (
-  <button aria-label={label} className={cx(B.base, '!rounded-full !px-0', { sm: 'h-10 w-10', md: 'h-12 w-12', lg: 'h-14 w-14' }[size], B.tone[tone], className)} {...p}>{children}</button>
+export const Button = ({ tone = 'primary', size = 'md', block, className, ...p }) => <button className={cx(B.base, B.size[size], B.tone[tone], block && 'w-full', className)} {...p} />;
+export const IconButton = ({ tone = 'ghost', size = 'md', className, label, children, ...p }) => (
+  <button aria-label={label} title={label} className={cx(B.base, '!rounded-full !px-0', { sm: 'h-9 w-9', md: 'h-11 w-11', lg: 'h-12 w-12' }[size], B.tone[tone], className)} {...p}>{children}</button>
 );
 
-/* ---- Inputs: h-12 single-line, rounded-xl, ring on focus ---- */
-const field = 'w-full rounded-xl bg-cream-50 text-[16px] text-army placeholder:text-ink-soft/60 outline-none ring-1 ring-inset ring-cream-200 transition focus:bg-white focus:ring-2 focus:ring-army';
+/* ---------- fields: 48px controls ---------- */
+const field = 'w-full rounded-xl bg-white text-[15px] text-ink placeholder:text-ink-faint outline-none ring-1 ring-inset ring-cream-300 transition hover:ring-cream-300/80 focus:ring-2 focus:ring-army';
 export const Input = ({ pre, suf, className, wrap, ...p }) => (
   <div className={cx('relative flex h-12 items-center', wrap)}>
-    {pre && <span className="pointer-events-none absolute left-4 text-[15px] font-semibold text-ink-soft">{pre}</span>}
-    <input className={cx(field, 'h-12', pre ? 'pl-9' : 'px-4', suf ? 'pr-14' : 'pr-4', className)} {...p} />
-    {suf && <span className="pointer-events-none absolute right-4 text-sm font-semibold text-ink-soft">{suf}</span>}
+    {pre && <span className="pointer-events-none absolute left-4 text-[15px] font-medium text-ink-soft">{pre}</span>}
+    <input className={cx(field, 'h-12', pre ? 'pl-10' : 'pl-4', suf ? 'pr-14' : 'pr-4', className)} {...p} />
+    {suf && <span className="pointer-events-none absolute right-4 text-small font-medium text-ink-soft">{suf}</span>}
   </div>
 );
-export const Textarea = ({ className, ...p }) => <textarea className={cx(field, 'min-h-[112px] resize-y px-4 py-3 leading-6', className)} {...p} />;
-export const Field = ({ label, help, children }) => (
-  <label className="flex flex-col gap-2">
-    <span className="text-[13px] font-semibold text-army">{label}</span>
+export const Select = ({ value, onChange, options, className }) => (
+  <div className={cx('relative h-12', className)}>
+    <select value={value} onChange={e => onChange(e.target.value)} className={cx(field, 'h-12 appearance-none pl-4 pr-10')}>{options.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+    <Ic.Chev width="18" height="18" className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rotate-90 text-ink-soft" />
+  </div>
+);
+export const Textarea = ({ className, ...p }) => <textarea className={cx(field, 'block min-h-[120px] resize-y px-4 py-3 leading-6', className)} {...p} />;
+export const Field = ({ label, help, children, aside }) => (
+  <div className="flex flex-col gap-2">
+    <div className="flex items-baseline justify-between gap-3"><span className="text-small font-semibold text-ink">{label}</span>{aside}</div>
     {children}
-    {help && <span className="text-xs leading-4 text-ink-soft">{help}</span>}
-  </label>
+    {help && <span className="text-caption text-ink-soft">{help}</span>}
+  </div>
 );
 
-/* ---- Surfaces: borderless cards on a tinted page ---- */
-export const Card = ({ title, sub, action, children, className, pad = true }) => (
-  <section className={cx('rounded-3xl bg-white shadow-card', pad && 'p-5 md:p-6', className)}>
+/* ---------- surfaces ---------- */
+export const Card = ({ title, sub, action, children, className, pad = true, as: As = 'section' }) => (
+  <As className={cx('rounded-3xl bg-white shadow-card', pad && 'p-5 sm:p-6', className)}>
     {(title || action) && (
-      <header className="mb-4 flex items-start justify-between gap-3">
-        <div><h3 className="font-serif text-[17px] leading-6 text-army">{title}</h3>{sub && <p className="mt-0.5 text-[13px] leading-5 text-ink-soft">{sub}</p>}</div>
+      <header className="mb-5 flex items-start justify-between gap-4">
+        <div className="min-w-0"><h3 className="text-subhead font-semibold text-ink">{title}</h3>{sub && <p className="mt-0.5 text-small text-ink-soft">{sub}</p>}</div>
         {action}
       </header>
     )}
     {children}
-  </section>
+  </As>
 );
 export const Rows = ({ rows }) => (
-  <dl className="divide-y divide-cream-100">
-    {rows.map(([k, v]) => (
-      <div key={k} className="flex min-h-[44px] items-center justify-between gap-4 py-2 text-sm first:pt-0 last:pb-0"><dt className="text-ink-soft">{k}</dt><dd className="text-right font-semibold">{v}</dd></div>
+  <dl className="flex flex-col">
+    {rows.filter(Boolean).map(([k, v], i) => (
+      <div key={i} className={cx('flex min-h-[44px] items-center justify-between gap-6 text-body', i > 0 && 'border-t border-cream-100')}><dt className="text-ink-soft">{k}</dt><dd className="tnum text-right font-semibold text-ink">{v}</dd></div>
     ))}
   </dl>
 );
-export const Stat = ({ v, l }) => (
-  <div className="rounded-2xl bg-white p-4 shadow-card"><div className="text-2xl font-bold leading-7">{v}</div><div className="mt-1 text-xs text-ink-soft">{l}</div></div>
+export const StatGroup = ({ items, className }) => (
+  <div className={cx('grid divide-x divide-cream-100 rounded-3xl bg-white py-4 shadow-card', className)} style={{ gridTemplateColumns: `repeat(${items.length},minmax(0,1fr))` }}>
+    {items.map(([v, l]) => <div key={l} className="min-w-0 px-4 sm:px-6"><div className="tnum truncate text-heading font-semibold text-ink">{v}</div><div className="mt-0.5 truncate text-caption text-ink-soft">{l}</div></div>)}
+  </div>
 );
-export const Chip = ({ children, tone = 'soft', className }) => (
-  <span className={cx('inline-flex h-7 items-center rounded-full px-3 text-xs font-semibold', { soft: 'bg-cream-100 text-army', sage: 'bg-sage text-army', dark: 'bg-white/15 text-white', glass: 'bg-black/30 text-white backdrop-blur' }[tone], className)}>{children}</span>
+/* category chip: neutral outline; status: dot + label. They never look alike. */
+export const Chip = ({ children, icon, tone = 'neutral', className }) => (
+  <span className={cx('inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-small font-medium', { neutral: 'bg-white text-ink ring-1 ring-inset ring-cream-300', sage: 'bg-sage text-army', glass: 'bg-white/12 text-white ring-1 ring-inset ring-white/20 backdrop-blur', solid: 'bg-white text-army' }[tone], className)}>{icon}{children}</span>
 );
-const TAGS = { open: 'sage', active: 'sage', verified: 'sage', accepted: 'sage', funded: 'sage', pending: 'amber', unfunded: 'amber', paused: 'blue', denied: 'red', rejected: 'red', ended: 'dark', withdrawn: 'dark' };
-export const Tag = ({ s }) => (
-  <span className={cx('inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-bold capitalize', { sage: 'bg-sage-100 text-[#2f5a14]', amber: 'bg-[#FBE9CF] text-[#8a5a10]', blue: 'bg-[#DDE9F2] text-[#25506d]', red: 'bg-[#F6D9CF] text-[#9b3a1c]', dark: 'bg-cream-200 text-ink-soft' }[TAGS[s] || 'dark'])}>{s}</span>
-);
-export const Avatar = ({ name, size = 40, tone = 'sage' }) => (
-  <span style={{ width: size, height: size, fontSize: size * 0.36 }} className={cx('inline-grid shrink-0 place-items-center rounded-full font-bold', tone === 'sage' ? 'bg-sage text-army' : 'bg-army text-white')}>{initials(name)}</span>
-);
+const ST = { open: ['Open', 'g'], active: ['Active', 'g'], verified: ['Verified', 'g'], accepted: ['Accepted', 'g'], funded: ['Funded', 'g'], pending: ['Pending', 'a'], unfunded: ['Awaiting payment', 'a'], paused: ['Paused', 'b'], denied: ['Denied', 'r'], rejected: ['Rejected', 'r'], ended: ['Ended', 'n'], withdrawn: ['Withdrawn', 'n'] };
+export const Status = ({ s, className }) => { const [l, t] = ST[s] || [s, 'n']; return (
+  <span className={cx('inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-caption font-semibold', { g: 'bg-sage-50 text-sage-700', a: 'bg-[#FBF1DE] text-[#8A5A10]', b: 'bg-[#E8F0F6] text-[#2C5877]', r: 'bg-[#FBEAE4] text-[#A23B17]', n: 'bg-cream-100 text-ink-soft' }[t], className)}>
+    <i className={cx('h-1.5 w-1.5 rounded-full', { g: 'bg-sage-700', a: 'bg-[#C98A1E]', b: 'bg-[#3E7BA6]', r: 'bg-[#C9512A]', n: 'bg-ink-faint' }[t])} />{l}</span>); };
+export const Tag = Status;
+const HUES = [['#26331F', '#CBD6A8'], ['#6A3B2A', '#F3D9C9'], ['#2D4B55', '#CFE3E8'], ['#6B5A2E', '#EFE3BE'], ['#4A3B5C', '#E2D9EE'], ['#3B5A3F', '#D5E7CF']];
+const hue = (n) => HUES[[...String(n)].reduce((a, c) => a + c.charCodeAt(0), 0) % HUES.length];
+export const Avatar = ({ name, size = 40, ring }) => { const [bg, fg] = hue(name); return (
+  <span style={{ width: size, height: size, fontSize: Math.round(size * 0.38), background: bg, color: fg }} className={cx('inline-grid shrink-0 select-none place-items-center rounded-full font-semibold tracking-tight', ring && 'ring-2 ring-white')}>{initials(name)}</span>); };
+export const Verified = () => <svg width="16" height="16" viewBox="0 0 24 24" className="inline shrink-0 align-[-2px]" aria-label="Verified"><path fill="#5E7A2E" d="M12 2l2.4 1.8 3-.2.9 2.9 2.5 1.7-.9 2.9.9 2.9-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9-2.5-1.7.9-2.9-.9-2.9 2.5-1.7.9-2.9 3 .2z" /><path d="M8 12.2l2.6 2.6L16 9.5" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 export const Switch = ({ on, onChange, label, sub }) => (
-  <div className="flex items-center justify-between gap-4">
-    <div><div className="text-sm font-semibold">{label}</div>{sub && <div className="text-xs leading-4 text-ink-soft">{sub}</div>}</div>
-    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className={cx('relative h-8 w-14 shrink-0 rounded-full transition', on ? 'bg-army' : 'bg-cream-200')}>
-      <span className={cx('absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all', on ? 'left-7' : 'left-1')} />
+  <div className="flex items-center justify-between gap-6">
+    <div><div className="text-body font-semibold">{label}</div>{sub && <div className="text-small text-ink-soft">{sub}</div>}</div>
+    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className={cx('relative h-7 w-12 shrink-0 rounded-full transition', on ? 'bg-army' : 'bg-cream-300')}>
+      <span className={cx('absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all', on ? 'left-[22px]' : 'left-0.5')} />
     </button>
   </div>
 );
 export const Segmented = ({ value, onChange, items }) => (
   <div className="flex h-12 gap-1 rounded-xl bg-cream-100 p-1">
-    {items.map(([k, l]) => <button key={k} type="button" onClick={() => onChange(k)} className={cx('flex-1 rounded-lg text-sm font-semibold capitalize transition', value === k ? 'bg-white text-army shadow-sm' : 'text-ink-soft')}>{l}</button>)}
+    {items.map(([k, l]) => <button key={k} type="button" onClick={() => onChange(k)} className={cx('flex-1 rounded-[10px] text-small font-semibold capitalize transition', value === k ? 'bg-white text-army shadow-sm' : 'text-ink-soft hover:text-ink')}>{l}</button>)}
   </div>
 );
 export const Pills = ({ value, onChange, items, multi }) => (
   <div className="flex flex-wrap gap-2">
-    {items.map(([k, l]) => { const on = multi ? value.includes(k) : value === k; return <button key={k} type="button" onClick={() => onChange(k)} className={cx('h-10 rounded-full px-4 text-sm font-semibold transition', on ? 'bg-army text-white' : 'bg-cream-100 text-army hover:bg-cream-200')}>{l}</button>; })}
+    {items.map(([k, l]) => { const on = multi ? value.includes(k) : value === k; return <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-small font-semibold transition', on ? 'bg-army text-white' : 'bg-white text-ink ring-1 ring-inset ring-cream-300 hover:ring-army/40')}>{on && multi && <Ic.Check width="14" height="14" />}{l}</button>; })}
   </div>
 );
-/* borderless tabs: text with a soft pill behind the active one */
+export const Radio = ({ on }) => <span className={cx('grid h-5 w-5 shrink-0 place-items-center rounded-full transition', on ? 'bg-army' : 'ring-2 ring-inset ring-cream-300')}>{on && <span className="h-2 w-2 rounded-full bg-white" />}</span>;
 export const Tabs = ({ value, onChange, items, className }) => (
-  <div className={cx('no-scrollbar flex gap-1 overflow-x-auto', className)}>
-    {items.map(([k, l, n]) => (
-      <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold transition', value === k ? 'bg-sage-100 text-army' : 'text-ink-soft hover:text-army')}>
-        {l}{n ? <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 text-[10px] font-bold text-white">{n}</span> : null}
-      </button>
-    ))}
+  <div className={cx('relative', className)}>
+    <div className="no-scrollbar flex gap-1 overflow-x-auto pr-6">
+      {items.map(([k, l, n]) => (
+        <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-small font-semibold transition', value === k ? 'bg-army text-white' : 'text-ink-soft hover:bg-white hover:text-ink')}>
+          {l}{n ? <span className={cx('grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[11px] font-bold', value === k ? 'bg-white text-army' : 'bg-ember text-white')}>{n}</span> : null}
+        </button>
+      ))}
+    </div>
   </div>
 );
-export const Art = ({ k, className }) => <div className={className} dangerouslySetInnerHTML={{ __html: ART[k] }} />;
-export const ProductArt = ({ p, className, k }) => (
-  <div className={cx('grid place-items-center overflow-hidden', className)} style={{ background: bgFor(p) }}>
-    {p.img ? <img src={p.img} alt="" className="h-full w-full object-cover" /> : <Art k={k || p.art} className="h-[78%] w-[78%] [&>svg]:h-full [&>svg]:w-full" />}
+export const Art = ({ k, className, style }) => <div className={className} style={style} dangerouslySetInnerHTML={{ __html: ART[k] }} />;
+export const ProductArt = ({ p, className, k, fit = '78%' }) => (
+  <div className={cx('relative grid place-items-center overflow-hidden', className)} style={{ background: bgFor(p) }}>
+    <div className="absolute inset-0 opacity-[.10] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:18px_18px]" />
+    {p.img ? <img src={p.img} alt="" className="relative h-full w-full object-cover" /> : <Art k={k || p.art} className="relative [&>svg]:h-full [&>svg]:w-full" style={{ width: fit, height: fit }} />}
   </div>
 );
-export function Sheet({ open, onClose, title, sub, children }) {
+export const Empty = ({ icon, title, text, action }) => (
+  <div className="flex flex-col items-center px-6 py-12 text-center">
+    <span className="mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-sage-50 text-sage-700">{icon}</span>
+    <div className="text-subhead font-semibold">{title}</div>
+    <p className="mt-1 max-w-xs text-small text-ink-soft">{text}</p>
+    {action && <div className="mt-5">{action}</div>}
+  </div>
+);
+export function Sheet({ open, onClose, title, sub, children, footer }) {
   useEffect(() => { if (!open) return; const f = (e) => e.key === 'Escape' && onClose(); addEventListener('keydown', f); return () => removeEventListener('keydown', f); }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
-      <button aria-label="Close" className="absolute inset-0 bg-army-900/60" onClick={onClose} />
-      <div className="relative max-h-[88vh] w-full overflow-y-auto rounded-t-3xl bg-white p-6 shadow-pop md:max-w-md md:rounded-3xl">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-cream-200 md:hidden" />
-        <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="font-serif text-xl text-army">{title}</h2>{sub && <p className="mt-1 text-sm text-ink-soft">{sub}</p>}</div><IconButton size="sm" label="Close" onClick={onClose}><Ic.X width="18" height="18" /></IconButton></div>
-        <div className="flex flex-col gap-4">{children}</div>
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+      <button aria-label="Close" className="absolute inset-0 bg-army-900/50 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative flex max-h-[90vh] w-full flex-col rounded-t-3xl bg-white shadow-pop sm:max-w-[460px] sm:rounded-3xl">
+        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-cream-200 sm:hidden" />
+        <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5"><div className="min-w-0"><h2 className="text-heading font-semibold text-ink">{title}</h2>{sub && <p className="mt-0.5 text-small text-ink-soft">{sub}</p>}</div><IconButton size="sm" tone="soft" label="Close" onClick={onClose}><Ic.X width="18" height="18" /></IconButton></div>
+        <div className="flex flex-col gap-5 overflow-y-auto px-6 pb-6 pt-3">{children}</div>
+        {footer && <div className="flex flex-col gap-2 border-t border-cream-100 px-6 py-4 pb-[max(16px,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
     </div>
   );
 }
 export const Toast = ({ t }) => (
-  <div className={cx('pointer-events-none fixed left-1/2 top-4 z-[60] w-max max-w-[88vw] -translate-x-1/2 rounded-full bg-army px-5 py-3 text-center text-sm font-semibold text-white shadow-pop transition-all', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>{t?.m}</div>
-);
-/* page chrome */
-export const Page = ({ title, crumb, onBack, right, children, wide }) => (
-  <div className="flex h-full min-h-0 flex-col bg-cream-50">
-    <header className="flex h-16 shrink-0 items-center gap-3 bg-white/80 px-4 backdrop-blur md:px-8">
-      {onBack && <IconButton size="sm" label="Back" onClick={onBack}><Ic.Back width="20" height="20" /></IconButton>}
-      <div className="min-w-0 flex-1"><div className="text-xs font-semibold text-ink-soft">{crumb}</div><div className="truncate font-serif text-[17px] leading-5 text-army">{title}</div></div>
-      {right}
-    </header>
-    <div className="min-h-0 flex-1 overflow-y-auto"><div className={cx('mx-auto w-full px-4 pb-32 pt-6 md:px-8 md:pt-8', wide ? 'max-w-6xl' : 'max-w-3xl')}>{children}</div></div>
+  <div role="status" className={cx('pointer-events-none fixed left-1/2 top-4 z-[60] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-army py-3 pl-3.5 pr-5 text-small font-semibold text-white shadow-pop transition-all duration-200', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>
+    <span className="grid h-6 w-6 place-items-center rounded-full bg-sage text-army"><Ic.Check width="14" height="14" /></span>{t?.m}
   </div>
 );
-export const Heading = ({ h, p, right }) => (
-  <div className="mb-6 flex items-end justify-between gap-4"><div><h1 className="font-serif text-[28px] leading-9 text-army md:text-[32px]">{h}</h1>{p && <p className="mt-1.5 max-w-xl text-[15px] leading-6 text-ink-soft">{p}</p>}</div>{right}</div>
+
+/* ---------- page layout: top bar, optional sub bar, scroll body, action bar ---------- */
+export const W = { narrow: 'max-w-[720px]', wide: 'max-w-[1120px]' };
+export function Page({ crumb, onBack, right, sub, children, width = 'wide', bar, barDesktop = false }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="z-10 flex h-14 shrink-0 items-center border-b border-cream-200 bg-white/90 backdrop-blur sm:h-16">
+        <div className={cx('mx-auto flex w-full items-center gap-2 px-4 sm:px-8', W[width])}>
+          {onBack ? <button onClick={onBack} className="-ml-2 inline-flex h-10 items-center gap-1.5 rounded-xl pl-1.5 pr-3 text-small font-semibold text-ink-soft transition hover:bg-cream-100 hover:text-ink"><Ic.Back width="20" height="20" />{crumb}</button>
+            : <span className="text-subhead font-semibold">{crumb}</span>}
+          <span className="flex-1" />{right}
+        </div>
+      </header>
+      {sub && <div className="shrink-0 border-b border-cream-200 bg-white"><div className={cx('mx-auto w-full px-4 sm:px-8', W[width])}>{sub}</div></div>}
+      <div className="min-h-0 flex-1 overflow-y-auto"><div className={cx('mx-auto w-full px-4 pb-10 pt-6 sm:px-8 sm:pt-10', W[width])}>{children}</div></div>
+      {bar && <div className={cx('shrink-0 border-t border-cream-200 bg-white', !barDesktop && 'lg:hidden')}><div className={cx('mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8', W[width])}>{bar}</div></div>}
+    </div>
+  );
+}
+export const PageTitle = ({ eyebrow, h, p, right, className }) => (
+  <div className={cx('mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between', className)}>
+    <div className="min-w-0">{eyebrow && <div className="mb-2">{eyebrow}</div>}<h1 className="font-serif text-[26px] leading-[34px] text-ink sm:text-title">{h}</h1>{p && <p className="mt-2 max-w-xl text-body text-ink-soft">{p}</p>}</div>
+    {right}
+  </div>
 );
