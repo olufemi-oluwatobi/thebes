@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ART } from '../lib/art.js';
-import { bgFor, initials } from '../lib/data.js';
+import { bgFor, initials, artFor } from '../lib/data.js';
 import * as Ic from './icons.jsx';
 export { Ic };
 export const cx = (...a) => a.filter(Boolean).join(' ');
@@ -131,7 +131,7 @@ export const Art = ({ k, className, style }) => <div className={className} style
 export const ProductArt = ({ p, className, k, fit = '78%' }) => (
   <div className={cx('relative grid place-items-center overflow-hidden', className)} style={{ background: bgFor(p) }}>
     <div className="absolute inset-0 opacity-[.10] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:18px_18px]" />
-    {p.img ? <img src={p.img} alt="" className="relative h-full w-full object-cover" /> : <Art k={k || p.art} className="relative [&>svg]:h-full [&>svg]:w-full" style={{ width: fit, height: fit }} />}
+    {p.img ? <img src={p.img} alt="" className="relative h-full w-full object-cover" /> : <Art k={k || p.art || artFor(p.category)} className="relative [&>svg]:h-full [&>svg]:w-full" style={{ width: fit, height: fit }} />}
   </div>
 );
 export const Empty = ({ icon, title, text, action }) => (

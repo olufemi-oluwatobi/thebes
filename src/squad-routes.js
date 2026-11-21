@@ -998,7 +998,8 @@ export function squadRoutes(app, h) {
       (SELECT COUNT(*) FROM deliveries d WHERE d.relationship_id = r.id AND d.is_deleted = 0) deliveries,
       (SELECT COUNT(*) FROM deliveries d WHERE d.relationship_id = r.id AND d.status = 'verified' AND d.is_deleted = 0) verified_deliveries,
       (SELECT COUNT(*) FROM messages g WHERE g.relationship_id = r.id AND g.sender_id <> ?1 AND g.read_at IS NULL AND g.is_deleted = 0) unread,
-      (SELECT MAX(created_at) FROM messages g WHERE g.relationship_id = r.id) last_message_at
+      (SELECT MAX(created_at) FROM messages g WHERE g.relationship_id = r.id) last_message_at,
+      (SELECT COALESCE(SUM(d.amount_cents), 0) FROM deliveries d WHERE d.relationship_id = r.id AND d.status = 'verified' AND d.is_deleted = 0) earned_cents, o.currency currency
     FROM relationships r JOIN offers o ON o.id = r.offer_id JOIN offer_types t ON t.id = o.offer_type_id JOIN products p ON p.id = o.product_id
     JOIN sellers s ON s.id = p.seller_id JOIN users su ON su.id = s.user_id JOIN marketers m ON m.id = r.marketer_id JOIN users mu ON mu.id = m.user_id
     LEFT JOIN companies co ON co.id = p.company_id`;
@@ -1006,7 +1007,7 @@ export function squadRoutes(app, h) {
     offer: { id: r.offer_id, title: r.offer_title }, product: { id: r.product_id, name: r.product_name }, type: { slug: r.type_slug, name: r.type_name },
     seller: { user: publicUser({ id: r.seller_user_id, display_name: r.s_display, first_name: r.s_first, last_name: r.s_last }), company: r.company_name },
     marketer: { id: r.marketer_id, country: r.m_country, is_verified: !!r.m_verified, user: publicUser({ id: r.marketer_user_id, display_name: r.m_display, first_name: r.m_first, last_name: r.m_last }) },
-    counts: { deliveries: r.deliveries, verified_deliveries: r.verified_deliveries, unread: r.unread }, last_message_at: r.last_message_at });
+    counts: { deliveries: r.deliveries, verified_deliveries: r.verified_deliveries, unread: r.unread }, last_message_at: r.last_message_at, earned_cents: r.earned_cents, currency: r.currency });
 
   // ?as=seller|marketer&status=active|paused|ended&offer_id=
   app.get('/api/squad/relationships', async (c) => {

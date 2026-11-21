@@ -1,23 +1,26 @@
 import { useState } from 'react';
-import { CATS } from '../lib/data.js';
-import { Ic, Chip, ProductArt, Card, cx } from './index.jsx';
+import { artFor } from '../lib/data.js';
+import { Ic, ProductArt, Card, cx } from './index.jsx';
 
+// the product's images (uploaded), or our category art when there are none; a demo video tile when there is one
 export function Gallery({ p, onDemo }) {
-  const [k, setK] = useState(p.gallery[0]);
-  const items = [...p.gallery.map(g => ({ g })), ...(p.video ? [{ video: true }] : [])];
+  const imgs = p.images?.length ? p.images : [null];
+  const [k, setK] = useState(0);
+  const items = [...imgs.map((src, i) => ({ src, i })), ...(p.videoUrl ? [{ video: true }] : [])];
+  const cur = imgs[k] ?? imgs[0];
   return (
     <div className="flex flex-col gap-3">
       <div className="relative overflow-hidden rounded-3xl shadow-card">
-        <ProductArt p={p} k={k} fit="70%" className="aspect-[4/3] w-full sm:aspect-[16/10]" />
-        {p.video && <button onClick={onDemo} className="absolute bottom-4 left-4 inline-flex h-10 items-center gap-2 rounded-full bg-white pl-1.5 pr-4 text-small font-semibold text-army shadow-lift transition hover:scale-[1.02]"><span className="grid h-7 w-7 place-items-center rounded-full bg-army text-white"><Ic.Play width="12" height="12" /></span>Watch demo · {p.video}</button>}
+        {cur ? <div className="grid aspect-[4/3] w-full place-items-center bg-cream-100 sm:aspect-[16/10]"><img src={cur} alt="" className="h-full w-full object-cover" /></div>
+          : <ProductArt p={{ ...p, img: null }} k={artFor(p.category)} fit="70%" className="aspect-[4/3] w-full sm:aspect-[16/10]" />}
+        {p.videoUrl && <button onClick={onDemo} className="absolute bottom-4 left-4 inline-flex h-10 items-center gap-2 rounded-full bg-white pl-1.5 pr-4 text-small font-semibold text-army shadow-lift transition hover:scale-[1.02]"><span className="grid h-7 w-7 place-items-center rounded-full bg-army text-white"><Ic.Play width="12" height="12" /></span>Watch demo</button>}
       </div>
       {items.length > 1 && (
         <div className="no-scrollbar -m-1 flex gap-3 overflow-x-auto p-1">
           {items.map((it, i) => (
-            <button key={i} onClick={() => it.video ? onDemo() : setK(it.g)} className={cx('relative h-[72px] w-[96px] shrink-0 overflow-hidden rounded-2xl transition', !it.video && k === it.g ? 'ring-2 ring-army ring-offset-2 ring-offset-cream-50' : 'opacity-80 hover:opacity-100')}>
-              <ProductArt p={p} k={it.g || p.art} fit="80%" className="h-full w-full" />
-              {it.video && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><span className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-army"><Ic.Play width="12" height="12" /></span></span>}
-              {it.video && <span className="absolute bottom-1 right-1.5 text-[11px] font-semibold text-white">{p.video}</span>}
+            <button key={i} onClick={() => it.video ? onDemo() : setK(it.i)} className={cx('relative h-[72px] w-[96px] shrink-0 overflow-hidden rounded-2xl bg-cream-100 transition', !it.video && k === it.i ? 'ring-2 ring-army ring-offset-2 ring-offset-cream-50' : 'opacity-80 hover:opacity-100')}>
+              {it.src ? <img src={it.src} alt="" className="h-full w-full object-cover" /> : <ProductArt p={{ ...p, img: imgs.find(Boolean) || null }} k={artFor(p.category)} fit="80%" className="h-full w-full" />}
+              {it.video && <span className="absolute inset-0 grid place-items-center bg-black/35 text-white"><span className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-army"><Ic.Play width="12" height="12" /></span></span>}
             </button>
           ))}
         </div>
@@ -34,6 +37,6 @@ export const Steps = ({ title, sub, steps }) => (
     </ol>
   </Card>
 );
-export const Player = ({ p, sub }) => (
-  <div><div className="relative overflow-hidden rounded-2xl"><ProductArt p={p} fit="60%" className="aspect-video w-full" /><span className="absolute inset-0 grid place-items-center"><span className="grid h-14 w-14 place-items-center rounded-full bg-white/90 text-army shadow-lift"><Ic.Play /></span></span></div><div className="mt-3 text-small text-ink-soft">{sub}</div></div>
+export const Player = ({ src, sub }) => (
+  <div>{src ? <video src={src} controls playsInline className="aspect-video w-full rounded-2xl bg-black" /> : <div className="grid aspect-video place-items-center rounded-2xl bg-cream-100 text-small text-ink-soft">No video</div>}{sub && <div className="mt-3 text-small text-ink-soft">{sub}</div>}</div>
 );

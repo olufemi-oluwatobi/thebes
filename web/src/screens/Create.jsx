@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { useStore } from '../lib/store.jsx';
-import { go, useRoute } from '../lib/router.js';
-import { CATS, TYPES, SYM, FEE, money, artFor, prodOf } from '../lib/data.js';
-import { Page, PageTitle, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Select, Radio, Ic, ProductArt, Art, Sheet, cx } from '../ui/index.jsx';
+import { useEffect, useState } from 'react';
+import { useStore, prodOf } from '../lib/store.jsx';
+import { go } from '../lib/router.js';
+import { CATS, TYPES, SYM, FEE, money, artFor, PLATFORMS } from '../lib/data.js';
+import { Page, PageTitle, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Select, Radio, Ic, ProductArt, Art, Sheet, Empty, cx } from '../ui/index.jsx';
 
 const STEPS = ['Type', 'Product', 'Details', 'Budget', 'Review'];
 const FIELDS = { percent: ['Commission', null, '%', 15], cookie_days: ['Attribution window', null, 'days', 30], rate_cents: ['Rate', 'cur', null, 0.05], per: ['Paid per'], share_percent: ['Your share', null, '%', 10], min_contract_cents: ['Minimum contract', 'cur', null, 20000] };
 const CUR_NAME = { USD: 'US dollar', EUR: 'Euro', GBP: 'British pound', NGN: 'Nigerian naira', GHS: 'Ghanaian cedi', KES: 'Kenyan shilling', ZAR: 'South African rand' };
-const newP = (pid) => ({ step: pid ? 3 : 1, type: 'commission', pid: pid || null, newProd: false, np: { name: '', category: 'software', desc: '', img: null, video: null, sample: false }, title: '', desc: '', terms: {}, minf: 1000, countries: [], verified: false, cur: 'USD', budget: '', cap: '', nocap: false });
+const newP = (pid) => ({ step: pid ? 3 : 1, type: 'commission', pid: pid || null, newProd: false, np: { name: '', category: 'software', desc: '', url: '', img: null, file: null, video: null, videoFile: null, sample: false }, title: '', desc: '', terms: {}, minf: 0, countries: [], verified: false, cur: 'USD', budget: '', cap: '', nocap: false });
 const tv = (P, k) => P.terms[k] ?? FIELDS[k]?.[3] ?? (k === 'per' ? 'click' : '');
 const termsOf = (P) => Object.fromEntries(TYPES[P.type].fields.map(([k]) => [k, k.endsWith('_cents') ? Math.round(+tv(P, k) * 100) : k === 'per' ? tv(P, k) : +tv(P, k)]));
 const bC = (P) => P.nocap ? null : Math.round((+P.budget || 0) * 100);
@@ -26,17 +26,18 @@ function Stepper({ st }) {
 
 function ProductForm({ P, set }) {
   const n = P.np, up = (k, v) => set({ np: { ...n, [k]: v } });
-  const file = (e, k) => { const f = e.target.files[0]; if (!f) return; if (k === 'img') { const r = new FileReader(); r.onload = () => set({ np: { ...n, img: r.result, sample: false } }); r.readAsDataURL(f); } else up('video', f.name); };
+  const file = (e, k) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; if (k === 'img') { if (f.size > 5 * 1048576) return alert('Images can be up to 5 MB'); set({ np: { ...n, img: URL.createObjectURL(f), file: f, sample: false } }); } else { if (f.size > 30 * 1048576) return alert('Videos can be up to 30 MB'); set({ np: { ...n, video: f.name, videoFile: f } }); } };
   return (
     <div className="flex flex-col gap-6">
       <Card title="Product"><div className="flex flex-col gap-5">
         <Field label="Name"><Input placeholder="e.g. Pepper Tracker" value={n.name} onChange={e => up('name', e.target.value)} /></Field>
         <Field label="Category"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{Object.entries(CATS).map(([k, l]) => <button key={k} type="button" onClick={() => up('category', k)} className={cx('flex h-[88px] flex-col items-center justify-center gap-2 rounded-2xl text-small font-semibold ring-1 ring-inset transition', n.category === k ? 'bg-sage-50 ring-2 ring-army' : 'bg-white ring-cream-300 hover:ring-army/40')}><Art k={artFor(k)} className="h-8 w-11 [&>svg]:h-full [&>svg]:w-full" />{l}</button>)}</div></Field>
-        <Field label="Description" aside={<span className="text-caption text-ink-faint">{n.desc.length}/280</span>}><Textarea maxLength={280} placeholder="What is it, and who is it for?" value={n.desc} onChange={e => up('desc', e.target.value)} /></Field>
+        <Field label="Description" help="At least 10 characters." aside={<span className="text-caption text-ink-faint">{n.desc.length}/1000</span>}><Textarea maxLength={1000} placeholder="What is it, and who is it for?" value={n.desc} onChange={e => up('desc', e.target.value)} /></Field>
+        <Field label="Website or store link" aside={<span className="text-caption text-ink-faint">Optional</span>}><Input type="url" placeholder="https://" value={n.url} onChange={e => up('url', e.target.value)} /></Field>
       </div></Card>
       <Card title="Media" sub="Marketers decide from the image, so make it count.">
         <div className="flex flex-col gap-5">
-          <Field label="Placement image" help="PNG, JPEG or WebP up to 5 MB. 4:3 works best.">
+          <Field label="Placement image" help="PNG, JPEG, WebP or GIF up to 5 MB. 4:3 works best.">
             <label className={cx('relative grid aspect-[16/9] cursor-pointer place-items-center overflow-hidden rounded-2xl transition sm:aspect-[21/9]', n.img || n.sample ? '' : 'border-2 border-dashed border-cream-300 bg-cream-50 hover:border-army/40')}>
               {n.img ? <img src={n.img} alt="" className="h-full w-full object-cover" /> : n.sample ? <ProductArt p={{ category: n.category, art: artFor(n.category) }} fit="70%" className="h-full w-full" /> : <span className="flex flex-col items-center gap-2 text-small text-ink-soft"><span className="grid h-11 w-11 place-items-center rounded-full bg-white shadow-card text-army"><Ic.Image width="20" height="20" /></span><span><b className="text-ink">Upload an image</b> or drag it here</span></span>}
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => file(e, 'img')} />
@@ -60,7 +61,7 @@ function Preview({ P, p }) {
       {p ? <ProductArt p={p} fit="72%" className="mb-4 aspect-[4/3] w-full rounded-2xl" />
         : <div className="mb-4 flex aspect-[4/3] flex-col justify-end gap-2 rounded-2xl bg-cream-50 p-4"><span className="mb-auto grid h-10 w-10 place-items-center rounded-xl bg-white text-ink-faint shadow-card"><Ic.Image width="20" height="20" /></span><span className="h-2.5 w-2/3 rounded-full bg-cream-200" /><span className="h-2.5 w-1/3 rounded-full bg-cream-200" /></div>}
       <div className="font-semibold leading-5">{P.title || (p ? 'Promote ' + p.name : 'Your offer title')}</div>
-      <div className="mb-4 mt-2 flex items-baseline gap-2"><span className="font-serif text-[32px] leading-none">{T.reward(t)}</span><span className="text-small text-ink-soft">{T.sub(t)}</span></div>
+      <div className="mb-4 mt-2 flex items-baseline gap-2"><span className="font-serif text-[32px] leading-none">{T.reward(t, P.cur)}</span><span className="text-small text-ink-soft">{T.sub(t, P.cur)}</span></div>
       <Rows rows={[['Budget', b ? money(b, P.cur) : P.nocap ? 'Open' : '—'], ['Max per marketer', cC(P) ? money(cC(P), P.cur) : '—'], ['Who can apply', +P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone']]} />
     </Card>
   );
@@ -73,15 +74,25 @@ const OptionCard = ({ on, onClick, title, text, icon }) => (
 );
 const TypeIcon = { commission: Ic.Wallet, attention: Ic.Share, introduction: Ic.Me };
 
-export default function Create() {
+export default function Create({ pid: arg }) {
   const { S, a } = useStore();
-  const r = useRoute();
-  const [mode, setMode] = useState(r.a ? 'offer' : null);
-  const [P, setP] = useState(() => newP(r.a));
-  const [prev, setPrev] = useState(false);
+  const pid = arg && arg !== 'social' && arg !== 'product' ? arg : null;
+  const [mode, setMode] = useState(arg === 'social' ? 'social' : arg === 'product' ? 'product' : pid ? 'offer' : null);
+  const [P, setP] = useState(() => newP(pid));
+  const [prev, setPrev] = useState(false), [busy, setBusy] = useState(false);
+  const [soc, setSoc] = useState({ platform: 'instagram', handle: '', followers: '' });
   const set = (x) => setP(q => ({ ...q, ...x }));
+  useEffect(() => { if (S.auth === 'in' && a.hasSeller && !S.myProductIds) a.loadSeller(); }, [S.auth, a.hasSeller]);
   const p = P.pid ? prodOf(S, P.pid) : null, T = TYPES[P.type], st = P.step;
-  const mineProducts = S.products.filter(x => x.owner === 'u-kofi' || x.mine);
+  const mineProducts = (S.myProductIds || []).map(id => prodOf(S, id)).filter(Boolean);
+
+  if (S.auth === 'out') return <Page crumb="Create" width="narrow"><Empty icon={<Ic.Plus />} title="Post offers, add products" text="Sign in to start selling or promoting on Gorilla Squad." action={<Button onClick={() => a.openSignin()}>Sign in</Button>} /></Page>;
+  const needSeller = (mode === 'offer' || mode === 'product') && !a.hasSeller, needMarketer = mode === 'social' && !a.hasMarketer;
+  if (needSeller || needMarketer) return (
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow">
+      <Card><Empty icon={needSeller ? <Ic.Box /> : <Ic.At />} title={needSeller ? 'Set up selling first' : 'Set up promoting first'} text={needSeller ? 'Tell marketers who you are, then add products and post offers.' : 'Add where you are based, then connect your accounts.'} action={<Button onClick={() => a.openSetup(needSeller ? 'seller' : 'marketer')}>Continue</Button>} /></Card>
+    </Page>
+  );
 
   if (!mode) return (
     <Page crumb="Create" width="narrow">
@@ -94,35 +105,35 @@ export default function Create() {
     </Page>
   );
 
-  const saveProduct = () => { const n = P.np; if (!n.name.trim()) { a.toast('Give the product a name'); return null; } if (!n.img && !n.sample) { a.toast('Add a placement image'); return null; } return a.addProduct(n); };
+  const saveProduct = async () => { const n = P.np; if (n.name.trim().length < 2) { a.toast('Give the product a name'); return null; } if (n.desc.trim().length < 10) { a.toast('Describe it in at least 10 characters'); return null; } if (n.url && !/^https?:\/\//.test(n.url.trim())) { a.toast('The link should start with https://'); return null; } if (!n.file && !n.sample) { a.toast('Add a placement image'); return null; } setBusy(true); try { return await a.addProduct(n); } finally { setBusy(false); } };
   if (mode === 'product') return (
-    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button onClick={() => saveProduct() && go('me')}>Save product</Button></>}>
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy} onClick={async () => { const id = await saveProduct(); if (id) go('product/' + id); }}>{busy ? 'Saving…' : 'Save product'}</Button></>}>
       <PageTitle h="Add a product" p="Add it once, then post as many offers for it as you like." />
       <ProductForm P={P} set={set} />
     </Page>
   );
   if (mode === 'social') return (
-    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button onClick={() => { a.toast('Sent for verification'); setMode(null); }}>Submit for review</Button></>}>
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy || !soc.handle.trim()} onClick={async () => { setBusy(true); const ok = await a.addSocial(soc); setBusy(false); if (ok) go('me'); }}>{busy ? 'Saving…' : 'Submit for review'}</Button></>}>
       <PageTitle h="Add a social" p="An admin checks each account before it counts toward offer requirements." />
-      <Card><div className="flex flex-col gap-5"><Field label="Platform"><Pills value="Instagram" onChange={() => {}} items={['Instagram', 'TikTok', 'YouTube', 'Newsletter'].map(x => [x, x])} /></Field><Field label="Handle or link"><Input pre="@" placeholder="yourhandle" /></Field></div></Card>
+      <Card><div className="flex flex-col gap-5"><Field label="Platform"><Pills value={soc.platform} onChange={v => setSoc({ ...soc, platform: v })} items={PLATFORMS} /></Field><div className="grid gap-5 sm:grid-cols-2"><Field label="Handle"><Input pre="@" placeholder="yourhandle" value={soc.handle} onChange={e => setSoc({ ...soc, handle: e.target.value })} /></Field><Field label="Followers"><Input type="number" min="0" placeholder="e.g. 4200" value={soc.followers} onChange={e => setSoc({ ...soc, followers: e.target.value })} /></Field></div></div></Card>
     </Page>
   );
 
   const b = bC(P), fee = b ? Math.round(b * FEE / 10000) : 0, t = termsOf(P);
-  const next = () => {
-    if (st === 2 && P.newProd) { const id = saveProduct(); return id && set({ pid: id, newProd: false }); }
+  const next = async () => {
+    if (st === 2 && P.newProd) { const id = await saveProduct(); return id && set({ pid: id, newProd: false }); }
     if (st === 2 && !P.pid) return a.toast('Pick a product first');
     if (st === 4 && !P.nocap) { if (!(+P.budget >= 1)) return a.toast('Enter a budget, or turn it off'); if (P.cap && +P.cap > +P.budget) return a.toast('The cap cannot be more than the budget'); }
     if (st < 5) return set({ step: st + 1 });
-    a.addOffer(P, p, t, b, cC(P)); go('feed');
+    if (busy) return; setBusy(true); const id = await a.addOffer(P, p, t, b, cC(P)); setBusy(false); if (id) go('offer/' + id);
   };
   const back_ = () => { if (P.newProd) set({ newProd: false }); else if (st > 1) set({ step: st - 1 }); else setMode(null); };
-  const label = st === 5 ? (b ? 'Pay ' + money(b + fee, P.cur) + ' & publish' : 'Publish offer') : st === 2 && P.newProd ? 'Save product' : 'Continue';
-  const titles = { 1: ['What kind of offer?', 'This decides how marketers get paid.'], 2: [P.newProd ? 'New product' : 'Which product?', P.newProd ? 'Add it once and reuse it for future offers.' : 'Marketers see its placement image first.'], 3: ['Offer details', T.name + ' offer for ' + (p ? p.name : 'your product')], 4: ['Budget', 'The total you will spend. Verified results draw it down.'], 5: ['Review and publish', b ? 'Pay to fund the budget. Your offer goes live once it is received.' : 'No payment needed. Your offer goes live right away.'] }[st];
+  const label = st === 5 ? (busy ? 'Publishing…' : b ? 'Submit · pay ' + money(b + fee, P.cur) : 'Publish offer') : st === 2 && P.newProd ? 'Save product' : 'Continue';
+  const titles = { 1: ['What kind of offer?', 'This decides how marketers get paid.'], 2: [P.newProd ? 'New product' : 'Which product?', P.newProd ? 'Add it once and reuse it for future offers.' : 'Marketers see its placement image first.'], 3: ['Offer details', T.name + ' offer for ' + (p ? p.name : 'your product')], 4: ['Budget', 'The total you will spend. Verified results draw it down.'], 5: ['Review and publish', b ? "We'll email you how to pay the budget. Your offer goes live once the payment lands." : 'No payment needed. Your offer goes live right away.'] }[st];
 
   return (
     <Page crumb="Create" onBack={back_} sub={<Stepper st={st} />} barDesktop
-      bar={<><Button tone="secondary" onClick={back_}>Back</Button>{st < 5 && !P.newProd && <Button tone="ghost" className="lg:hidden" onClick={() => setPrev(true)}>Preview</Button>}<span className="flex-1" /><Button onClick={next}>{label}</Button></>}>
+      bar={<><Button tone="secondary" onClick={back_}>Back</Button>{st < 5 && !P.newProd && <Button tone="ghost" className="lg:hidden" onClick={() => setPrev(true)}>Preview</Button>}<span className="flex-1" /><Button disabled={busy} onClick={next}>{label}</Button></>}>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
           <PageTitle h={titles[0]} p={titles[1]} className="!mb-2" />
@@ -145,7 +156,7 @@ export default function Create() {
           </>)}
           {st === 5 && (<>
             <div className="lg:hidden"><Preview P={P} p={p} /></div>
-            <Card title="Offer" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}><Rows rows={[['Title', P.title || 'Promote ' + p.name], ['Product', p.name], ['Type', T.name], ['Reward', T.reward(t) + ' ' + T.sub(t).split(' · ')[0]], ['Who can apply', (+P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone') + (P.countries.length ? ' · ' + P.countries.join(', ') : '') + (P.verified ? ' · verified' : '')]]} /></Card>
+            <Card title="Offer" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}><Rows rows={[['Title', P.title || 'Promote ' + p.name], ['Product', p.name], ['Type', T.name], ['Reward', T.reward(t, P.cur) + ' ' + T.sub(t, P.cur).split(' · ')[0]], ['Who can apply', (+P.minf ? (+P.minf).toLocaleString() + '+ followers' : 'Anyone') + (P.countries.length ? ' · ' + P.countries.join(', ') : '') + (P.verified ? ' · verified' : '')]]} /></Card>
             <Card title="Payment" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 4 })}>Edit</button>}>{b ? <Rows rows={[['Budget', money(b, P.cur)], cC(P) && ['Max per marketer', money(cC(P), P.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, P.cur)], ['Total to pay', <span className="text-heading">{money(b + fee, P.cur)}</span>]]} /> : <Rows rows={[['Budget', 'Open, paid directly']]} />}</Card>
           </>)}
         </div>
