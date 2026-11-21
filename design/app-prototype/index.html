@@ -417,7 +417,7 @@ textarea.ta:focus{border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A899}
 .bignum{font-family:"Libre Baskerville",Georgia,serif;font-size:42px;line-height:1.05}
 .bignum small{font:600 14px Inter;color:var(--sub);display:block;margin-top:6px}
 .chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px}
-.chk b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none}
+.chk>b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none}
 .chk .y{background:#dfe9c4;color:#2f5a14}.chk .n{background:#f6d9cf;color:#9b3a1c}
 .chk small{display:block;color:var(--sub);font-size:12px;margin-top:1px}
 .trust{font-size:12px;color:var(--sub);line-height:17px;display:flex;gap:8px}
@@ -461,6 +461,17 @@ textarea.ta:focus{border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A899}
 .tabsb button{border:0;border-bottom:2.5px solid transparent;background:none;border-radius:0}
 .tabsb button.on{border-bottom-color:var(--ink)}
 .chs button,.cattiles button,.pc{font-family:inherit}
+
+/* borderless tabs */
+.tabsb{display:flex;gap:4px;border:0;margin:0 0 8px -12px;padding:0}
+.tabsb button{border:0!important;background:none;border-radius:999px;padding:9px 16px;margin:0;font-weight:700;font-size:14px;color:var(--sub);display:inline-flex;align-items:center;gap:6px}
+.tabsb button:hover{color:var(--ink);background:#f1f0e4}
+.tabsb button.on{background:#E9EDD6;color:var(--ink)}
+.tabsb .n{margin:0}
+.side .card .thumb,.side .card>div>span:first-child{flex:none}
+.chat{gap:10px}
+.bubble{max-width:78%}
+.trust span{flex:1;min-width:0}.trust svg{flex:none}
 
 </style>
 </head>
@@ -692,7 +703,7 @@ function renderDeal(id){
   +(d.dels.length?`<div class="tbl">${d.dels.map(x=>`<div class="tr">${x.video?`<button type="button" class="thumb" data-act="cvplay" data-id="${x.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span></button>`:''}<span class="tx"><b>${esc(x.kind)}${x.amount?' · '+money(x.amount,F.cur):''}</b><span>${esc(x.proof)}</span></span>${tag(x.status)}${seller&&x.status==='pending'?`<button class="b pri sm" data-act="vsheet" data-id="${x.id}">Review</button>`:''}</div>`).join('')}</div>`:'<div style="color:var(--sub);padding:8px 0">No deliveries yet.</div>')+`<div class="help" style="font-size:12px;color:var(--sub)">The seller (or an admin) verifies each delivery before it earns anything.</div>`;
  if(t==='terms')body=`<div class="banner" style="margin:0">Frozen when the interest was accepted. Later edits to the offer do not change this deal.</div>${rows([...T.fields.map(f=>[fieldLabel(f),fmtTerm(f[0],d.terms[f[0]],F.cur)]),['Max you can earn',F.cap?money(F.cap,F.cur):'No cap'],['Earned so far',money(earned,F.cur)]])}`
   +(d.status!=='ended'?`<div style="display:flex;gap:10px">${seller?`<button class="b sec sm" data-act="pausedeal" data-id="${d.id}">${d.status==='paused'?'Resume':'Pause'} deal</button>`:''}<button class="b bad sm" data-act="enddeal" data-id="${d.id}">End deal</button></div>`:'');
- const side=`<div class="side">${card('','',`<div style="display:flex;gap:14px;align-items:center"><span style="width:84px;flex:none">${thumb(p)}</span><div style="min-width:0"><b style="font-size:15px;display:block">${esc(o.title)}</b><span style="font-size:12px;color:var(--sub)">${T.name} · since ${d.since}</span></div></div>${rows([['Status',tag(d.status)],['Reward',T.reward(d.terms)+' '+esc(T.sub(d.terms).split(' · ')[0])],['Earned',money(earned,F.cur)],['Budget left',F.budget==null?'No cap':money(left(o),F.cur)]])}<button class="b sec block" data-go="offer-${o.id}">View offer</button>`)}</div>`;
+ const side=`<div class="side">${card('','',`<div style="display:flex;gap:14px;align-items:center"><span style="width:92px;flex:none;display:block;margin-right:2px">${thumb(p)}</span><div style="min-width:0;flex:1"><b style="font-size:15px;display:block">${esc(o.title)}</b><span style="font-size:12px;color:var(--sub)">${T.name} · since ${d.since}</span></div></div>${rows([['Status',tag(d.status)],['Reward',T.reward(d.terms)+' '+esc(T.sub(d.terms).split(' · ')[0])],['Earned',money(earned,F.cur)],['Budget left',F.budget==null?'No cap':money(left(o),F.cur)]])}<button class="b sec block" data-go="offer-${o.id}">View offer</button>`)}</div>`;
  $('#views').innerHTML=page(esc(other),'Deal',`<div class="cols"><div class="main-col">${card('','',tabs+body)}</div>${side}</div>`);
  if(t==='chat'){const m=$('.scroll');m.scrollTop=m.scrollHeight}
 }
