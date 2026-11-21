@@ -18,6 +18,10 @@
   // No cron: the free plan allows 5 per account. Contests open and close (and winners are picked) when the feed loads
   // or someone plays. On Workers Paid, add  "triggers": { "crons": ["*/5 * * * *"] }  to also do it on a timer.
   "workers_dev": true,
+  "routes": [
+    { "pattern": "gorillasquad.xyz", "custom_domain": true },
+    { "pattern": "www.gorillasquad.xyz", "custom_domain": true }
+  ],
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "observability": { "enabled": true },
   "vars": {
