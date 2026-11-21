@@ -309,6 +309,158 @@ nav a{position:relative}
 .thumb .pl svg{width:22px;height:22px}
 .flyer .art{width:min(340px,86%)}
 @media(max-width:560px){.g2{grid-template-columns:1fr}}
+/* ===== SaaS pages: top bar, content column, cards, forms ===== */
+.toast{top:84px;bottom:auto;transform:translateX(-50%) translateY(-6px);transition:opacity .2s,transform .2s;z-index:40}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.view.light{background:#F7F6EE}
+.top{flex:none;height:72px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;z-index:5}
+.top-in{width:100%;max-width:1120px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:14px}
+.top .round{width:40px;height:40px;border-radius:50%;background:var(--soft);border:0}
+.top .tt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.top .tt small{font-size:12px;color:var(--sub);font-weight:600}
+.top .tt b{font-size:17px;font-family:"Libre Baskerville",Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .grow{flex:1}
+.scroll{flex:1;min-height:0;overflow-y:auto}
+.pg{width:100%;max-width:1120px;margin:0 auto;padding:36px 32px 120px;display:flex;flex-direction:column;gap:28px}
+.pg.narrow{max-width:760px}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.ph h1{margin:0;font-size:32px;line-height:38px;letter-spacing:-.01em}
+.ph p{margin:6px 0 0;color:var(--sub);font-size:15px;line-height:22px;max-width:560px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:32px;align-items:start}
+.cols>.main-col{display:flex;flex-direction:column;gap:24px;min-width:0}
+.side{position:sticky;top:20px;display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.card.tight{gap:12px}
+.card>.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card>.ch h3{margin:0;font-size:17px}
+.card>.ch p{margin:4px 0 0;font-size:13px;color:var(--sub);line-height:18px}
+.rowsl .r{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-top:1px solid #eeede0;font-size:14px}
+.rowsl .r:first-child{border-top:0;padding-top:0}.rowsl .r:last-child{padding-bottom:0}
+.rowsl .r span:first-child{color:var(--sub)}.rowsl .r b{text-align:right;font-weight:700}
+.b{height:48px;padding:0 22px;border-radius:14px;border:0;font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.b.pri{background:var(--ink);color:#fff}.b.pri:hover{background:#34432b}
+.b.sage{background:var(--pink);color:var(--ink)}
+.b.sec{background:#fff;border:1.5px solid #d9d7c8;color:var(--ink)}.b.sec:hover{border-color:var(--ink)}
+.b.bad{background:#fbe6df;color:#8a2e12}
+.b.block{width:100%}.b.sm{height:38px;padding:0 14px;font-size:13px;border-radius:11px}
+.b[disabled]{opacity:.45;cursor:not-allowed}
+/* form kit */
+.f{display:flex;flex-direction:column;gap:8px;min-width:0}
+.f>label,.f>.lb{font-size:13px;font-weight:700;color:var(--ink)}
+.f .help{font-size:12px;color:var(--sub);line-height:17px}
+.inp{display:flex;align-items:center;gap:8px;height:52px;border:1.5px solid #d9d7c8;border-radius:14px;background:#fff;padding:0 16px;transition:border-color .15s,box-shadow .15s}
+.inp:hover{border-color:#b9b7a6}
+.inp:focus-within{border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A899}
+.inp input,.inp select{flex:1;min-width:0;height:100%;border:0;outline:0;background:none;font-size:16px}
+.inp .pre,.inp .suf{font-weight:700;color:var(--sub);font-size:15px;flex:none}
+textarea.ta{width:100%;min-height:104px;border:1.5px solid #d9d7c8;border-radius:14px;background:#fff;padding:14px 16px;font-size:16px;line-height:23px;resize:vertical;outline:0;transition:border-color .15s,box-shadow .15s}
+textarea.ta:focus{border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A899}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chs{display:flex;flex-wrap:wrap;gap:8px}
+.chs button{height:40px;padding:0 16px;border-radius:999px;border:1.5px solid #d9d7c8;background:#fff;font-weight:700;font-size:14px;color:var(--ink)}
+.chs button:hover{border-color:var(--ink)}
+.chs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.segc{display:flex;padding:4px;background:#ECEADB;border-radius:14px;gap:4px}
+.segc button{flex:1;height:44px;border-radius:11px;font-weight:700;font-size:14px;color:var(--sub)}
+.segc button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
+.swrow{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.swrow b{display:block;font-size:14px}.swrow span{font-size:12px;color:var(--sub);line-height:17px}
+.sw{flex:none;width:50px;height:30px;border-radius:99px;background:#d4d2c2;position:relative;border:0;transition:background .15s}
+.sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0004;transition:transform .15s}
+.sw.on{background:var(--ink)}.sw.on i{transform:translateX(20px)}
+.cattiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cattiles button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border-radius:16px;border:1.5px solid #d9d7c8;background:#fff;font-weight:700;font-size:13px}
+.cattiles button svg{width:26px;height:26px}
+.cattiles button.on{border-color:var(--ink);background:#EEF2DF;box-shadow:0 0 0 3px #CBD6A899}
+/* wizard stepper */
+.stp{display:flex;align-items:center;list-style:none;margin:0;padding:0;gap:0}
+.stp li{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:var(--sub);flex:1}
+.stp li:last-child{flex:none}
+.stp li b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#E7E5D6;color:var(--sub);font-size:13px;flex:none}
+.stp li.cur{color:var(--ink)}.stp li.cur b{background:var(--ink);color:#fff}
+.stp li.done b{background:var(--pink);color:var(--ink)}.stp li.done{color:var(--ink)}
+.stp li:not(:last-child):after{content:"";flex:1;height:2px;background:#E1DFCF;margin:0 14px;border-radius:2px}
+.stp li.done:not(:last-child):after{background:var(--pink)}
+.stp-m{display:none;font-size:13px;font-weight:700;color:var(--sub)}
+.stp-m .bar{margin-top:8px}
+.wfoot{flex:none;background:#fffffff2;border-top:1px solid var(--line)}
+.wfoot-in{max-width:1120px;margin:0 auto;padding:14px 32px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.wfoot-in .hint{font-size:13px;color:var(--sub)}
+/* product pick grid */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pc{position:relative;display:flex;flex-direction:column;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:18px;overflow:hidden;padding:0}
+.pc:hover{border-color:#b9b7a6}
+.pc.sel{border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A8aa}
+.pc .im{height:150px;display:flex;align-items:center;justify-content:center;padding:14px}
+.pc .im>svg,.pc .im>img{height:100%;width:auto;max-width:100%;object-fit:contain}
+.pc .tx{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px}
+.pc .tx b{font-size:15px}.pc .tx span{font-size:12px;color:var(--sub)}
+.pc .ck{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:14px}
+.pc.add{border-style:dashed;align-items:center;justify-content:center;min-height:226px;gap:10px;color:var(--sub);font-weight:700}
+.pc.add .plus2{width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;color:var(--ink)}
+/* live preview card */
+.prev .pv-art{border-radius:14px;height:170px;display:flex;align-items:center;justify-content:center;padding:14px;margin:-4px -4px 0}
+.prev .pv-art>svg,.prev .pv-art>img{height:100%;width:auto;max-width:100%;object-fit:contain}
+.prev .pv-empty{border:1.5px dashed #cfcdbd;border-radius:14px;height:170px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:13px;text-align:center;padding:0 24px}
+.prev .pv-t{font-weight:800;font-size:16px;line-height:21px}
+.prev .pv-rw{font-family:"Libre Baskerville",Georgia,serif;font-size:30px}
+.prev .pv-rw small{font:600 13px Inter;color:var(--sub);margin-left:6px}
+.tot{border-top:1px solid #e3e1d2;padding-top:12px;font-size:16px;font-weight:800}
+/* gallery (product + offer pages) */
+.gal{display:flex;flex-direction:column;gap:12px}
+.gal .hero-art{padding:34px 0 26px;min-height:360px;border-radius:22px}
+.gal .hero-art .art{width:min(380px,66%)}
+.gal .thumbs{gap:10px}
+.gal .thumb{width:110px;height:84px;border-radius:14px}
+.thumb.addt{background:#fff!important;border:1.5px dashed #b9b7a6;color:var(--sub);flex-direction:column;gap:2px;font-size:11px;font-weight:700}
+.thumb .cvb{position:absolute;left:5px;top:5px;font-size:10px;font-weight:800;background:var(--pink);color:var(--ink);border-radius:99px;padding:2px 7px}
+.bignum{font-family:"Libre Baskerville",Georgia,serif;font-size:42px;line-height:1.05}
+.bignum small{font:600 14px Inter;color:var(--sub);display:block;margin-top:6px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:20px}
+.chk b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;flex:none}
+.chk .y{background:#dfe9c4;color:#2f5a14}.chk .n{background:#f6d9cf;color:#9b3a1c}
+.chk small{display:block;color:var(--sub);font-size:12px;margin-top:1px}
+.trust{font-size:12px;color:var(--sub);line-height:17px;display:flex;gap:8px}
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.statrow .stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.onlym{display:none}
+.tbl{display:flex;flex-direction:column}
+.tbl .tr{display:flex;align-items:center;gap:14px;padding:14px 4px;border-top:1px solid #eeede0;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;width:100%}
+.tbl .tr:first-child{border-top:0}
+.tbl .tr:hover{background:#faf9f2}
+.tbl .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.tbl .tx b{font-size:15px}.tbl .tx span{font-size:12px;color:var(--sub)}
+.tbl .thumb{width:72px;height:56px;border-radius:12px;flex:none}
+.tabsb{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:0 0 4px}
+.tabsb button{padding:12px 16px;font-weight:700;font-size:14px;color:var(--sub);border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabsb button.on{color:var(--ink);border-color:var(--ink)}
+.tabsb .n{background:#e07a4f;color:#fff;border-radius:9px;font-size:10px;padding:1px 6px;margin-left:6px}
+.profhead{display:flex;align-items:center;gap:20px}
+.profhead .big{width:84px;height:84px;font-size:30px}
+@media(max-width:899px){
+ .top{height:60px}.top-in{padding:0 16px}
+ .pg{padding:20px 16px 110px;gap:22px}
+ .ph h1{font-size:26px;line-height:32px}
+ .cols{grid-template-columns:1fr;gap:22px}.side{position:static}
+ .card{padding:18px;border-radius:18px}
+ .fg2{grid-template-columns:1fr}
+ .cattiles{grid-template-columns:repeat(2,1fr)}
+ .pgrid{grid-template-columns:repeat(2,1fr);gap:12px}
+ .stp{display:none}.stp-m{display:block}
+ .wfoot-in{padding:12px 16px}
+ .statrow{grid-template-columns:repeat(2,1fr)}
+ .onlym{display:block}.onlyd{display:none}
+ .gal .hero-art{min-height:250px;padding:24px 0 18px}
+ .gal .thumb{width:84px;height:64px}
+ .top .tt b{font-size:16px}
+ .toast{top:70px}
+}
+@media(min-width:900px){#app{width:min(100vw - 40px,1320px)}}
+.segc button{border:0;background:transparent}
+.pv-rw small{display:inline-block;margin-left:8px}
+.toast{max-width:min(420px,90vw)}
+.tabsb button{border:0;border-bottom:2.5px solid transparent;background:none;border-radius:0}
+.tabsb button.on{border-bottom-color:var(--ink)}
+.chs button,.cattiles button,.pc{font-family:inherit}
 
 </style>
 </head>
@@ -368,7 +520,7 @@ const PEOPLE={
 };
 const S={role:'marketer',tab:'deals',dtab:'chat',fc:'all',from:'feed',pf:null,n:20,gal:{},
  products:[
-  {id:'p1',owner:'u-kofi',name:'Scotch Bonnet Hot Sauce',category:'physical',art:'bottle',gallery:['bottle'],desc:'Small-batch scotch bonnet sauce made in Lagos.'},
+  {id:'p1',owner:'u-kofi',name:'Scotch Bonnet Hot Sauce',category:'physical',art:'bottle',gallery:['bottle'],url:'https://kofihotsauce.example',desc:'Small-batch scotch bonnet sauce made in Lagos.'},
   {id:'p7',owner:'u-kofi',name:'Pepper Masterclass',category:'digital',art:'course',gallery:['course'],video:'0:48',desc:'A video course on growing and fermenting peppers.'},
   {id:'p2',owner:'u-tunde',name:'Lagos Nights EP',category:'digital',art:'music',gallery:['music'],video:'0:30',desc:'A lo-fi EP for late nights.'},
   {id:'p3',owner:'u-pay',name:'PayrollPilot HR suite',category:'software',art:'dashboard',gallery:['dashboard','app'],video:'1:05',desc:'Payroll for African SMEs.'},
@@ -411,7 +563,7 @@ function elig(o){const r=o.req,m=ME.marketer,res=[];
  if(r.verified_only)res.push({ok:m.verified,t:'Verified marketer',you:m.verified?'You are verified':'Not verified'});
  return {ok:res.every(x=>x.ok),res}}
 const tag=(s)=>`<span class="tag ${{open:'live',active:'live',verified:'live',accepted:'live',funded:'live',pending:'pink',paused:'blue',denied:'red',rejected:'red',ended:'dark',unfunded:'pink',draft:''}[s]||''}">${s}</span>`;
-let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400)}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
 function openSheet(html,tall){const s=$('#sheet');s.innerHTML='<span class="grab"></span>'+html;s.classList.toggle('tall',!!tall);s.classList.add('on');$('#veil').classList.add('on')}
 function closeSheet(){$('#sheet').classList.remove('on');$('#veil').classList.remove('on')}
 $('#veil').onclick=closeSheet;
@@ -421,7 +573,9 @@ addEventListener('hashchange',()=>{closeSheet();render()});
 
 /* ---------- shared pieces ---------- */
 const bgFor=p=>`linear-gradient(165deg,${CAT_BG[p.category][0]},${CAT_BG[p.category][1]})`;
-const artOf=(p,k)=>p.img&&(!k||k===p.art)?`<img src="${p.img}" alt="" style="width:100%;border-radius:14px;display:block">`:ART[k||p.art];
+const isData=g=>String(g).startsWith('data:');
+const gArt=g=>isData(g)?`<img src="${g}" alt="" style="width:100%;border-radius:14px;display:block">`:ART[g];
+const artOf=(p,k)=>gArt(k||p.gallery[0]);
 const thumb=(p)=>`<span class="thumb" style="background:${bgFor(p)}">${artOf(p)}</span>`;
 function feedPoster(o){const p=prod(o.pid),T=TYPES[o.type];
  return `<div class="flyer" style="background:${bgFor(p)}"><div class="brand">${esc(o.co)} · ${CATS[p.category]}</div><div class="art">${artOf(p)}</div><div class="name">${esc(p.name)}</div><div class="rw">${T.reward(o.terms)}</div><div class="fine">${T.sub(o.terms)}</div></div>`}
@@ -463,131 +617,159 @@ function renderFeed(){
     <div class="row2">${ctaFor(o)}${p.video||cv?`<button type="button" class="demo" data-act="demo" data-id="${o.id}" aria-label="Watch the demo">${I.play}</button>`:''}</div></div></div></article>`}).join('');
  $('#views').innerHTML=`<section class="view on" id="feed"><div class="topbar">${tabs.map(([k,l])=>`<button type="button" class="${S.fc===k?'on':''}" data-fc="${k}">${l}</button>`).join('')}</div><div class="slides">${slides||'<div class="empty"><h2>Nothing here yet</h2><p>No offers in this section.</p></div>'}</div></section>`;
 }
-/* ---------- offer detail ---------- */
+/* ---------- shell + form kit ---------- */
+const chev='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>';
+function page(title,crumb,body,o={}){
+ return `<section class="view on light"><header class="top"><div class="top-in"><button class="ib round" data-back aria-label="Back">${I.back}</button><div class="tt"><small>${crumb}</small><b>${title}</b></div><span class="grow"></span>${o.right||''}</div></header><div class="scroll"><div class="pg ${o.narrow?'narrow':''}">${body}</div></div>${o.foot||''}</section>`}
+const ph=(h,p,r='')=>`<div class="ph"><div><h1>${h}</h1>${p?`<p>${p}</p>`:''}</div>${r}</div>`;
+const fld=(label,inner,help)=>`<div class="f"><label>${label}</label>${inner}${help?`<div class="help">${help}</div>`:''}</div>`;
+const inp=(attrs,pre,suf)=>`<div class="inp">${pre?`<span class="pre">${pre}</span>`:''}<input ${attrs}>${suf?`<span class="suf">${suf}</span>`:''}</div>`;
+const chips=(items,cur,act)=>`<div class="chs">${items.map(([k,l])=>`<button type="button" class="${cur===k?'on':''}" data-act="${act}" data-v="${k}">${l}</button>`).join('')}</div>`;
+const sw=(on,key,t,sub)=>`<div class="swrow"><div><b>${t}</b><span>${sub}</span></div><button type="button" class="sw ${on?'on':''}" data-act="swt" data-v="${key}" role="switch" aria-checked="${!!on}"><i></i></button></div>`;
+const card=(h,p,inner,cls='')=>`<div class="card ${cls}">${h?`<div class="ch"><div><h3>${h}</h3>${p?`<p>${p}</p>`:''}</div></div>`:''}${inner}</div>`;
+const rows=a=>`<div class="rowsl">${a.map(([l,v])=>`<div class="r"><span>${l}</span><b>${v}</b></div>`).join('')}</div>`;
+const SIGN={rate_cents:1,min_contract_cents:1};
+const fieldLabel=f=>({percent:'Commission',cookie_days:'Attribution window',rate_cents:'Rate',per:'Paid per',share_percent:'Your share',min_contract_cents:'Minimum contract'}[f[0]]||f[1]);
+const fmtTerm=(k,v,cur='USD')=>({percent:v+'%',cookie_days:v+' days',rate_cents:money(v,cur),per:'per '+v,share_percent:v+'%',min_contract_cents:money(v,cur)}[k]??v);
+const HOW={
+ commission:[['Ask to join','Send a short note. The seller reviews and accepts.'],['Share your link','Promote it to your own audience in your own words.'],['Earn per sale','Each verified sale pays your commission, drawn from the budget.']],
+ attention:[['Ask to join','Send a short note. The seller reviews and accepts.'],['Post it','Share to your audience and report the proof link or video.'],['Get paid per result','Each verified click or view earns the rate, until the budget runs out.']],
+ introduction:[['Ask to join','Tell the seller who you can introduce.'],['Make the intro','Connect them with a real buyer and keep the chat going in the deal.'],['Share the contract','When a contract signs, you earn your share.']]};
+const howCard=o=>card('How it works','Terms are frozen the moment the seller accepts you.',`<div style="display:flex;flex-direction:column;gap:16px">${HOW[o.type].map((s,i)=>`<div class="chk"><b class="y" style="background:var(--ink);color:#fff;width:28px;height:28px;font-size:13px">${i+1}</b><div><b style="font-size:15px">${s[0]}</b><small style="font-size:13px;margin-top:2px">${s[1]}</small></div></div>`).join('')}</div>`);
 function heroArt(o){
  const p=prod(o.pid),k=S.gal[o.id]||p.gallery[0];
  const thumbs=p.gallery.map(g=>`<button type="button" class="thumb ${g===k?'on':''}" data-act="gal" data-id="${o.id}" data-v="${g}" style="background:${bgFor(p)}">${p.img&&g===p.art?`<img src="${p.img}" style="width:100%">`:ART[g]}</button>`).join('')
   +(p.video?`<button type="button" class="thumb" data-act="demo" data-id="${o.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${p.video}</span></button>`:'');
  return `<div class="hero-art" style="background:${bgFor(p)}"><span class="chip pink badge">${CATS[p.category]}</span><div class="art">${artOf(p,k)}</div>${p.video?`<button class="vid" data-act="demo" data-id="${o.id}">${I.play} Watch demo · ${p.video}</button>`:''}</div>${thumbs?`<div class="thumbs">${thumbs}</div>`:''}`}
+/* ---------- offer ---------- */
+function gallery(o){const p=prod(o.pid);return `<div class="gal">${heroArt(o)}</div>`}
 function renderOffer(id){
  const o=offer(id);if(!o)return go('feed');const p=prod(o.pid),T=TYPES[o.type],mine=meOffer(o),e=elig(o),ints=intsOn(o.id),F=o.fin,cvs=creatorVideos(o);
- const budget=F.budget==null?null:F.budget,fee=budget?Math.round(budget*FEE/10000):0;
- let h=`<section class="view on light"><header class="hdr"><button class="ib" data-back aria-label="Back">${I.back}</button><span class="ttl">${mine?'Your offer':'Offer'}</span><span style="width:44px"></span></header><div class="main" style="padding-top:6px">
-  ${heroArt(o)}
-  <div><h1 style="font-size:24px;line-height:30px">${esc(o.title)}</h1><div class="lede" style="margin-top:4px">${esc(o.co)}${o.coV?' · verified':''} · ${T.name} · ${esc(p.name)}</div></div>
-  <div class="stats"><div class="stat"><b>${T.reward(o.terms)}</b><span>${esc(T.sub(o.terms).split(' · ')[0])}</span></div><div class="stat"><b>${budget==null?'No cap':money(left(o),F.cur)}</b><span>${budget==null?'Budget':'Budget left'}</span></div><div class="stat"><b>${F.cap?money(F.cap,F.cur):'None'}</b><span>Max per marketer</span></div></div>`;
- if(mine){
-  const pct=budget?Math.min(100,Math.round(spent(o)/budget*100)):0;
-  h+=`<div class="fld"><div class="h3">Financials ${tag(budget?(F.funded?'funded':'unfunded'):'no budget')}</div><div class="fin">${budget?`<div class="bar"><i style="width:${pct}%"></i></div><div class="r"><span>Spent</span><b>${money(spent(o),F.cur)} of ${money(budget,F.cur)}</b></div><div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,F.cur)}</b></div><div class="r"><span>Paid in</span><b>${F.funded?money(budget+fee,F.cur):money(0,F.cur)}</b></div>`:'<div class="r"><span>No budget set. You settle payouts directly with each marketer.</span></div>'}</div></div>`;
-  h+=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Interests<button type="button" data-act="togglestatus" data-id="${o.id}">${o.status==='open'?'Pause offer':'Reopen offer'}</button></div>`;
-  h+=ints.length?ints.map(i=>{const q=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="rowbtn" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(q.name))}</span><span class="tx"><b>${esc(q.name)}${q.verified?' ✓':''}</b><span>${(q.followers||0).toLocaleString()} followers · ${q.country}</span></span>${tag(i.status)}</button>`}).join(''):'<span style="color:var(--sub)">No interests yet.</span>';
-  h+='</div>';
- }else{
-  h+=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Requirements</div>${e.res.length?e.res.map(x=>`<div class="cl"><span class="tx"><b class="${x.ok?'ok':'no'}">${x.ok?'✓':'✕'} ${esc(x.t)}</b><span>${esc(x.you)}</span></span></div>`).join(''):'<div class="cl"><span class="tx"><b class="ok">✓ Open to every marketer</b></span></div>'}</div>`;
- }
- if(cvs.length)h+=`<div class="fld"><div class="h3">Creator videos <span class="seeall">${cvs.length} from marketers</span></div><div class="thumbs">${cvs.map(v=>`<button type="button" class="thumb" data-act="cv" data-id="${o.id}" data-v="${v.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${v.video}</span></button>`).join('')}</div></div>`;
- h+=`<div class="fld"><div class="h3">About</div><p class="lede" style="margin:0">${esc(o.desc)}</p></div>
-  <div class="fld" style="gap:2px"><div class="h3" style="height:34px">Terms</div>${T.fields.map(f=>`<div class="cl"><span class="tx"><span>${f[1]}</span><b>${esc(o.terms[f[0]])}</b></span></div>`).join('')}<div class="cl"><span class="tx"><span>Product</span><b>${esc(p.name)} · ${CATS[p.category]}</b></span></div></div></div>`;
- if(!mine&&S.role==='marketer'){const d=dealFor(o),mi=myInt(o);
-  h+=`<div class="foot">${d?`<button class="cta dark" data-go="deal-${d.id}">Open your deal</button>`:mi?`<button class="cta ghost" data-act="withdraw" data-id="${o.id}">Withdraw request</button>`:!e.ok?`<button class="cta" disabled>You don't meet the requirements</button>`:(budget!=null&&left(o)===0)?`<button class="cta" disabled>The budget is used up</button>`:`<button class="cta" data-act="int" data-id="${o.id}">I'm interested</button>`}</div>`}
- $('#views').innerHTML=h+'</section>';
+ const budget=F.budget,fee=budget?Math.round(budget*FEE/10000):0,d=dealFor(o),mi=myInt(o);
+ const full=budget!=null&&left(o)===0;
+ const cta=mine?`<button class="b sec block" data-act="togglestatus" data-id="${o.id}">${o.status==='open'?'Pause offer':'Reopen offer'}</button>`:
+  d?`<button class="b pri block" data-go="deal-${d.id}">Open your deal</button>`:mi?`<button class="b sec block" data-act="withdraw" data-id="${o.id}">Withdraw request</button>`:
+  !e.ok?`<button class="b pri block" disabled>You don't meet the requirements</button>`:full?`<button class="b pri block" disabled>The budget is used up</button>`:`<button class="b pri block" data-act="int" data-id="${o.id}">I'm interested</button>`;
+ const pct=budget?Math.min(100,Math.round(spent(o)/budget*100)):0;
+ const side=`<div class="side">${card('','',`<div class="bignum">${T.reward(o.terms)}<small>${esc(T.sub(o.terms))}</small></div>${rows([['Budget left',budget==null?'No cap':money(left(o),F.cur)],['Max per marketer',F.cap?money(F.cap,F.cur):'None'],['Type',T.name]])}<div class="onlyd">${cta}</div><div class="trust">${I.shield||''}<span>${mine?'You can pause or reopen this any time.':'The seller reviews every request. Your terms are frozen once accepted.'}</span></div>`)}
+  ${mine?card('Financials',budget?(F.funded?'Funded and open to marketers':'Waiting for payment'):'No budget set',budget?`<div class="fin"><div class="bar"><i style="width:${pct}%"></i></div>${rows([['Spent',money(spent(o),F.cur)+' of '+money(budget,F.cur)],['Listing fee ('+FEE/100+'%)',money(fee,F.cur)],['Paid in',F.funded?money(budget+fee,F.cur):money(0,F.cur)]])}</div>`:'<div class="help" style="font-size:13px;color:var(--sub)">You settle payouts directly with each marketer.</div>'):''}</div>`;
+ const main=`${gallery(o)}
+  <div><div style="display:flex;gap:8px;margin-bottom:10px">${tag(o.status)}<span class="chip">${CATS[p.category]}</span></div><h1 style="margin:0;font-size:30px;line-height:36px">${esc(o.title)}</h1><div style="color:var(--sub);margin-top:6px;font-size:14px">${esc(o.co)}${o.coV?' · verified seller':''} · ${esc(p.name)}</div></div>
+  ${card('About this offer','',`<p style="margin:0;font-size:15px;line-height:24px;color:#33382c">${esc(o.desc)}</p>`)}
+  ${mine?card('Interests',ints.length?ints.length+' marketer'+(ints.length>1?'s':'')+' asked to join. Tap one to accept or deny.':'Nobody has asked yet.',ints.length?`<div class="tbl">${ints.map(i=>{const q=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="tr" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(q.name))}</span><span class="tx"><b>${esc(q.name)}${q.verified?' ✓':''}</b><span>${(q.followers||0).toLocaleString()} followers · ${q.country}</span></span>${tag(i.status)}</button>`}).join('')}</div>`:''):howCard(o)}
+  ${mine?'':card('Requirements','',e.res.length?`<div style="display:flex;flex-direction:column;gap:14px">${e.res.map(x=>`<div class="chk"><b class="${x.ok?'y':'n'}">${x.ok?'✓':'✕'}</b><div><span style="font-weight:700">${esc(x.t)}</span><small>${esc(x.you)}</small></div></div>`).join('')}</div>`:`<div class="chk"><b class="y">✓</b><div><span style="font-weight:700">Open to every marketer</span></div></div>`)}
+  ${cvs.length?card('Creator videos',cvs.length+' from marketers on this offer',`<div class="thumbs">${cvs.map(v=>`<button type="button" class="thumb" data-act="cv" data-id="${o.id}" data-v="${v.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${v.video}</span></button>`).join('')}</div>`):''}
+  ${card('Terms','',rows([...T.fields.map(f=>[fieldLabel(f),fmtTerm(f[0],o.terms[f[0]],F.cur)]),['Product',esc(p.name)+' · '+CATS[p.category]]]))}`;
+ const foot=(!mine&&S.role==='marketer')?`<div class="wfoot onlym"><div class="wfoot-in">${cta.replace('block','block')}</div></div>`:'';
+ $('#views').innerHTML=page(esc(o.title),mine?'Your offer':'Offer',`<div class="cols"><div class="main-col">${main}</div>${side}</div>`,{foot,right:mine?'':''});
 }
 function intSheet(id){
  const i=S.interests.find(x=>x.id===id),p=PEOPLE[i.from]||{name:i.from};
  openSheet(`<div class="sh-head"><div><h2>${esc(p.name)}</h2><p>Interested in ${esc(offer(i.offer).title)}</p></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div>
- <div class="form"><div class="stats"><div class="stat"><b>${(p.followers||0).toLocaleString()}</b><span>Followers</span></div><div class="stat"><b>${p.country}</b><span>Country</span></div><div class="stat"><b>${p.verified?'Yes':'No'}</b><span>Verified</span></div></div>
+ <div class="form" style="gap:18px"><div class="stats"><div class="stat"><b>${(p.followers||0).toLocaleString()}</b><span>Followers</span></div><div class="stat"><b>${p.country}</b><span>Country</span></div><div class="stat"><b>${p.verified?'Yes':'No'}</b><span>Verified</span></div></div>
  <div class="banner" style="margin:0">“${esc(i.msg)}”</div><div style="font-size:13px;color:var(--sub)">${esc(p.socials||'')}</div>
- ${i.status==='pending'?`<button class="cta" data-act="accept" data-id="${i.id}">Accept · start deal</button><button class="cta ghost" data-act="deny" data-id="${i.id}">Deny</button><div style="font-size:12px;color:var(--sub)">Accepting freezes today's terms into the deal.</div>`:`<div>${tag(i.status)}</div>`}</div>`);
+ ${i.status==='pending'?`<div style="display:flex;flex-direction:column;gap:10px"><button class="b pri block" data-act="accept" data-id="${i.id}">Accept and start deal</button><button class="b sec block" data-act="deny" data-id="${i.id}">Deny</button></div><div class="help" style="font-size:12px;color:var(--sub)">Accepting freezes today's terms into the deal.</div>`:`<div>${tag(i.status)}</div>`}</div>`);
 }
 function verifySheet(id){
  let x,d;S.deals.forEach(dd=>dd.dels.forEach(y=>{if(y.id===id){x=y;d=dd}}));const o=offer(d.offer),F=o.fin;
  const earned=d.dels.filter(z=>z.status==='verified').reduce((n,z)=>n+(z.amount||0),0);
  openSheet(`<div class="sh-head"><div><h2>Verify delivery</h2><p>${esc(x.kind)} · ${esc(x.proof)}</p></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div>
- <div class="form">${x.video?`<button type="button" class="pick" data-act="cvplay" data-id="${x.id}"><span class="thumb" style="background:${bgFor(prod(o.pid))}">${ART[prod(o.pid).art]}</span><span class="tx"><b>Creator video · ${x.video}</b><span>by ${esc(x.by||'the marketer')}, tap to watch</span></span></button>`:''}
- <div class="fld"><label>What did it earn? (${F.cur})</label><input class="in" id="amt" type="number" min="0" step="1" value="${x.amount??''}" placeholder="0"><div class="note">${F.budget?`Budget left ${money(left(o),F.cur)}${F.cap?` · this marketer has earned ${money(earned,F.cur)} of ${money(F.cap,F.cur)}`:''}`:'No budget set on this offer, so this is just a record.'}</div></div>
- <button class="cta" data-act="verifygo" data-id="${x.id}">Verify</button><button class="cta ghost" data-act="reject" data-id="${x.id}">Reject</button></div>`);
+ <div class="form" style="gap:18px">${x.video?`<button type="button" class="pick" data-act="cvplay" data-id="${x.id}"><span class="thumb" style="background:${bgFor(prod(o.pid))}">${ART[prod(o.pid).art]}</span><span class="tx"><b>Creator video · ${x.video}</b><span>by ${esc(x.by||'the marketer')}, tap to watch</span></span></button>`:''}
+ ${fld('What did it earn?',inp(`id="amt" type="number" min="0" step="1" value="${x.amount!=null?x.amount/100:''}" placeholder="0"`,SYM[F.cur]||'$',F.cur),F.budget?`Budget left ${money(left(o),F.cur)}${F.cap?` · this marketer has earned ${money(earned,F.cur)} of ${money(F.cap,F.cur)}`:''}`:'No budget on this offer, so this is only a record.')}
+ <div style="display:flex;flex-direction:column;gap:10px"><button class="b pri block" data-act="verifygo" data-id="${x.id}">Verify</button><button class="b sec block" data-act="reject" data-id="${x.id}">Reject</button></div></div>`);
 }
 /* ---------- deal ---------- */
 function renderDeal(id){
- const d=S.deals.find(x=>x.id===id);if(!d)return go('me');const o=offer(d.offer),T=TYPES[o.type],F=o.fin;
+ const d=S.deals.find(x=>x.id===id);if(!d)return go('me');const o=offer(d.offer),T=TYPES[o.type],F=o.fin,p=prod(o.pid);
  const seller=o.owner==='u-kofi'&&S.role==='seller',marketer=d.marketer===meId()&&S.role==='marketer';
  const other=seller?who(d.marketer).name:o.co,t=S.dtab;
  const earned=d.dels.filter(x=>x.status==='verified').reduce((n,x)=>n+(x.amount||0),0);
- let body='',foot='';
- if(t==='chat'){body=`<div class="chat">${d.msgs.map(m=>{const me=(m.f==='u-kofi'&&S.role==='seller')||(m.f==='u-ada'&&S.role==='marketer');return `<div class="bubble ${me?'me':''}">${esc(m.t)}<small>${esc(who(m.f).name)}</small></div>`}).join('')}</div>`;
-  foot=`<div class="composer"><input id="msg" placeholder="Write a message…" autocomplete="off"><button class="btn" data-act="send" data-id="${d.id}">Send</button></div>`}
- if(t==='dels'){
-  body=(marketer&&d.status==='active'?`<div class="fld"><label>Report a delivery</label><input class="in" id="dp" placeholder="Proof link, https://…"><div style="display:flex;gap:8px"><button class="cta" data-act="report" data-id="${d.id}" style="flex:1">Report link</button><button class="cta ghost" data-act="cvup" data-id="${d.id}" style="flex:1">${I.up}&nbsp;Creator video</button></div></div>`:'')
-   +`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Deliveries<span class="seeall">Earned ${money(earned,F.cur)}</span></div>`+(d.dels.length?d.dels.map(x=>`<div class="cl" style="align-items:center">${x.video?`<button type="button" class="thumb" data-act="cvplay" data-id="${x.id}" style="background:${bgFor(prod(o.pid))};width:64px;height:52px">${ART[prod(o.pid).art]}<span class="pl">${I.play}</span></button>`:''}<span class="tx"><b>${esc(x.kind)}${x.amount?' · '+money(x.amount,F.cur):''}</b><span>${esc(x.proof)}</span></span>${tag(x.status)}${seller&&x.status==='pending'?`<button class="mbtn" data-act="vsheet" data-id="${x.id}">Review</button>`:''}</div>`).join(''):'<span style="color:var(--sub)">No deliveries yet.</span>')+`</div><div style="font-size:12px;color:var(--sub)">The seller (or an admin) verifies each delivery before it earns anything.</div>`}
- if(t==='terms'){
-  body=`<div class="banner" style="margin:0">Frozen when the interest was accepted. Later edits to the offer do not change this deal.</div><div class="fld" style="gap:2px">${T.fields.map(f=>`<div class="cl"><span class="tx"><span>${f[1]}</span><b>${esc(d.terms[f[0]])}</b></span></div>`).join('')}<div class="cl"><span class="tx"><span>Max you can earn</span><b>${F.cap?money(F.cap,F.cur):'No cap'}</b></span></div><div class="cl"><span class="tx"><span>Earned so far</span><b>${money(earned,F.cur)}</b></span></div></div>`
-   +(d.status!=='ended'?`<div style="display:flex;gap:8px">${seller?`<button class="mbtn" data-act="pausedeal" data-id="${d.id}">${d.status==='paused'?'Resume':'Pause'} deal</button>`:''}<button class="mbtn red" data-act="enddeal" data-id="${d.id}">End deal</button></div>`:'')}
- $('#views').innerHTML=`<section class="view on light"><header class="hdr"><button class="ib" data-back aria-label="Back">${I.back}</button><span class="ttl">${esc(other)}</span><span style="width:44px"></span></header>
- <div class="main" style="padding-top:6px;gap:16px"><div class="co"><span class="lg" style="background:none;padding:0;width:56px;height:46px">${thumb(prod(o.pid))}</span><div style="flex:1;min-width:0"><b style="font-size:16px">${esc(o.title)}</b><div style="font-size:12px;color:var(--sub);margin-top:2px">${T.name} · since ${d.since}</div></div>${tag(d.status)}</div>
- <div class="seg">${[['chat','Chat'],['dels','Deliveries'],['terms','Terms']].map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-dt="${k}">${l}</button>`).join('')}</div>${body}</div>${foot}</section>`;
- const m=$('.main');m.scrollTop=m.scrollHeight;
+ let body='';
+ const tabs=`<div class="tabsb">${[['chat','Chat'],['dels','Deliveries'+(d.dels.filter(x=>x.status==='pending').length?`<span class="n">${d.dels.filter(x=>x.status==='pending').length}</span>`:'')],['terms','Terms']].map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-dt="${k}">${l}</button>`).join('')}</div>`;
+ if(t==='chat')body=`<div class="chat" style="padding:4px 0 8px;min-height:240px">${d.msgs.map(m=>{const me=(m.f==='u-kofi'&&S.role==='seller')||(m.f==='u-ada'&&S.role==='marketer');return `<div class="bubble ${me?'me':''}">${esc(m.t)}<small>${esc(who(m.f).name)}</small></div>`}).join('')}</div>
+  <div style="display:flex;gap:10px"><div class="inp" style="flex:1"><input id="msg" placeholder="Write a message…" autocomplete="off"></div><button class="b pri" data-act="send" data-id="${d.id}">Send</button></div>`;
+ if(t==='dels')body=(marketer&&d.status==='active'?`<div style="display:flex;flex-direction:column;gap:12px;padding-bottom:20px;border-bottom:1px solid #eeede0">${fld('Report a delivery',inp('id="dp" placeholder="https://link-to-your-post"'),'Paste a proof link, or upload a creator video.')}<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="b pri" data-act="report" data-id="${d.id}">Report link</button><button class="b sec" data-act="cvup" data-id="${d.id}">${I.up} Upload creator video</button></div></div>`:'')
+  +(d.dels.length?`<div class="tbl">${d.dels.map(x=>`<div class="tr">${x.video?`<button type="button" class="thumb" data-act="cvplay" data-id="${x.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span></button>`:''}<span class="tx"><b>${esc(x.kind)}${x.amount?' · '+money(x.amount,F.cur):''}</b><span>${esc(x.proof)}</span></span>${tag(x.status)}${seller&&x.status==='pending'?`<button class="b pri sm" data-act="vsheet" data-id="${x.id}">Review</button>`:''}</div>`).join('')}</div>`:'<div style="color:var(--sub);padding:8px 0">No deliveries yet.</div>')+`<div class="help" style="font-size:12px;color:var(--sub)">The seller (or an admin) verifies each delivery before it earns anything.</div>`;
+ if(t==='terms')body=`<div class="banner" style="margin:0">Frozen when the interest was accepted. Later edits to the offer do not change this deal.</div>${rows([...T.fields.map(f=>[fieldLabel(f),fmtTerm(f[0],d.terms[f[0]],F.cur)]),['Max you can earn',F.cap?money(F.cap,F.cur):'No cap'],['Earned so far',money(earned,F.cur)]])}`
+  +(d.status!=='ended'?`<div style="display:flex;gap:10px">${seller?`<button class="b sec sm" data-act="pausedeal" data-id="${d.id}">${d.status==='paused'?'Resume':'Pause'} deal</button>`:''}<button class="b bad sm" data-act="enddeal" data-id="${d.id}">End deal</button></div>`:'');
+ const side=`<div class="side">${card('','',`<div style="display:flex;gap:14px;align-items:center"><span style="width:84px;flex:none">${thumb(p)}</span><div style="min-width:0"><b style="font-size:15px;display:block">${esc(o.title)}</b><span style="font-size:12px;color:var(--sub)">${T.name} · since ${d.since}</span></div></div>${rows([['Status',tag(d.status)],['Reward',T.reward(d.terms)+' '+esc(T.sub(d.terms).split(' · ')[0])],['Earned',money(earned,F.cur)],['Budget left',F.budget==null?'No cap':money(left(o),F.cur)]])}<button class="b sec block" data-go="offer-${o.id}">View offer</button>`)}</div>`;
+ $('#views').innerHTML=page(esc(other),'Deal',`<div class="cols"><div class="main-col">${card('','',tabs+body)}</div>${side}</div>`);
+ if(t==='chat'){const m=$('.scroll');m.scrollTop=m.scrollHeight}
 }
-/* ---------- plus: offer type → product → details → budget → review ---------- */
-const newPF=()=>({kind:'offer',step:1,type:'commission',pid:null,newProd:false,np:{name:'',category:'software',desc:'',img:null,video:null},title:'',desc:'',terms:{},minf:1000,countries:'',verified:false,cur:'USD',budget:'',cap:'',nocap:false});
-const termsOf=P=>{const t={};TYPES[P.type].fields.forEach(f=>{const v=P.terms[f[0]]??f[2];t[f[0]]=typeof f[2]==='number'?+v:v});return t};
+/* ---------- product page ---------- */
+function renderProduct(id){
+ const p=prod(id);if(!p)return go('me');const offers=S.offers.filter(o=>o.pid===p.id),k=S.gal['p'+p.id]||p.gallery[0];
+ const mineP=p.owner==='u-kofi'||p.mine;
+ const thumbs=p.gallery.map(g=>`<button type="button" class="thumb ${g===k?'on':''}" data-act="pgal" data-id="${p.id}" data-v="${g}" style="background:${bgFor(p)}">${p.img&&g===p.art?`<img src="${p.img}" style="width:100%">`:ART[g]}${g===p.gallery[0]?'<span class="cvb">Cover</span>':''}</button>`).join('')
+  +(p.video?`<button type="button" class="thumb" data-act="pdemo" data-id="${p.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${p.video}</span></button>`:'')
+  +(mineP?`<button type="button" class="thumb addt" data-act="toast" data-v="Upload opens here. Max 5 MB per image."><span style="font-size:20px">+</span>Add image</button>`:'');
+ const main=`<div class="gal"><div class="hero-art" style="background:${bgFor(p)}"><span class="chip pink badge">${CATS[p.category]}</span><div class="art">${artOf(p,k)}</div>${p.video?`<button class="vid" data-act="pdemo" data-id="${p.id}">${I.play} Watch demo · ${p.video}</button>`:''}</div><div class="thumbs">${thumbs}</div></div>
+  <div><h1 style="margin:0;font-size:30px;line-height:36px">${esc(p.name)}</h1><div style="color:var(--sub);margin-top:6px;font-size:14px">${CATS[p.category]}${p.url?' · '+esc(p.url.replace('https://','')):''}</div></div>
+  ${card('About','',`<p style="margin:0;font-size:15px;line-height:24px;color:#33382c">${esc(p.desc||'No description yet.')}</p>`)}
+  ${card('How it works','What marketers see before they ask to join.',`<div style="display:flex;flex-direction:column;gap:16px">${[['Placement image','The cover image appears on the feed card and the offer page.'],['Gallery and demo','Extra images and a demo video show what the product really does.'],['Creator videos','Marketers can upload their own review videos once a deal is active.']].map((s,i)=>`<div class="chk"><b class="y" style="background:var(--ink);color:#fff;width:28px;height:28px;font-size:13px">${i+1}</b><div><b style="font-size:15px">${s[0]}</b><small style="font-size:13px;margin-top:2px">${s[1]}</small></div></div>`).join('')}</div>`)}`;
+ const side=`<div class="side">${card('Offers on this product',offers.length?offers.length+' running':'None yet',offers.length?`<div class="tbl">${offers.map(o=>`<button type="button" class="tr" data-act="open" data-id="${o.id}"><span class="tx"><b>${esc(o.title)}</b><span>${TYPES[o.type].name} · ${TYPES[o.type].reward(o.terms)}</span></span>${tag(o.status)}</button>`).join('')}</div>`:'')}${mineP?`<button class="b pri block" data-act="newoffer" data-id="${p.id}">Post an offer for this</button>`:''}</div>`;
+ $('#views').innerHTML=page(esc(p.name),'Product',`<div class="cols"><div class="main-col">${main}</div>${side}</div>`);
+}
+/* ---------- create wizard ---------- */
+const newPF=()=>({kind:'offer',step:1,type:'commission',pid:null,newProd:false,np:{name:'',category:'software',desc:'',img:null,video:null},title:'',desc:'',terms:{},minf:1000,countries:[],verified:false,cur:'USD',budget:'',cap:'',nocap:false});
+const termVal=(P,f)=>P.terms[f[0]]??(f[0].endsWith('_cents')?f[2]/100:f[2]);
+const termsOf=P=>{const t={};TYPES[P.type].fields.forEach(f=>{const v=termVal(P,f);t[f[0]]=f[0].endsWith('_cents')?Math.round(+v*100):typeof f[2]==='number'?+v:v});return t};
 const budgetC=P=>P.nocap?null:Math.round((+P.budget||0)*100);
 const capC=P=>P.nocap||!P.cap?null:Math.round((+P.cap||0)*100);
-function estimate(P){const T=TYPES[P.type],b=budgetC(P);if(!b)return '';const t=termsOf(P);
+function estimate(P){const b=budgetC(P);if(!b)return '';const t=termsOf(P);
  if(P.type==='attention')return `Pays for about ${Math.floor(b/Math.max(1,t.rate_cents)).toLocaleString()} ${t.per}s at ${money(t.rate_cents,P.cur)} each.`;
- if(P.type==='commission')return `Covers about ${money(b,P.cur)} in commission. At ${t.percent}%, that is ${money(Math.round(b/(t.percent/100)),P.cur)} in sales.`;
- return `Covers about ${money(b,P.cur)} in shares of signed contracts.`}
+ if(P.type==='commission')return `At ${t.percent}%, this budget covers ${money(Math.round(b/(t.percent/100)),P.cur)} in sales.`;
+ return `Covers ${money(b,P.cur)} in shares of signed contracts.`}
 function finBlock(P){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0;
- return `<div class="fin">${b?`<div class="r"><span>Budget</span><b>${money(b,P.cur)}</b></div><div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,P.cur)}</b></div><div class="r tot"><span>Total to pay</span><b>${money(b+fee,P.cur)}</b></div><div class="note" style="font-size:12px;color:var(--sub)">${estimate(P)}</div>`:`<div class="r"><span>${P.nocap?'No budget, so no payment is needed to go live.':'Enter a budget to see what it costs.'}</span></div>`}</div>`}
-function productPick(P){
- const mine=S.products.filter(p=>p.owner==='u-kofi'||p.mine);
- if(P.newProd){const n=P.np;
-  return `<div><h1>New product</h1><p class="lede">Add a placement image so marketers can see what they are promoting.</p></div>
-  <div class="fld"><label>Name</label><input class="in" data-np="name" value="${esc(n.name)}" placeholder="Product name"></div>
-  <div class="fld"><label>Category</label><div class="catgrid">${Object.entries(CATS).map(([k,l])=>`<button type="button" class="${n.category===k?'on':''}" data-act="npcat" data-v="${k}">${l}</button>`).join('')}</div></div>
-  <div class="fld"><label>Description</label><textarea class="in" rows="3" data-np="desc" placeholder="What is it, and who is it for?">${esc(n.desc)}</textarea></div>
-  <div class="fld"><label>Placement image</label><label class="drop ${n.img||n.sample?'has':''}">${n.img?`<img src="${n.img}" alt="">`:n.sample?`<span style="width:150px;display:block">${ART[artFor(n.category)]}</span>`:`${I.up}<span>Add a screenshot, product photo or cover</span>`}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file="img"></label><div class="note"><button type="button" class="mbtn" data-act="npsample">Use a sample placement</button> PNG, JPEG, WebP or GIF up to 5 MB.</div></div>
-  <div class="fld"><label>Demo video (optional)</label><label class="drop ${n.video?'has':''}" style="height:64px">${n.video?`<span style="color:#fff">${I.play}&nbsp;${esc(n.video)}</span>`:`${I.up}<span>Add an MP4, MOV or WebM up to 30 MB</span>`}<input type="file" accept="video/mp4,video/quicktime,video/webm" data-file="video"></label></div>
-  <button type="button" class="mbtn" data-act="npcancel" style="align-self:flex-start">Back to my products</button>`;}
- return `<div><h1>Pick a product</h1><p class="lede">Which of your products is this offer for?</p></div>
-  <div style="display:flex;flex-direction:column;gap:10px">${mine.map(p=>`<button type="button" class="pick ${P.pid===p.id?'sel':''}" data-act="ppick" data-id="${p.id}">${thumb(p)}<span class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''}</span></span>${P.pid===p.id?tag('selected'):''}</button>`).join('')}
-  <button type="button" class="pick" data-act="npnew" style="border-style:dashed"><span class="thumb" style="background:var(--soft);color:var(--ink)">${I.plus}</span><span class="tx"><b>Add a new product</b><span>Software, digital, physical or a service</span></span></button></div>`}
+ return `<div class="fin">${b?rows([['Budget',money(b,P.cur)],['Listing fee ('+FEE/100+'%)',money(fee,P.cur)]])+`<div class="rowsl tot"><div class="r"><span>Total to pay</span><b>${money(b+fee,P.cur)}</b></div></div><div class="help" style="margin-top:8px">${estimate(P)}</div>`:`<div class="help" style="font-size:13px">${P.nocap?'No budget, so no payment is needed to go live.':'Enter a budget to see what it costs.'}</div>`}</div>`}
 const artFor=c=>({software:'dashboard',digital:'course',physical:'bottle',service:'service'}[c]);
+const STEPS=['Type','Product','Details','Budget','Review'];
+const stepper=st=>`<ol class="stp">${STEPS.map((l,i)=>`<li class="${i+1<st?'done':i+1===st?'cur':''}"><b>${i+1<st?'✓':i+1}</b>${l}</li>`).join('')}</ol><div class="stp-m">Step ${st} of 5 · ${STEPS[st-1]}<div class="bar"><i style="width:${st*20}%"></i></div></div>`;
+function asideHtml(P){
+ const p=P.pid?prod(P.pid):null,T=TYPES[P.type],t=termsOf(P),b=budgetC(P);
+ return `<div class="eyebrowl" style="font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.06em">Live preview</div>
+ ${card('','',`<div class="prev">${p?`<div class="pv-art" style="background:${bgFor(p)}">${artOf(p)}</div>`:`<div class="pv-empty">Pick a product and its placement image shows here.</div>`}</div>
+ <div class="pv-t">${esc(P.title||(p?'Promote '+p.name:'Your offer title'))}</div>
+ <div class="pv-rw">${T.reward(t)}<small>${esc(T.sub(t))}</small></div>
+ ${rows([['Budget',b?money(b,P.cur):P.nocap?'None':'Not set'],['Max per marketer',capC(P)?money(capC(P),P.cur):'None'],['Who can apply',(+P.minf?(+P.minf).toLocaleString()+'+ followers':'Anyone')+(P.verified?' · verified':'')]])}`,'tight')}`}
+function productForm(P,inline){const n=P.np;
+ return `${card('New product','Add a placement image so marketers can see what they are promoting.',
+  fld('Name',inp(`data-np="name" value="${esc(n.name)}" placeholder="e.g. Pepper Tracker"`))
+  +fld('Category',`<div class="cattiles">${Object.entries(CATS).map(([k,l])=>`<button type="button" class="${n.category===k?'on':''}" data-act="npcat" data-v="${k}">${ART[artFor(k)]?`<span style="width:34px;height:26px;display:block">${ART[artFor(k)]}</span>`:''}${l}</button>`).join('')}</div>`)
+  +fld('Description',`<textarea class="ta" data-np="desc" placeholder="What is it, and who is it for?">${esc(n.desc)}</textarea>`)
+  +fld('Placement image',`<label class="drop ${n.img||n.sample?'has':''}">${n.img?`<img src="${n.img}" alt="">`:n.sample?`<span style="width:170px;display:block">${ART[artFor(n.category)]}</span>`:`${I.up}<span>Add a screenshot, product photo or cover</span>`}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file="img"></label>`,'PNG, JPEG, WebP or GIF up to 5 MB. <button type="button" class="mbtn" data-act="npsample">Use a sample</button>')
+  +fld('Demo video (optional)',`<label class="drop ${n.video?'has':''}" style="height:64px">${n.video?`<span style="color:#fff">${I.play}&nbsp;${esc(n.video)}</span>`:`${I.up}<span>MP4, MOV or WebM up to 30 MB</span>`}<input type="file" accept="video/mp4,video/quicktime,video/webm" data-file="video"></label>`))}
+ ${inline?`<button type="button" class="b sec" data-act="npcancel" style="align-self:flex-start">Back to my products</button>`:''}`}
+function productPick(P){
+ if(P.newProd)return productForm(P,true);
+ const mine=S.products.filter(p=>p.owner==='u-kofi'||p.mine);
+ return card('Pick a product','Which of your products is this offer for?',`<div class="pgrid">${mine.map(p=>`<button type="button" class="pc ${P.pid===p.id?'sel':''}" data-act="ppick" data-id="${p.id}"><div class="im" style="background:${bgFor(p)}">${p.img?`<img src="${p.img}" alt="">`:ART[p.art]}</div><div class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''}</span></div>${P.pid===p.id?'<span class="ck">✓</span>':''}</button>`).join('')}<button type="button" class="pc add" data-act="npnew"><span class="plus2">${I.plus}</span>Add a new product</button></div>`)}
 function renderPlus(){
- const P=S.pf;let h='';
+ const P=S.pf;
  if(!P){
-  h=`<section class="view on light"><header class="hdr"><span class="ttl" style="padding-left:8px">Create</span></header><div class="main" style="padding-top:6px"><div><h1>What do you want to add?</h1><p class="lede">Offers are what marketers see in the feed.</p></div><div class="grid2">
-  <button type="button" class="tile" data-act="pstart"><span class="marks"><i></i><i></i></span><span><span class="n1">Post an offer</span><br><span class="n2">Pick a type, a product and a budget</span></span></button>
-  <button type="button" class="tile" data-act="pstart" data-v="product"><span class="marks"><i></i></span><span><span class="n1">Add a product</span><br><span class="n2">Software, digital, physical or service</span></span></button>
-  <button type="button" class="tile" data-act="pstart" data-v="social"><span class="marks"><i></i><i></i><i></i></span><span><span class="n1">Add a social</span><br><span class="n2">Get verified to apply for offers</span></span></button></div></div></section>`;
- }else if(P.kind==='offer'){
-  const T=TYPES[P.type],st=P.step,p=P.pid?prod(P.pid):null;
-  const prog=`<div class="prog" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4,5].map(n=>`<span class="${n<=st?'on':''}"></span>`).join('')}</div>`;
-  let main='';
-  if(st===1)main=`<div><h1>Offer type</h1><p class="lede">How will marketers be paid?</p></div><div class="grid2" style="grid-template-columns:1fr">${Object.entries(TYPES).map(([k,v])=>`<button type="button" class="tile ${P.type===k?'sel':''}" data-act="ptype" data-v="${k}" style="min-height:92px"><span class="n1">${v.name}</span><span class="n2">${v.blurb}</span></button>`).join('')}</div>`;
-  if(st===2)main=productPick(P);
-  if(st===3)main=`<div><h1>Details</h1><p class="lede">${T.name} offer for ${esc(p?p.name:'your product')}</p></div>
-   <div class="fld"><label>Title</label><input class="in" data-f="title" value="${esc(P.title)}" placeholder="${esc('Promote '+(p?p.name:'my product'))}"></div>
-   <div class="fld"><label>What should marketers do?</label><textarea class="in" rows="3" data-f="desc" placeholder="Where to share it, what to say, what to avoid">${esc(P.desc)}</textarea></div>
-   <div class="g2">${T.fields.map(f=>`<div class="fld"><label>${f[1]}</label>${f[0]==='per'?`<select class="in" data-tf="per">${['click','view','post'].map(x=>`<option ${(P.terms.per||'click')===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input class="in" type="number" data-tf="${f[0]}" value="${esc(P.terms[f[0]]??f[2])}">`}</div>`).join('')}</div>
-   <div class="g2"><div class="fld"><label>Minimum followers</label><input class="in" type="number" data-f="minf" value="${P.minf}"></div><div class="fld"><label>Countries (blank = any)</label><input class="in" data-f="countries" value="${esc(P.countries)}" placeholder="NG, GH"></div></div>
-   <label class="check"><input type="checkbox" data-f="verified" ${P.verified?'checked':''}> Verified marketers only</label>`;
-  if(st===4){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0;
-   main=`<div><h1>Budget</h1><p class="lede">What will you spend in total? It is held until verified results draw it down.</p></div>
-   <div class="g2"><div class="fld"><label>Currency</label><select class="in" data-f="cur">${Object.keys(SYM).map(c=>`<option ${P.cur===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="fld"><label>Total budget</label><input class="in" type="number" min="1" data-f="budget" value="${esc(P.budget)}" placeholder="1000" ${P.nocap?'disabled':''}></div></div>
-   <div class="fld"><label>Most one marketer can earn</label><input class="in" type="number" min="1" data-f="cap" value="${esc(P.cap)}" placeholder="Optional" ${P.nocap?'disabled':''}></div>
-   <label class="check"><input type="checkbox" data-f="nocap" ${P.nocap?'checked':''}> No budget. I settle payouts directly with each marketer.</label>
-   ${finBlock(P)}`}
-  if(st===5){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0,t=termsOf(P);
-   main=`<div><h1>Review</h1><p class="lede">${b?'Pay to put the budget in. The offer goes live once it is received.':'No payment needed. The offer goes live right away.'}</p></div>
-   <div class="hero-art" style="background:${bgFor(p)}"><span class="chip pink badge">${CATS[p.category]}</span><div class="art">${artOf(p)}</div></div>
-   <div class="fld" style="gap:2px"><div class="cl"><span class="tx"><span>Offer</span><b>${esc(P.title||'Promote '+p.name)}</b></span></div><div class="cl"><span class="tx"><span>Type</span><b>${T.name} · ${T.reward(t)} ${esc(T.sub(t))}</b></span></div><div class="cl"><span class="tx"><span>Who can apply</span><b>${P.minf?(+P.minf).toLocaleString()+'+ followers':'Anyone'}${P.countries?' · '+esc(P.countries):''}${P.verified?' · verified':''}</b></span></div></div>
-   <div class="fin">${b?`<div class="r"><span>Budget</span><b>${money(b,P.cur)}</b></div>${capC(P)?`<div class="r"><span>Max per marketer</span><b>${money(capC(P),P.cur)}</b></div>`:''}<div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,P.cur)}</b></div><div class="r tot"><span>Total to pay</span><b>${money(b+fee,P.cur)}</b></div>`:'<div class="r"><span>Budget</span><b>None</b></div>'}</div>`}
-  const last=st===5,b=budgetC(P);
-  h=`<section class="view on light"><header class="hdr"><button class="ib" data-act="pback" aria-label="Back">${I.back}</button><span class="ttl">Post an offer</span><span style="width:44px"></span></header>${prog}<div class="main" style="padding-top:18px">${main}</div><div class="foot"><button class="cta" data-act="pnext">${last?(b?'Pay '+money(b+Math.round(b*FEE/10000),P.cur)+' and publish':'Publish offer'):(st===2&&P.newProd?'Save product':'Continue')}</button></div></section>`;
- }else{
-  h=`<section class="view on light"><header class="hdr"><button class="ib" data-act="pback" aria-label="Back">${I.back}</button><span class="ttl">${P.kind==='product'?'Add a product':'Add a social'}</span><span style="width:44px"></span></header><div class="main" style="padding-top:6px">${P.kind==='product'?productPick({...P,newProd:true,np:P.np}).replace(/<button type="button" class="mbtn" data-act="npcancel"[^]*?<\/button>/,''):'<div class="fld"><label>Platform</label><select class="in"><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Newsletter</option></select></div><div class="fld"><label>Handle or link</label><input class="in"></div><div class="banner" style="margin:0">An admin verifies each social before it counts toward offer requirements.</div>'}</div><div class="foot"><button class="cta" data-act="${P.kind==='product'?'npsave':'pdone'}">Save</button></div></section>`;
- }
- $('#views').innerHTML=h;
+  $('#views').innerHTML=`<section class="view on light"><div class="scroll"><div class="pg narrow" style="padding-top:48px">${ph('What do you want to add?','Offers are what marketers see in the feed.')}
+  <div style="display:flex;flex-direction:column;gap:14px">${[['Post an offer','Pick a type, a product and a budget','',['<i></i><i></i>']],['Add a product','Software, digital, physical or a service','product',['<i></i>']],['Add a social','Get verified to apply for offers','social',['<i></i><i></i><i></i>']]].map(([a,b,v,m])=>`<button type="button" class="card" data-act="pstart" ${v?`data-v="${v}"`:''} style="flex-direction:row;align-items:center;text-align:left;gap:18px;padding:22px"><span class="marks">${m}</span><span style="flex:1"><b style="font-size:17px;display:block">${a}</b><span style="font-size:14px;color:var(--sub)">${b}</span></span>${chev}</button>`).join('')}</div></div></div></section>`;return}
+ if(P.kind!=='offer'){
+  const prod_=P.kind==='product';
+  $('#views').innerHTML=page(prod_?'Add a product':'Add a social','Create',ph(prod_?'Add a product':'Add a social',prod_?'Marketers decide from the image, so make it count.':'An admin verifies each social before it counts.')+(prod_?productForm(P,false):card('','',fld('Platform',`<div class="inp"><select><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Newsletter</option></select></div>`)+fld('Handle or link',inp('placeholder="@yourhandle"')))),{narrow:true,foot:`<div class="wfoot"><div class="wfoot-in"><span class="hint"></span><button class="b pri" data-act="${prod_?'npsave':'pdone'}">Save</button></div></div>`});return}
+ const T=TYPES[P.type],st=P.step,p=P.pid?prod(P.pid):null;let main='';
+ if(st===1)main=ph('What kind of offer?','This decides how marketers get paid.')+`<div style="display:flex;flex-direction:column;gap:14px">${Object.entries(TYPES).map(([k,v])=>`<button type="button" class="card ${P.type===k?'selc':''}" data-act="ptype" data-v="${k}" style="flex-direction:row;align-items:center;gap:16px;text-align:left;padding:20px 22px;${P.type===k?'border-color:var(--ink);box-shadow:0 0 0 4px #CBD6A8aa':''}"><span style="flex:1"><b style="font-size:17px;display:block">${v.name}</b><span style="font-size:14px;color:var(--sub)">${v.blurb}</span></span><span style="font-weight:700;color:var(--ink)">${P.type===k?'✓ Selected':''}</span></button>`).join('')}</div>`;
+ if(st===2)main=ph('Which product?','Marketers see its placement image first.')+productPick(P);
+ if(st===3)main=ph('Offer details',T.name+' offer for '+esc(p?p.name:'your product'))
+  +card('The basics','',fld('Title',inp(`data-f="title" value="${esc(P.title)}" placeholder="${esc('Promote '+(p?p.name:'my product'))}"`))+fld('What should marketers do?',`<textarea class="ta" data-f="desc" placeholder="Where to share it, what to say, what to avoid">${esc(P.desc)}</textarea>`))
+  +card('Payout terms','What a marketer earns.',`<div class="fg2">${T.fields.map(f=>f[0]==='per'?fld('Paid per',`<div class="segc">${['click','view','post'].map(x=>`<button type="button" class="${(P.terms.per||'click')===x?'on':''}" data-act="tper" data-v="${x}">${x}</button>`).join('')}</div>`):fld(fieldLabel(f),inp(`type="number" min="0" step="any" data-tf="${f[0]}" value="${esc(termVal(P,f))}"`,f[0].endsWith('_cents')?SYM[P.cur]||'$':'',f[0]==='percent'||f[0]==='share_percent'?'%':f[0]==='cookie_days'?'days':''))).join('')}</div>`)
+  +card('Who can apply','Leave open to get more interest.',`<div class="fg2">${fld('Minimum followers',inp(`type="number" min="0" data-f="minf" value="${P.minf}"`))}${fld('Countries',`<div class="chs">${[['NG','Nigeria'],['GH','Ghana'],['KE','Kenya'],['ZA','S. Africa']].map(([c,l])=>`<button type="button" class="${P.countries.includes(c)?'on':''}" data-act="ctry" data-v="${c}">${l}</button>`).join('')}</div>`,'None selected means anywhere.')}</div>${sw(P.verified,'verified','Verified marketers only','Only marketers an admin has verified can ask to join.')}`);
+ if(st===4)main=ph('Budget','What you will spend in total. Results draw it down as they are verified.')
+  +card('Spend','',sw(!P.nocap,'budgeton','Set a budget','Off means you settle payouts directly with each marketer.')+(P.nocap?'':`<div class="fg2">${fld('Currency',chips(Object.keys(SYM).map(c=>[c,c]),P.cur,'cur'))}</div><div class="fg2">${fld('Total budget',inp(`type="number" min="1" data-f="budget" value="${esc(P.budget)}" placeholder="1,000"`,SYM[P.cur]||'$',P.cur))}${fld('Max per marketer',inp(`type="number" min="1" data-f="cap" value="${esc(P.cap)}" placeholder="Optional"`,SYM[P.cur]||'$',P.cur),'Stops one marketer taking it all.')}</div>`))
+  +card('What it costs','',finBlock(P));
+ if(st===5){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0,t=termsOf(P);
+  main=ph('Review and publish',b?'Pay to put the budget in. Your offer goes live once it is received.':'No payment needed. Your offer goes live right away.')
+  +card('Offer','',rows([['Title',esc(P.title||'Promote '+p.name)],['Product',esc(p.name)],['Type',T.name],['Reward',T.reward(t)+' '+esc(T.sub(t))],['Who can apply',(+P.minf?(+P.minf).toLocaleString()+'+ followers':'Anyone')+(P.countries.length?' · '+P.countries.join(', '):'')+(P.verified?' · verified':'')]]))
+  +card('Payment','',b?rows([['Budget',money(b,P.cur)],...(capC(P)?[['Max per marketer',money(capC(P),P.cur)]]:[]),['Listing fee ('+FEE/100+'%)',money(fee,P.cur)],['Total to pay','<b style="font-size:18px">'+money(b+fee,P.cur)+'</b>']]):rows([['Budget','None']]))}
+ const b=budgetC(P),last=st===5;
+ const label=last?(b?'Pay '+money(b+Math.round(b*FEE/10000),P.cur)+' and publish':'Publish offer'):(st===2&&P.newProd?'Save product':'Continue');
+ const foot=`<div class="wfoot"><div class="wfoot-in"><button class="b sec" data-act="pback">Back</button><button class="b pri" data-act="pnext">${label}</button></div></div>`;
+ $('#views').innerHTML=page('Post an offer','Create',`${stepper(st)}<div class="cols"><div class="main-col">${main}</div><div class="side" id="aside">${asideHtml(P)}</div></div>`,{foot});
 }
 /* ---------- profile ---------- */
 function renderMe(){
@@ -595,30 +777,39 @@ function renderMe(){
  const mine=S.offers.filter(o=>o.owner==='u-kofi'),recv=mine.flatMap(o=>intsOn(o.id)),pend=recv.filter(i=>i.status==='pending').length;
  const deals=S.deals.filter(d=>seller?offer(d.offer).owner==='u-kofi':d.marketer==='u-ada');
  const sent=S.interests.filter(i=>i.from==='u-ada');
- const tabs=seller?[['deals','Deals'],['inbox','Interests'+(pend?' · '+pend:'')],['offers','Offers'],['products','Products']]:[['deals','Deals'],['inbox','Requests'],['socials','Socials']];
+ const tabs=seller?[['deals','Deals'],['inbox','Interests'+(pend?`<span class="n">${pend}</span>`:'')],['offers','Offers'],['products','Products']]:[['deals','Deals'],['inbox','Requests'],['socials','Socials']];
  if(!tabs.some(t=>t[0]===S.tab))S.tab='deals';
  const t=S.tab;let box='';
- const dealRow=d=>{const o=offer(d.offer),nm=seller?who(d.marketer).name:o.co;return `<button type="button" class="rowbtn" data-go="deal-${d.id}"><span class="int-av">${esc(initials(nm))}</span><span class="tx"><b>${esc(nm)}</b><span>${esc(o.title)}</span></span>${tag(d.status)}</button>`};
+ const empty=m=>`<div style="color:var(--sub);padding:12px 0">${m}</div>`;
+ const dealRow=d=>{const o=offer(d.offer),nm=seller?who(d.marketer).name:o.co;return `<button type="button" class="tr" data-go="deal-${d.id}"><span class="int-av">${esc(initials(nm))}</span><span class="tx"><b>${esc(nm)}</b><span>${esc(o.title)}</span></span>${tag(d.status)}${chev}</button>`};
  const earn=deals.reduce((n,d)=>n+d.dels.filter(x=>x.status==='verified').reduce((m,x)=>m+(x.amount||0),0),0);
- if(t==='deals')box=`<div class="stats"><div class="stat"><b>${deals.filter(d=>d.status==='active').length}</b><span>Active deals</span></div><div class="stat"><b>${money(earn)}</b><span>${seller?'Paid out':'Earned'}</span></div><div class="stat"><b>${deals.reduce((n,d)=>n+d.dels.filter(x=>x.status==='pending').length,0)}</b><span>To verify</span></div></div><div class="fld" style="gap:2px"><div class="h3" style="height:34px">Deals</div>${deals.length?deals.map(dealRow).join(''):'<span style="color:var(--sub)">No deals yet. Accepted interests become deals.</span>'}</div>`;
- if(t==='inbox'&&seller)box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Interests on your offers</div>${recv.length?recv.map(i=>{const p=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="rowbtn" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(p.name))}</span><span class="tx"><b>${esc(p.name)}</b><span>${esc(offer(i.offer).title)}</span></span>${tag(i.status)}</button>`}).join(''):'<span style="color:var(--sub)">No interests yet.</span>'}</div>`;
- if(t==='inbox'&&!seller)box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your requests</div>${sent.length?sent.map(i=>`<button type="button" class="rowbtn" data-act="open" data-id="${i.offer}"><span class="tx"><b>${esc(offer(i.offer).title)}</b><span>${esc(offer(i.offer).co)}</span></span>${tag(i.status)}</button>`).join(''):'<span style="color:var(--sub)">You have not asked to join any offer yet. Find one in the feed.</span>'}</div>`;
- if(t==='offers')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your offers<a href="#plus">New offer</a></div>${mine.map(o=>{const F=o.fin,p=prod(o.pid);return `<button type="button" class="rowbtn" data-act="open" data-id="${o.id}">${thumb(p)}<span class="tx"><b>${esc(o.title)}</b><span>${TYPES[o.type].name} · ${F.budget?money(spent(o),F.cur)+' of '+money(F.budget,F.cur)+' spent':'no budget'}</span></span>${pendOn(o.id).length?`<span class="tag pink">${pendOn(o.id).length} new</span>`:''}${tag(F.budget&&!F.funded?'unfunded':o.status)}</button>`}).join('')}</div>`;
- if(t==='products')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your products<a href="#plus">Add</a></div>${S.products.filter(p=>p.owner==='u-kofi'||p.mine).map(p=>`<div class="rowbtn" style="cursor:default">${thumb(p)}<span class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''} · ${S.offers.filter(o=>o.pid===p.id).length} offer(s)</span></span></div>`).join('')}</div>`;
- if(t==='socials')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Socials<a href="#plus">Add</a></div>${ME.marketer.socials.map(s=>`<div class="cl" style="align-items:center"><span class="tx"><b>${s[0]} · ${esc(s[1])}</b><span>${s[2].toLocaleString()} followers</span></span>${tag('verified')}</div>`).join('')}</div>`;
- $('#views').innerHTML=`<section class="view on light"><header class="hdr" style="padding-left:16px"><span class="ttl">@${u.handle}</span><button type="button" class="mbtn" data-act="role">Demo: switch to ${seller?'marketer':'seller'}</button></header><div class="main" style="padding-top:6px">
- <div class="me"><span class="big">${esc(initials(u.name))}</span><div><div class="n1">${esc(u.name)}</div><div class="n2">${seller?esc(ME.seller.company)+' · seller':ME.marketer.followers.toLocaleString()+' followers · '+ME.marketer.country} · verified</div></div></div>
- <div class="seg">${tabs.map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div>${box}</div></section>`;
+ const stats=`<div class="statrow"><div class="stat"><b>${deals.filter(d=>d.status==='active').length}</b><span>Active deals</span></div><div class="stat"><b>${money(earn)}</b><span>${seller?'Paid out':'Earned'}</span></div><div class="stat"><b>${deals.reduce((n,d)=>n+d.dels.filter(x=>x.status==='pending').length,0)}</b><span>To verify</span></div><div class="stat"><b>${seller?mine.length:sent.length}</b><span>${seller?'Offers':'Requests'}</span></div></div>`;
+ if(t==='deals')box=card('Deals','Accepted interests become deals.',deals.length?`<div class="tbl">${deals.map(dealRow).join('')}</div>`:empty('No deals yet.'));
+ if(t==='inbox'&&seller)box=card('Interests','Marketers who asked to join your offers.',recv.length?`<div class="tbl">${recv.map(i=>{const p=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="tr" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(p.name))}</span><span class="tx"><b>${esc(p.name)}</b><span>${esc(offer(i.offer).title)}</span></span>${tag(i.status)}</button>`}).join('')}</div>`:empty('No interests yet.'));
+ if(t==='inbox'&&!seller)box=card('Your requests','Offers you asked to join.',sent.length?`<div class="tbl">${sent.map(i=>`<button type="button" class="tr" data-act="open" data-id="${i.offer}"><span class="tx"><b>${esc(offer(i.offer).title)}</b><span>${esc(offer(i.offer).co)}</span></span>${tag(i.status)}</button>`).join('')}</div>`:empty('You have not asked to join any offer yet. Find one in the feed.'));
+ if(t==='offers')box=card('Your offers','',`<div class="tbl">${mine.map(o=>{const F=o.fin,p=prod(o.pid);return `<button type="button" class="tr" data-act="open" data-id="${o.id}">${thumb(p)}<span class="tx"><b>${esc(o.title)}</b><span>${TYPES[o.type].name} · ${F.budget?money(spent(o),F.cur)+' of '+money(F.budget,F.cur)+' spent':'no budget'}</span></span>${pendOn(o.id).length?`<span class="tag pink">${pendOn(o.id).length} new</span>`:''}${tag(F.budget&&!F.funded?'unfunded':o.status)}</button>`}).join('')}</div>`);
+ if(t==='products')box=card('Your products','Tap one to see how marketers see it.',`<div class="tbl">${S.products.filter(p=>p.owner==='u-kofi'||p.mine).map(p=>`<button type="button" class="tr" data-go="product-${p.id}">${thumb(p)}<span class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''} · ${S.offers.filter(o=>o.pid===p.id).length} offer(s)</span></span>${chev}</button>`).join('')}</div>`);
+ if(t==='socials')box=card('Socials','',`<div class="tbl">${ME.marketer.socials.map(s=>`<div class="tr"><span class="tx"><b>${s[0]} · ${esc(s[1])}</b><span>${s[2].toLocaleString()} followers</span></span>${tag('verified')}</div>`).join('')}</div>`);
+ $('#views').innerHTML=`<section class="view on light"><div class="scroll"><div class="pg">
+ <div class="ph"><div class="profhead"><span class="big me-av" style="display:grid;place-items:center;border-radius:50%;background:var(--ink);color:#fff;font-weight:800">${esc(initials(u.name))}</span><div><h1 style="font-size:28px">${esc(u.name)}</h1><p style="margin-top:4px">@${u.handle} · ${seller?esc(ME.seller.company)+' · seller':ME.marketer.followers.toLocaleString()+' followers · '+ME.marketer.country} · verified</p></div></div><button type="button" class="b sec sm" data-act="role">Demo: switch to ${seller?'marketer':'seller'}</button></div>
+ ${stats}<div class="tabsb">${tabs.map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div>${box}</div></div></section>`;
 }
 function render(){const r=route();if(['feed','plus','me'].includes(r.n))S.from=r.n;nav();
- ({plus:renderPlus,me:renderMe,offer:()=>renderOffer(r.a),deal:()=>renderDeal(r.a)}[r.n]||renderFeed)()}
-/* ---------- actions ---------- */
+ ({plus:renderPlus,me:renderMe,offer:()=>renderOffer(r.a),deal:()=>renderDeal(r.a),product:()=>renderProduct(r.a)}[r.n]||renderFeed)()}
 function sendInterest(id){const o=offer(id);if(!elig(o).ok)return toast("You don't meet the requirements");S.interests.push({id:'i'+(++S.n),offer:id,from:'u-ada',msg:"Hi! I'd love to promote this to my local community in Lagos.",status:'pending'});toast('Interest sent. The seller will accept or deny.');render()}
 function act(k,id,el){
  if(k==='close')return closeSheet();
  if(k==='open')return go('offer-'+id);
  if(k==='int')return sendInterest(id);
  if(k==='like'||k==='follow'||k==='share'){el.classList.toggle('liked');return toast(k==='share'?'Share link copied':k==='follow'?'Following':'Saved')}
+ if(k==='pgal'){S.gal['p'+id]=el.dataset.v;return renderProduct(id)}
+ if(k==='pdemo'){const p=prod(id);return player(p.name+' demo',(p.video||'0:30')+' · product demo',ART[p.art],bgFor(p))}
+ if(k==='toast')return toast(el.dataset.v);
+ if(k==='newoffer'){S.pf={...newPF(),pid:id,step:3};return go('plus')}
+ if(k==='swt'){const P=S.pf,v=el.dataset.v;if(v==='verified')P.verified=!P.verified;if(v==='budgeton')P.nocap=!P.nocap;return renderPlus()}
+ if(k==='tper'){S.pf.terms.per=el.dataset.v;return renderPlus()}
+ if(k==='ctry'){const a=S.pf.countries,c=el.dataset.v;S.pf.countries=a.includes(c)?a.filter(x=>x!==c):[...a,c];return renderPlus()}
+ if(k==='cur'){S.pf.cur=el.dataset.v;return renderPlus()}
  if(k==='gal'){S.gal[id]=el.dataset.v;return renderOffer(id)}
  if(k==='demo'){const o=offer(id),p=prod(o.pid);return player(p.name+' demo',(p.video||'0:30')+' · from '+o.co,ART[p.art],bgFor(p))}
  if(k==='cv'){const o=offer(id),v=creatorVideos(o).find(x=>x.id===el.dataset.v);return player('Creator video',(v.by||'A marketer')+' · '+v.video,ART[prod(o.pid).art],bgFor(prod(o.pid)))}
@@ -662,7 +853,7 @@ function act(k,id,el){
   if(P.step===4&&!P.nocap){if(!(+P.budget>=1))return toast('Enter a budget, or choose no budget');if(P.cap&&+P.cap>+P.budget)return toast('The cap cannot be more than the budget')}
   if(P.step<5){P.step++;return render()}
   const p=prod(P.pid),b=budgetC(P);
-  S.offers.unshift({id:'o'+(++S.n),pid:p.id,owner:'u-kofi',co:ME.seller.company,coV:true,title:P.title||'Promote '+p.name,type:P.type,terms:termsOf(P),req:{min_followers:+P.minf||0,countries:P.countries.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),verified_only:P.verified},desc:P.desc||p.desc,status:'open',max:10,likes:0,fin:{cur:P.cur,budget:b,cap:capC(P),funded:!!b,spent:0}});
+  S.offers.unshift({id:'o'+(++S.n),pid:p.id,owner:'u-kofi',co:ME.seller.company,coV:true,title:P.title||'Promote '+p.name,type:P.type,terms:termsOf(P),req:{min_followers:+P.minf||0,countries:P.countries,verified_only:P.verified},desc:P.desc||p.desc,status:'open',max:10,likes:0,fin:{cur:P.cur,budget:b,cap:capC(P),funded:!!b,spent:0}});
   S.pf=null;S.fc='all';toast(b?'Payment received. Your offer is live.':'Your offer is live');return go('feed')}
 }
 document.addEventListener('click',e=>{
@@ -676,11 +867,10 @@ document.addEventListener('click',e=>{
  if(el=e.target.closest('.slide')&&!e.target.closest('button'))return go('offer-'+el.dataset.id);
 });
 document.addEventListener('input',e=>{const P=S.pf;if(!P)return;const t=e.target;
- if(t.dataset.f){P[t.dataset.f]=t.type==='checkbox'?t.checked:t.value;
-  if(t.type==='checkbox'||t.tagName==='SELECT'){if(['nocap','cur'].includes(t.dataset.f))renderPlus()}
-  else if(['budget','cap'].includes(t.dataset.f)&&P.step===4){const f=$('.fin');if(f)f.outerHTML=finBlock(P)}}
+ if(t.dataset.f){P[t.dataset.f]=t.value;if(['budget','cap'].includes(t.dataset.f)&&P.step===4){const f=$('.fin');if(f)f.outerHTML=finBlock(P)}}
  if(t.dataset.tf)P.terms[t.dataset.tf]=t.value;
- if(t.dataset.np)P.np[t.dataset.np]=t.value});
+ if(t.dataset.np)P.np[t.dataset.np]=t.value;
+ const a=$('#aside');if(a&&P.kind==='offer')a.innerHTML=asideHtml(P)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.file||!S.pf)return;const f=t.files[0];if(!f)return;
  if(t.dataset.file==='img'){if(f.size>5*1048576)return toast('Images can be up to 5 MB');const r=new FileReader();r.onload=()=>{S.pf.np.img=r.result;S.pf.np.sample=false;renderPlus()};r.readAsDataURL(f)}
  else{if(f.size>30*1048576)return toast('Videos can be up to 30 MB');S.pf.np.video=f.name;renderPlus()}});
@@ -688,5 +878,4 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='msg')
 render();
 
 </script>
-</body>
-</html>
+</body></html>
