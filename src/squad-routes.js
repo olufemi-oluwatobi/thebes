@@ -5,6 +5,9 @@
 // Mounted on the Thebes Worker; the games engine is untouched. Helpers come from worker.js.
 
 export const PLATFORMS = ['x', 'instagram', 'tiktok', 'youtube', 'linkedin', 'facebook', 'whatsapp', 'telegram', 'substack', 'newsletter', 'reddit', 'discord', 'twitch', 'website', 'other'];
+export const CATEGORIES = ['physical', 'digital', 'software', 'service', 'content', 'other'];
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR'];
+const MEDIA_LIMITS = { image: 5 * 1024 * 1024, video: 30 * 1024 * 1024, creator_video: 30 * 1024 * 1024 };
 const PAGE = 50;
 
 export function squadRoutes(app, h) {
@@ -87,16 +90,27 @@ export function squadRoutes(app, h) {
   const sellerOut = (r) => r && ({ id: r.id, user_id: r.user_id, company_id: r.company_id, bio: r.bio, ...flags(r), created_at: r.created_at });
   const marketerOut = (r) => r && ({ id: r.id, user_id: r.user_id, country: r.country, city: r.city, bio: r.bio, ...flags(r), verified_at: r.verified_at, created_at: r.created_at });
   const socialOut = (r) => r && ({ id: r.id, marketer_id: r.marketer_id, platform: r.platform, handle: r.handle, url: r.url, followers: r.followers, audience_countries: json(r.audience_countries, []), ...flags(r), verified_at: r.verified_at, verification_note: r.verification_note, created_at: r.created_at });
-  const productOut = (r) => r && ({ id: r.id, seller_id: r.seller_id, company_id: r.company_id, name: r.name, description: r.description, url: r.url, details: json(r.details, {}), image: r.image_key ? '/files/' + r.image_key : null, image_asset_id: r.image_asset_id, is_flagged: !!r.is_flagged, flag_reason: r.flag_reason, ...flags(r), created_at: r.created_at, updated_at: r.updated_at });
+  const mediaUrl = (id) => '/api/squad/media/' + id + '/file';
+  const mediaOut = (r) => r && ({ id: r.id, kind: r.kind, mime: r.mime, bytes: r.bytes, width: r.width, height: r.height, duration_ms: r.duration_ms, caption: r.caption,
+    url: mediaUrl(r.id), poster: r.poster_media_id ? mediaUrl(r.poster_media_id) : null, poster_media_id: r.poster_media_id, ...flags(r), created_at: r.created_at });
+  // money: budget_cents is the seller's total, the listing fee sits on top, spent_cents is what verified deliveries have drawn down
+  const financials = (r) => {
+    const budget = r.budget_cents ?? null, bps = r.platform_fee_bps ?? 500, fee = budget ? Math.round(budget * bps / 10000) : 0, spent = r.spent_cents ?? null;
+    return { currency: r.currency || 'USD', budget_cents: budget, payout_cap_cents: r.payout_cap_cents ?? null, platform_fee_bps: bps, listing_fee_cents: fee,
+      payment_due_cents: budget ? budget + fee : 0, funding_status: r.funding_status || 'unfunded', funded_cents: r.funded_cents || 0, refunded_cents: r.refunded_cents || 0,
+      spent_cents: spent, remaining_cents: budget != null && spent != null ? Math.max(0, budget - spent) : null };
+  };
+  const productOut = (r) => r && ({ id: r.id, seller_id: r.seller_id, company_id: r.company_id, name: r.name, description: r.description, url: r.url, details: json(r.details, {}), category: r.category || 'physical', image: r.image_key ? '/files/' + r.image_key : null, image_asset_id: r.image_asset_id, cover_media_id: r.cover_media_id || null, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : (r.image_key ? '/files/' + r.image_key : null), is_flagged: !!r.is_flagged, flag_reason: r.flag_reason, ...flags(r), created_at: r.created_at, updated_at: r.updated_at });
   const typeOut = (r) => r && ({ id: r.id, slug: r.slug, name: r.name, description: r.description, criteria: json(r.criteria, {}), meta: json(r.meta, {}), created_by: r.created_by, is_approved: !!r.is_approved, is_deleted: !!r.is_deleted });
   const offerOut = (r, extra = {}) => r && ({
     id: r.id, product_id: r.product_id, offer_type_id: r.offer_type_id, title: r.title, description: r.description,
     terms: json(r.terms, {}), requirements: json(r.requirements, {}), max_relationships: r.max_relationships, status: r.status,
+    financials: financials(r), video_media_id: r.video_media_id || null, video: r.video_media_id ? mediaUrl(r.video_media_id) : null,
     ...flags(r), created_at: r.created_at, updated_at: r.updated_at, ...extra,
   });
   const interestOut = (r) => r && ({ id: r.id, offer_id: r.offer_id, marketer_id: r.marketer_id, social_id: r.social_id, message: r.message, status: r.status, decided_at: r.decided_at, decision_note: r.decision_note, created_at: r.created_at });
   const relOut = (r) => r && ({ id: r.id, offer_id: r.offer_id, marketer_id: r.marketer_id, interest_id: r.interest_id, status: r.status, terms_snapshot: json(r.terms_snapshot, {}), ended_reason: r.ended_reason, created_at: r.created_at, updated_at: r.updated_at, ended_at: r.ended_at });
-  const deliveryOut = (r) => r && ({ id: r.id, relationship_id: r.relationship_id, delivery_type_id: r.delivery_type_id, social_id: r.social_id, proof_url: r.proof_url, note: r.note, status: r.status, is_verified: !!r.is_verified, verified_at: r.verified_at, verification_note: r.verification_note, created_at: r.created_at });
+  const deliveryOut = (r) => r && ({ id: r.id, relationship_id: r.relationship_id, delivery_type_id: r.delivery_type_id, social_id: r.social_id, proof_url: r.proof_url, note: r.note, status: r.status, is_verified: !!r.is_verified, verified_at: r.verified_at, verification_note: r.verification_note, media_id: r.media_id || null, media: r.media_id ? mediaUrl(r.media_id) : null, amount_cents: r.amount_cents ?? null, created_at: r.created_at });
   const messageOut = (r) => r && ({ id: r.id, relationship_id: r.relationship_id, sender_id: r.sender_id, body: r.is_deleted ? null : r.body, is_deleted: !!r.is_deleted, created_at: r.created_at, read_at: r.read_at });
 
   // ---------- loaders ----------
@@ -245,6 +259,7 @@ export function squadRoutes(app, h) {
         (SELECT o.id FROM offers o JOIN products p ON p.id = o.product_id WHERE p.seller_id = ?)`).bind(u.id, t, t, seller.id),
       D.prepare(`UPDATE offers SET status = 'closed', updated_at = ? WHERE product_id IN (SELECT id FROM products WHERE seller_id = ?)`).bind(t, seller.id),
       D.prepare('UPDATE products SET is_deleted = 1, updated_at = ? WHERE seller_id = ?').bind(t, seller.id));
+    q.push(D.prepare('UPDATE media SET is_deleted = 1, updated_at = ? WHERE owner_user_id = ?').bind(t, u.id));
     q.push(D.prepare('DELETE FROM sessions WHERE user_id = ?').bind(u.id));
     await D.batch(q);
     return c.json({ ok: true });
@@ -421,6 +436,7 @@ export function squadRoutes(app, h) {
     const out = {};
     if (!partial || 'name' in b) out.name = text(b.name, 'product name', { min: 2, max: 120, required: true });
     if (!partial || 'description' in b) out.description = text(b.description, 'description', { min: 10, max: 5000, required: true });
+    if (!partial || 'category' in b) { const cat = String(b.category ?? 'physical').toLowerCase(); if (!CATEGORIES.includes(cat)) no(400, `category is one of: ${CATEGORIES.join(', ')}`, 'invalid'); out.category = cat; }
     if ('url' in b) out.url = url(b.url, 'product link');
     if ('details' in b) out.details = JSON.stringify(obj(b.details, 'details'));
     if ('company_id' in b) out.company_id = b.company_id ? await companyFor(c, { id: s.user_id }, b.company_id) : null;
@@ -441,8 +457,8 @@ export function squadRoutes(app, h) {
     const n = (await DB(c).prepare('SELECT COUNT(*) n FROM products WHERE seller_id = ? AND is_deleted = 0').bind(s.id).first()).n;
     if (n >= 200) no(409, 'you can list up to 200 products', 'limit');
     const id = uid('pr');
-    await DB(c).prepare('INSERT INTO products (id, seller_id, company_id, name, description, url, details, image_asset_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, s.id, f.company_id !== undefined ? f.company_id : s.company_id, f.name, f.description, f.url ?? null, f.details ?? '{}', f.image_asset_id ?? null, t, t).run();
+    await DB(c).prepare('INSERT INTO products (id, seller_id, company_id, name, description, url, details, image_asset_id, category, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, s.id, f.company_id !== undefined ? f.company_id : s.company_id, f.name, f.description, f.url ?? null, f.details ?? '{}', f.image_asset_id ?? null, f.category, t, t).run();
     return c.json({ product: productOut(await getProduct(c, id)) }, 201);
   });
 
@@ -460,7 +476,7 @@ export function squadRoutes(app, h) {
     if (!p || p.is_deleted || (!owner && !isAdmin(c) && (p.is_blocked || p.is_flagged || !live(s)))) return fail(c, 404, 'no such product', 'not_found');
     const offers = (await DB(c).prepare(`SELECT o.* FROM offers o WHERE o.product_id = ? AND o.is_deleted = 0 ${owner || isAdmin(c) ? '' : "AND o.status = 'open' AND o.is_blocked = 0"} ORDER BY o.created_at DESC`).bind(p.id).all()).results;
     const company = p.company_id ? await DB(c).prepare('SELECT * FROM companies WHERE id = ?').bind(p.company_id).first() : null;
-    return c.json({ product: productOut(p), company: companyOut(company), offers: offers.map((o) => offerOut(o)), is_owner: owner });
+    return c.json({ product: productOut(p), media: await mediaOf(c, p.id), company: companyOut(company), offers: offers.map((o) => offerOut(o)), is_owner: owner });
   });
 
   app.patch('/api/squad/products/:id', async (c) => {
@@ -487,6 +503,155 @@ export function squadRoutes(app, h) {
       DB(c).prepare('UPDATE products SET is_deleted = 1, updated_at = ? WHERE id = ?').bind(t, id),
     ]);
     return c.json({ ok: true });
+  });
+
+
+  // ======================================================================================================
+  // media: images, videos and creator videos, stored in R2 and described in the media table
+  // ======================================================================================================
+  const mediaOf = async (c, productId) => (await DB(c).prepare(`SELECT m.*, pm.role FROM product_media pm JOIN media m ON m.id = pm.media_id
+    WHERE pm.product_id = ? AND m.is_deleted = 0 AND m.is_blocked = 0 ORDER BY pm.position`).bind(productId).all()).results.map((r) => ({ ...mediaOut(r), role: r.role }));
+
+  // what the first bytes say the file is, so a renamed file cannot pass as a picture or a video
+  const sniff = (buf) => {
+    const a = new Uint8Array(buf.slice(0, 16)), at = (i, j) => String.fromCharCode(...a.slice(i, j));
+    if (a[0] === 0x89 && at(1, 4) === 'PNG') return 'image/png';
+    if (a[0] === 0xff && a[1] === 0xd8 && a[2] === 0xff) return 'image/jpeg';
+    if (at(0, 4) === 'RIFF' && at(8, 12) === 'WEBP') return 'image/webp';
+    if (at(0, 4) === 'GIF8') return 'image/gif';
+    if (at(4, 8) === 'ftyp') return at(8, 10) === 'qt' ? 'video/quicktime' : 'video/mp4';
+    if (a[0] === 0x1a && a[1] === 0x45 && a[2] === 0xdf && a[3] === 0xa3) return 'video/webm';
+    return null;
+  };
+  const hex = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, '0')).join('');
+
+  // images and videos belong to sellers; a creator video can come from anyone with a seller or marketer profile
+  app.post('/api/squad/media', async (c) => {
+    const u = me(c), t = now();
+    const kind = c.req.query('kind') || 'image';
+    if (!MEDIA_LIMITS[kind]) no(400, 'kind is image, video or creator_video', 'invalid');
+    if (kind === 'creator_video') { if (!(await sellerOf(c, u.id)) && !(await marketerOf(c, u.id))) no(403, 'set up a seller or marketer profile first', 'no_profile'); }
+    else await asSeller(c);
+    const limit = MEDIA_LIMITS[kind];
+    if (parseInt(c.req.header('content-length') || '0', 10) > limit) no(413, `${kind === 'image' ? 'images' : 'videos'} can be up to ${limit / 1048576} MB`, 'too_large');
+    const buf = await c.req.arrayBuffer();
+    if (!buf.byteLength) no(400, 'the file is empty', 'invalid');
+    if (buf.byteLength > limit) no(413, `${kind === 'image' ? 'images' : 'videos'} can be up to ${limit / 1048576} MB`, 'too_large');
+    const mime = sniff(buf);
+    if (!mime || (kind === 'image') !== mime.startsWith('image/')) no(415, kind === 'image' ? 'upload a PNG, JPEG, WebP or GIF' : 'upload an MP4, MOV or WebM video', 'bad_type');
+    const declared = (c.req.header('content-type') || '').split(';')[0].trim();
+    if (declared && declared !== 'application/octet-stream' && declared.split('/')[0] !== mime.split('/')[0]) no(415, 'the file is not what its type says', 'bad_type');
+    const n = (await DB(c).prepare('SELECT COUNT(*) n FROM media WHERE owner_user_id = ? AND is_deleted = 0').bind(u.id).first()).n;
+    if (n >= 300) no(409, 'you can keep up to 300 files; delete some first', 'limit');
+    let poster = null;
+    if (c.req.query('poster_media_id')) {
+      poster = await DB(c).prepare(`SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND kind = 'image' AND is_deleted = 0`).bind(c.req.query('poster_media_id'), u.id).first();
+      if (!poster) no(400, 'that poster image is not one of yours', 'invalid');
+    }
+    const dim = (k, max) => { const v = c.req.query(k); return v == null ? null : intIn(v, k, 1, max); };
+    const id = uid('md'), key = `media/${u.id}/${id}`;
+    await c.env.BUCKET.put(key, buf, { httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' } });
+    await DB(c).prepare('INSERT INTO media (id, owner_user_id, kind, r2_key, mime, bytes, sha256, width, height, duration_ms, poster_media_id, caption, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, u.id, kind, key, mime, buf.byteLength, hex(await crypto.subtle.digest('SHA-256', buf)), dim('width', 20000), dim('height', 20000), dim('duration_ms', 36e6), poster?.id ?? null,
+        text(c.req.query('caption'), 'caption', { max: 200 }), t, t).run();
+    return c.json({ media: mediaOut(await DB(c).prepare('SELECT * FROM media WHERE id = ?').bind(id).first()) }, 201);
+  });
+
+  app.get('/api/squad/media', async (c) => {
+    const u = me(c), kind = c.req.query('kind');
+    const rows = (await DB(c).prepare(`SELECT * FROM media WHERE owner_user_id = ? AND is_deleted = 0 ${kind ? 'AND kind = ?' : ''} ORDER BY created_at DESC LIMIT 300`).bind(...(kind ? [u.id, kind] : [u.id])).all()).results;
+    return c.json({ media: rows.map(mediaOut) });
+  });
+
+  // public pictures and videos can be seen by anyone with the link; a creator video only by its owner, an admin, and the seller it was delivered to
+  const mediaSeen = async (c, m) => {
+    const u = c.get('user');
+    if (!m || m.is_deleted) return false;
+    if (u && (u.role === 'admin' || u.id === m.owner_user_id)) return true;
+    if (m.is_blocked) return false;
+    if (m.kind !== 'creator_video') return true;
+    if (!u) return false;
+    return !!(await DB(c).prepare(`SELECT 1 FROM deliveries d JOIN relationships r ON r.id = d.relationship_id JOIN offers o ON o.id = r.offer_id
+      JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id WHERE d.media_id = ? AND d.is_deleted = 0 AND s.user_id = ?`).bind(m.id, u.id).first());
+  };
+  app.get('/api/squad/media/:id', async (c) => {
+    const m = await DB(c).prepare('SELECT * FROM media WHERE id = ?').bind(c.req.param('id')).first();
+    if (!(await mediaSeen(c, m))) return fail(c, 404, 'no such file', 'not_found');
+    return c.json({ media: mediaOut(m) });
+  });
+  // the bytes. Videos honour Range so players can seek.
+  app.get('/api/squad/media/:id/file', async (c) => {
+    const m = await DB(c).prepare('SELECT * FROM media WHERE id = ?').bind(c.req.param('id')).first();
+    if (!(await mediaSeen(c, m))) return fail(c, 404, 'no such file', 'not_found');
+    const isPublic = m.kind !== 'creator_video' && !m.is_blocked;
+    const headers = { 'content-type': m.mime, 'accept-ranges': 'bytes', 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'",
+      'cache-control': isPublic ? 'public, max-age=31536000, immutable' : 'private, max-age=300' };
+    const rg = /^bytes=(\d*)-(\d*)$/.exec(c.req.header('range') || '');
+    if (rg && (rg[1] || rg[2])) {
+      const size = m.bytes;
+      const start = rg[1] === '' ? Math.max(0, size - Number(rg[2])) : Number(rg[1]);
+      const end = rg[1] === '' || rg[2] === '' ? size - 1 : Math.min(Number(rg[2]), size - 1);
+      if (start > end || start >= size) return new Response(null, { status: 416, headers: { 'content-range': `bytes */${size}` } });
+      const o = await c.env.BUCKET.get(m.r2_key, { range: { offset: start, length: end - start + 1 } });
+      if (!o) return fail(c, 404, 'no such file', 'not_found');
+      return new Response(o.body, { status: 206, headers: { ...headers, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': String(end - start + 1) } });
+    }
+    const o = await c.env.BUCKET.get(m.r2_key);
+    if (!o) return fail(c, 404, 'no such file', 'not_found');
+    return new Response(o.body, { headers: { ...headers, 'content-length': String(m.bytes) } });
+  });
+
+  app.patch('/api/squad/media/:id', async (c) => {
+    const u = me(c), b = await body(c);
+    const m = await DB(c).prepare('SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0').bind(c.req.param('id'), u.id).first();
+    if (!m) no(404, 'no such file of yours', 'not_found');
+    if ('caption' in b) await DB(c).prepare('UPDATE media SET caption = ?, updated_at = ? WHERE id = ?').bind(text(b.caption, 'caption', { max: 200 }), now(), m.id).run();
+    return c.json({ media: mediaOut(await DB(c).prepare('SELECT * FROM media WHERE id = ?').bind(m.id).first()) });
+  });
+
+  // deleting a file takes it off products and offers; one a delivery points to stays until the delivery goes
+  app.delete('/api/squad/media/:id', async (c) => {
+    const u = me(c), t = now();
+    const m = await DB(c).prepare('SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0').bind(c.req.param('id'), u.id).first();
+    if (!m) no(404, 'no such file of yours', 'not_found');
+    if (await DB(c).prepare('SELECT 1 FROM deliveries WHERE media_id = ? AND is_deleted = 0').bind(m.id).first()) no(409, 'a delivery uses this file; remove the delivery first', 'in_use');
+    await DB(c).batch([
+      DB(c).prepare('DELETE FROM product_media WHERE media_id = ?').bind(m.id),
+      DB(c).prepare('UPDATE products SET cover_media_id = NULL, updated_at = ? WHERE cover_media_id = ?').bind(t, m.id),
+      DB(c).prepare('UPDATE offers SET video_media_id = NULL, updated_at = ? WHERE video_media_id = ?').bind(t, m.id),
+      DB(c).prepare('UPDATE media SET is_deleted = 1, updated_at = ? WHERE id = ?').bind(t, m.id),
+    ]);
+    await c.env.BUCKET.delete(m.r2_key).catch(() => {});
+    return c.json({ ok: true });
+  });
+
+  // set a product's gallery in one go: [{ media_id, role }]. The first cover, or else the first image, is the placement image.
+  app.put('/api/squad/products/:id/media', async (c) => {
+    const { u, s } = await asSeller(c), b = await body(c), id = c.req.param('id'), t = now();
+    const p = await DB(c).prepare('SELECT * FROM products WHERE id = ? AND seller_id = ? AND is_deleted = 0').bind(id, s.id).first();
+    if (!p) no(404, 'no such product of yours', 'not_found');
+    if (p.is_blocked) no(403, 'this product is blocked', 'blocked');
+    if (!Array.isArray(b.items) || b.items.length > 12) no(400, 'items is a list of up to 12 files', 'invalid');
+    const seen = new Set(), rows = [];
+    for (const [i, it] of b.items.entries()) {
+      const mid = it && it.media_id, role = (it && it.role) || 'gallery';
+      if (!['cover', 'gallery', 'screenshot', 'demo'].includes(role)) no(400, 'role is cover, gallery, screenshot or demo', 'invalid');
+      if (seen.has(mid)) no(400, 'a file can only be listed once', 'invalid');
+      seen.add(mid);
+      const m = await DB(c).prepare('SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0 AND is_blocked = 0').bind(mid || '', u.id).first();
+      if (!m) no(400, 'one of those files is not yours', 'invalid');
+      if (role === 'demo' ? m.kind === 'image' : m.kind !== 'image') no(400, role === 'demo' ? 'a demo is a video' : `a ${role} is an image`, 'invalid');
+      rows.push({ m, role, i });
+    }
+    if (rows.filter((r) => r.role === 'cover').length > 1) no(400, 'only one cover', 'invalid');
+    const cover = rows.find((r) => r.role === 'cover') || rows.find((r) => r.m.kind === 'image');
+    if (cover) cover.role = 'cover';
+    await DB(c).batch([
+      DB(c).prepare('DELETE FROM product_media WHERE product_id = ?').bind(id),
+      ...rows.map((r) => DB(c).prepare('INSERT INTO product_media (product_id, media_id, role, position) VALUES (?, ?, ?, ?)').bind(id, r.m.id, r.role, r.i)),
+      DB(c).prepare('UPDATE products SET cover_media_id = ?, updated_at = ? WHERE id = ?').bind(cover ? cover.m.id : null, t, id),
+    ]);
+    return c.json({ product: productOut(await getProduct(c, id)), media: await mediaOf(c, id) });
   });
 
   // ======================================================================================================
@@ -529,6 +694,25 @@ export function squadRoutes(app, h) {
   // ======================================================================================================
   // offers
   // ======================================================================================================
+  const spentOn = async (c, offerId, exceptDelivery = '') => (await DB(c).prepare(`SELECT COALESCE(SUM(d.amount_cents), 0) n FROM deliveries d JOIN relationships r ON r.id = d.relationship_id
+    WHERE r.offer_id = ? AND d.status = 'verified' AND d.is_deleted = 0 AND d.id <> ?`).bind(offerId, exceptDelivery).first()).n;
+  const SPENT = `(SELECT COALESCE(SUM(d.amount_cents), 0) FROM deliveries d JOIN relationships r ON r.id = d.relationship_id WHERE r.offer_id = o.id AND d.status = 'verified' AND d.is_deleted = 0) spent_cents`;
+  const money = (b, cur = {}) => {
+    const out = {};
+    if ('currency' in b) { const cc = String(b.currency || '').toUpperCase(); if (!CURRENCIES.includes(cc)) no(400, `currency is one of: ${CURRENCIES.join(', ')}`, 'invalid'); out.currency = cc; }
+    if ('budget_cents' in b) out.budget_cents = intIn(b.budget_cents, 'budget', 100, 1e10);
+    if ('payout_cap_cents' in b) out.payout_cap_cents = intIn(b.payout_cap_cents, 'payout cap', 1, 1e10);
+    const budget = 'budget_cents' in out ? out.budget_cents : cur.budget_cents ?? null, cap = 'payout_cap_cents' in out ? out.payout_cap_cents : cur.payout_cap_cents ?? null;
+    if (cap != null && budget == null) no(400, 'set a budget before a payout cap', 'invalid');
+    if (cap != null && budget != null && cap > budget) no(400, 'the payout cap cannot be more than the budget', 'invalid');
+    return out;
+  };
+  const videoOf = async (c, u, id) => {
+    if (!id) return null;
+    const m = await DB(c).prepare('SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0 AND is_blocked = 0').bind(id, u.id).first();
+    if (!m || m.kind === 'image') no(400, 'that video is not one of yours', 'invalid');
+    return m.id;
+  };
   const approvedOfferType = async (c, idOrSlug) => {
     const t = await DB(c).prepare('SELECT * FROM offer_types WHERE (id = ? OR slug = ?) AND is_deleted = 0').bind(idOrSlug, idOrSlug).first();
     if (!t) no(400, 'unknown offer type', 'invalid');
@@ -549,24 +733,27 @@ export function squadRoutes(app, h) {
     const max = intIn(b.max_relationships, 'max_relationships', 1, 100000);
     const status = b.status === 'open' ? 'open' : 'draft';
     if (status === 'open' && p.is_flagged) no(409, 'this product is flagged and cannot be offered until it is reviewed', 'flagged');
+    const fin = money(b), video = await videoOf(c, u, b.video_media_id);
+    if (status === 'open' && fin.budget_cents) no(409, 'a budgeted offer opens once its budget is funded: save it as a draft first', 'unfunded');
     const id = uid('of');
-    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t).run();
+    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null).run();
     return c.json({ offer: offerOut(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()) }, 201);
   });
 
   // browse: open offers, newest first. ?type=commission&country=US&q=&eligible=1&limit=&before=
   app.get('/api/squad/offers', async (c) => {
     const { limit, before } = page(c);
-    const type = c.req.query('type'), q = (c.req.query('q') || '').trim().slice(0, 80), ctry = (c.req.query('country') || '').toUpperCase();
+    const type = c.req.query('type'), q = (c.req.query('q') || '').trim().slice(0, 80), ctry = (c.req.query('country') || '').toUpperCase(), cat = (c.req.query('category') || '').toLowerCase();
     const where = [`o.status = 'open'`, 'o.is_deleted = 0', 'o.is_blocked = 0', 'p.is_deleted = 0', 'p.is_blocked = 0', 'p.is_flagged = 0',
       's.is_deleted = 0', 's.is_blocked = 0', '(co.id IS NULL OR (co.is_deleted = 0 AND co.is_blocked = 0))'];
     const args = [];
     if (type) { where.push('t.slug = ?'); args.push(type); }
+    if (cat) { if (!CATEGORIES.includes(cat)) no(400, `category is one of: ${CATEGORIES.join(', ')}`, 'invalid'); where.push('p.category = ?'); args.push(cat); }
     if (q) { where.push('(o.title LIKE ? OR p.name LIKE ? OR p.description LIKE ?)'); args.push(`%${q}%`, `%${q}%`, `%${q}%`); }
     if (ctry) { where.push(`(json_extract(o.requirements, '$.countries') IS NULL OR EXISTS (SELECT 1 FROM json_each(o.requirements, '$.countries') WHERE value = ?))`); args.push(ctry); }
     if (before) { where.push('o.created_at < ?'); args.push(before); }
-    const rows = (await DB(c).prepare(`SELECT o.*, p.name product_name, p.description product_description, p.url product_url, a.r2_key image_key,
+    const rows = (await DB(c).prepare(`SELECT o.*, ${SPENT}, p.name product_name, p.description product_description, p.url product_url, p.category product_category, p.cover_media_id, a.r2_key image_key,
         t.slug type_slug, t.name type_name, co.name company_name, co.is_verified company_verified, s.is_verified seller_verified,
         (SELECT COUNT(*) FROM relationships r WHERE r.offer_id = o.id AND r.status <> 'ended') active_relationships
       FROM offers o JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id JOIN offer_types t ON t.id = o.offer_type_id
@@ -580,7 +767,7 @@ export function squadRoutes(app, h) {
       UNION ALL SELECT offer_id, 'accepted' FROM relationships WHERE marketer_id = ?1 AND status <> 'ended'`).bind(m.id).all()).results.map((r) => [r.offer_id, r.status])) : new Map();
     let out = [];
     for (const r of rows) {
-      const extra = { product: { name: r.product_name, description: r.product_description, url: r.product_url, image: r.image_key ? '/files/' + r.image_key : null },
+      const extra = { product: { name: r.product_name, description: r.product_description, url: r.product_url, category: r.product_category, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : (r.image_key ? '/files/' + r.image_key : null), image: r.image_key ? '/files/' + r.image_key : null },
         type: { slug: r.type_slug, name: r.type_name }, company: r.company_name ? { name: r.company_name, is_verified: !!r.company_verified } : null,
         seller_verified: !!r.seller_verified, active_relationships: r.active_relationships,
         full: r.max_relationships != null && r.active_relationships >= r.max_relationships, my_interest: mine.get(r.id) || null };
@@ -594,12 +781,12 @@ export function squadRoutes(app, h) {
   // the seller's own offers, all statuses, with counts
   app.get('/api/squad/seller/offers', async (c) => {
     const { s } = await asSeller(c);
-    const rows = (await DB(c).prepare(`SELECT o.*, p.name product_name, t.slug type_slug, t.name type_name,
+    const rows = (await DB(c).prepare(`SELECT o.*, ${SPENT}, p.name product_name, p.category product_category, p.cover_media_id, t.slug type_slug, t.name type_name,
         (SELECT COUNT(*) FROM interests i WHERE i.offer_id = o.id AND i.status = 'pending') pending_interests,
         (SELECT COUNT(*) FROM relationships r WHERE r.offer_id = o.id AND r.status <> 'ended') active_relationships
       FROM offers o JOIN products p ON p.id = o.product_id JOIN offer_types t ON t.id = o.offer_type_id
       WHERE p.seller_id = ? AND o.is_deleted = 0 ORDER BY o.created_at DESC`).bind(s.id).all()).results;
-    return c.json({ offers: rows.map((r) => offerOut(r, { product: { name: r.product_name }, type: { slug: r.type_slug, name: r.type_name }, pending_interests: r.pending_interests, active_relationships: r.active_relationships })) });
+    return c.json({ offers: rows.map((r) => offerOut(r, { product: { name: r.product_name, category: r.product_category, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : null }, type: { slug: r.type_slug, name: r.type_name }, pending_interests: r.pending_interests, active_relationships: r.active_relationships })) });
   });
 
   app.get('/api/squad/offers/:id', async (c) => {
@@ -611,7 +798,8 @@ export function squadRoutes(app, h) {
     const company = p.company_id ? await DB(c).prepare('SELECT * FROM companies WHERE id = ?').bind(p.company_id).first() : null;
     const type = await DB(c).prepare('SELECT * FROM offer_types WHERE id = ?').bind(o.offer_type_id).first();
     const active = (await DB(c).prepare(`SELECT COUNT(*) n FROM relationships WHERE offer_id = ? AND status <> 'ended'`).bind(o.id).first()).n;
-    const extra = { product: productOut(p), company: companyOut(company), type: typeOut(type), active_relationships: active,
+    o.spent_cents = await spentOn(c, o.id);
+    const extra = { product: productOut(p), media: await mediaOf(c, p.id), company: companyOut(company), type: typeOut(type), active_relationships: active,
       full: o.max_relationships != null && active >= o.max_relationships, is_owner: owner };
     if (owner) extra.pending_interests = (await DB(c).prepare(`SELECT COUNT(*) n FROM interests WHERE offer_id = ? AND status = 'pending'`).bind(o.id).first()).n;
     const m = u && !owner ? await marketerOf(c, u.id) : null;
@@ -648,9 +836,15 @@ export function squadRoutes(app, h) {
       const active = (await DB(c).prepare(`SELECT COUNT(*) n FROM relationships WHERE offer_id = ? AND status <> 'ended'`).bind(id).first()).n;
       if (set.max_relationships != null && set.max_relationships < active) no(409, `there are already ${active} active relationships`, 'too_low');
     }
+    if ('video_media_id' in b) set.video_media_id = await videoOf(c, u, b.video_media_id);
+    if (['currency', 'budget_cents', 'payout_cap_cents'].some((k) => k in b)) {
+      if (o.funded_cents > 0) no(409, 'the budget is locked once it is funded: close this offer and start a new one to change it', 'locked');
+      Object.assign(set, money(b, o));
+      if ('budget_cents' in set && set.budget_cents != null && set.budget_cents < await spentOn(c, id)) no(409, 'the budget cannot be less than what is already spent', 'too_low');
+    }
     const keys = Object.keys(set);
     if (keys.length) await DB(c).prepare(`UPDATE offers SET ${keys.map((k) => k + ' = ?').join(', ')}, updated_at = ? WHERE id = ?`).bind(...keys.map((k) => set[k]), t, id).run();
-    return c.json({ offer: offerOut(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()) });
+    return c.json({ offer: offerOut({ ...(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()), spent_cents: await spentOn(c, id) }) });
   });
 
   // draft → open → paused ⇄ open → closed (final). Closing denies pending interests; relationships carry on.
@@ -665,6 +859,7 @@ export function squadRoutes(app, h) {
     if (o.status === to) return c.json({ offer: offerOut(o) });
     if (!MOVES[to].includes(o.status)) no(409, `a ${o.status} offer cannot be ${to}`, 'bad_transition');
     if (to === 'open' && (o.p_flagged || o.p_blocked || o.p_deleted)) no(409, 'the product is flagged or removed, so the offer cannot open', 'flagged');
+    if (to === 'open' && o.budget_cents && o.funding_status !== 'funded') no(409, 'fund the budget before opening this offer', 'unfunded');
     const q = [DB(c).prepare('UPDATE offers SET status = ?, updated_at = ? WHERE id = ?').bind(to, t, id)];
     if (to === 'closed') q.push(DB(c).prepare(`UPDATE interests SET status = 'denied', decision_note = 'offer closed', decided_by = ?, decided_at = ?, updated_at = ? WHERE offer_id = ? AND status = 'pending'`).bind(u.id, t, t, id));
     await DB(c).batch(q);
@@ -695,6 +890,7 @@ export function squadRoutes(app, h) {
     if (!offerVisible(o)) no(409, o.status === 'paused' ? 'this offer is paused' : 'this offer is not open', 'not_open');
     const active = (await DB(c).prepare(`SELECT COUNT(*) n FROM relationships WHERE offer_id = ? AND status <> 'ended'`).bind(id).first()).n;
     if (o.max_relationships != null && active >= o.max_relationships) no(409, 'this offer is full', 'full');
+    if (o.budget_cents && (await spentOn(c, id)) >= o.budget_cents) no(409, 'the budget for this offer is used up', 'budget_exhausted');
     if (await DB(c).prepare(`SELECT 1 FROM interests WHERE offer_id = ? AND marketer_id = ? AND status = 'pending'`).bind(id, m.id).first()) no(409, 'you already asked for this offer', 'duplicate');
     if (await DB(c).prepare(`SELECT 1 FROM relationships WHERE offer_id = ? AND marketer_id = ? AND status <> 'ended'`).bind(id, m.id).first()) no(409, 'you already work on this offer', 'duplicate');
     let social = null;
@@ -827,7 +1023,9 @@ export function squadRoutes(app, h) {
     const { u } = await relParty(c, c.req.param('id'));
     const r = await DB(c).prepare(`${relListSql} WHERE r.id = ?2`).bind(u.id, c.req.param('id')).first();
     const interest = await DB(c).prepare('SELECT * FROM interests WHERE id = ?').bind(r.interest_id).first();
-    return c.json({ relationship: { ...relRow(r, u.id), interest: interestOut(interest) } });
+    const earned = (await DB(c).prepare(`SELECT COALESCE(SUM(amount_cents), 0) n FROM deliveries WHERE relationship_id = ? AND status = 'verified' AND is_deleted = 0`).bind(r.id).first()).n;
+    const off = await DB(c).prepare('SELECT currency, payout_cap_cents FROM offers WHERE id = ?').bind(r.offer_id).first();
+    return c.json({ relationship: { ...relRow(r, u.id), interest: interestOut(interest), earned_cents: earned, currency: off.currency, payout_cap_cents: off.payout_cap_cents } });
   });
 
   // pause and resume (seller), end (either side, final)
@@ -858,7 +1056,7 @@ export function squadRoutes(app, h) {
   });
 
   app.post('/api/squad/relationships/:id/deliveries', async (c) => {
-    const { r, side } = await relParty(c, c.req.param('id')), b = await body(c), t = now();
+    const { u, r, side } = await relParty(c, c.req.param('id')), b = await body(c), t = now();
     if (side !== 'marketer') no(403, 'only the marketer reports deliveries', 'forbidden');
     if (r.m_blocked || r.m_deleted) no(403, 'your marketer profile is blocked', 'blocked');
     if (r.status !== 'active') no(409, `this relationship is ${r.status}`, 'not_active');
@@ -874,14 +1072,21 @@ export function squadRoutes(app, h) {
       if (!social) no(400, 'that account is not one of yours', 'invalid');
       if (social.is_blocked) no(403, 'that account is blocked', 'blocked');
     } else if (crit.needs_social) no(400, `say which account the ${type.name.toLowerCase()} went out on`, 'needs_social');
-    const proof_url = url(b.proof_url, 'proof link', crit.proof === 'url');
-    const note = text(b.note, 'note', { max: 2000 });
-    if (!proof_url && !note) no(400, 'add a link or a note so it can be checked', 'needs_proof');
+    let note = text(b.note, 'note', { max: 2000 });
+    let media = null;
+    if (b.media_id) {
+      media = await DB(c).prepare('SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0').bind(b.media_id, u.id).first();
+      if (!media) no(400, 'that file is not one of yours', 'invalid');
+      if (media.is_blocked) no(403, 'that file is blocked', 'blocked');
+    }
+    const proof_url = url(b.proof_url, 'proof link', crit.proof === 'url' && !media);
+    if (!proof_url && !note && !media) no(400, 'add a link or a note so it can be checked', 'needs_proof');
+    if (!proof_url && !note) note = media.kind === 'creator_video' ? 'Creator video uploaded' : 'File uploaded';  // the table wants a link or a note
     if (proof_url && await DB(c).prepare('SELECT 1 FROM deliveries WHERE relationship_id = ? AND proof_url = ? AND is_deleted = 0').bind(r.id, proof_url).first())
       no(409, 'that link was already reported', 'duplicate');
     const id = uid('dl');
-    await DB(c).prepare('INSERT INTO deliveries (id, relationship_id, delivery_type_id, social_id, proof_url, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, r.id, type.id, social?.id ?? null, proof_url, note, t, t).run();
+    await DB(c).prepare('INSERT INTO deliveries (id, relationship_id, delivery_type_id, social_id, proof_url, note, media_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(id, r.id, type.id, social?.id ?? null, proof_url, note, media?.id ?? null, t, t).run();
     return c.json({ delivery: deliveryOut(await DB(c).prepare('SELECT * FROM deliveries WHERE id = ?').bind(id).first()) }, 201);
   });
 
@@ -902,8 +1107,22 @@ export function squadRoutes(app, h) {
       if (d.status === status) return c.json({ delivery: deliveryOut(d) });
       const note = text(b.note, 'note', { max: 1000 });
       if (status === 'rejected' && !note) no(400, 'say why it was rejected', 'needs_note');
-      await DB(c).prepare('UPDATE deliveries SET status = ?, is_verified = ?, verified_by = ?, verified_at = ?, verification_note = ?, updated_at = ? WHERE id = ?')
-        .bind(status, bool(status === 'verified'), u.id, t, note, t, d.id).run();
+      // verifying can say what the delivery earned; it draws down the offer's budget and counts toward the marketer's cap
+      const amount = status === 'verified' && 'amount_cents' in b ? intIn(b.amount_cents, 'amount', 0, 1e10) : null;
+      if (amount) {
+        const off = await DB(c).prepare('SELECT budget_cents, payout_cap_cents, funding_status, currency FROM offers WHERE id = ?').bind(r.offer_id).first();
+        if (off.budget_cents) {
+          if (off.funding_status !== 'funded') no(409, 'the budget is not funded yet', 'unfunded');
+          const left = off.budget_cents - await spentOn(c, r.offer_id, d.id);
+          if (amount > left) no(409, `only ${(Math.max(left, 0) / 100).toFixed(2)} ${off.currency} is left in the budget`, 'budget_exceeded');
+        }
+        if (off.payout_cap_cents) {
+          const earned = (await DB(c).prepare(`SELECT COALESCE(SUM(amount_cents), 0) n FROM deliveries WHERE relationship_id = ? AND status = 'verified' AND is_deleted = 0 AND id <> ?`).bind(r.id, d.id).first()).n;
+          if (earned + amount > off.payout_cap_cents) no(409, `this marketer can earn up to ${(off.payout_cap_cents / 100).toFixed(2)} ${off.currency} on this offer`, 'cap_exceeded');
+        }
+      }
+      await DB(c).prepare('UPDATE deliveries SET status = ?, is_verified = ?, verified_by = ?, verified_at = ?, verification_note = ?, amount_cents = ?, updated_at = ? WHERE id = ?')
+        .bind(status, bool(status === 'verified'), u.id, t, note, status === 'verified' ? amount : null, t, d.id).run();
       return c.json({ delivery: deliveryOut(await DB(c).prepare('SELECT * FROM deliveries WHERE id = ?').bind(d.id).first()) });
     });
   }
@@ -972,6 +1191,7 @@ export function squadRoutes(app, h) {
     'offer-types': { table: 'offer_types', actions: ['approve', 'unapprove', 'delete', 'restore'] },
     'delivery-types': { table: 'delivery_types', actions: ['approve', 'unapprove', 'delete', 'restore'] },
     deliveries: { table: 'deliveries', actions: ['verify', 'reject', 'delete', 'restore'] },
+    media: { table: 'media', actions: ['verify', 'unverify', 'block', 'unblock', 'delete', 'restore'] },
   };
 
   app.post('/api/admin/squad/:kind/:id', async (c) => {
@@ -1012,6 +1232,33 @@ export function squadRoutes(app, h) {
     if (action === 'flag') q.push(DB(c).prepare(`UPDATE offers SET status = 'paused', updated_at = ? WHERE product_id = ? AND status = 'open'`).bind(t, id));
     await DB(c).batch(q);
     return c.json({ ok: true, row: await DB(c).prepare(`SELECT * FROM ${spec.table} WHERE id = ?`).bind(id).first() });
+  });
+
+  // the platform records money it has received for an offer (by hand until payments are connected); the offer can open once it is covered
+  app.post('/api/admin/squad/offers/:id/fund', async (c) => {
+    const a = needAdmin(c), b = await body(c), t = now();
+    const o = await DB(c).prepare('SELECT * FROM offers WHERE id = ? AND is_deleted = 0').bind(c.req.param('id')).first();
+    if (!o) no(404, 'no such offer', 'not_found');
+    if (!o.budget_cents) no(409, 'this offer has no budget to fund', 'no_budget');
+    if (o.funding_status === 'refunded') no(409, 'this offer was refunded', 'refunded');
+    const amount = intIn(b.amount_cents, 'amount', 1, 1e10, true), due = financials(o).payment_due_cents, funded = o.funded_cents + amount;
+    if (funded > due) no(409, `that is more than is due (${(due - o.funded_cents) / 100} ${o.currency} left)`, 'overpaid');
+    await DB(c).prepare('UPDATE offers SET funded_cents = ?, funding_status = ?, funded_at = ?, funded_by = ?, updated_at = ? WHERE id = ?')
+      .bind(funded, funded >= due ? 'funded' : 'unfunded', t, a.id, t, o.id).run();
+    return c.json({ offer: offerOut({ ...(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(o.id).first()), spent_cents: await spentOn(c, o.id) }) });
+  });
+
+  // closing an offer frees whatever was not spent; the listing fee stays with the platform
+  app.post('/api/admin/squad/offers/:id/refund', async (c) => {
+    needAdmin(c);
+    const t = now(), o = await DB(c).prepare('SELECT * FROM offers WHERE id = ? AND is_deleted = 0').bind(c.req.param('id')).first();
+    if (!o) no(404, 'no such offer', 'not_found');
+    if (o.status !== 'closed') no(409, 'close the offer first', 'not_closed');
+    if (o.funding_status !== 'funded' && !(o.funded_cents > 0)) no(409, 'nothing was paid for this offer', 'not_funded');
+    if (o.funding_status === 'refunded') no(409, 'already refunded', 'refunded');
+    const spent = await spentOn(c, o.id), refund = Math.max(0, Math.min(o.funded_cents - financials(o).listing_fee_cents, o.budget_cents) - spent);
+    await DB(c).prepare("UPDATE offers SET funding_status = 'refunded', refunded_cents = ?, updated_at = ? WHERE id = ?").bind(refund, t, o.id).run();
+    return c.json({ refund_cents: refund, offer: offerOut({ ...(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(o.id).first()), spent_cents: spent }) });
   });
 
   // what needs a person: unverified marketers and accounts, flagged products, types to approve

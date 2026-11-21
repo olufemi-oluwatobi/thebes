@@ -105,7 +105,7 @@ app.get('/auth/verify', async (c) => {
   await DB.prepare('INSERT INTO sessions (id_hash, user_id, created_at, expires_at, user_agent) VALUES (?, ?, ?, ?, ?)')
     .bind(await sha(sid), u.id, t, t + 30 * DAY, (c.req.header('user-agent') || '').slice(0, 200)).run();
   setCookie(c, 'ts', sid, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 30 * 86400 });
-  return c.redirect('/app/#board');
+  return c.redirect('/app/#feed');
 });
 
 app.post('/api/auth/signout', async (c) => {

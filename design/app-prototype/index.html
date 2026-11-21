@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gorilla Squad – app prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Thebes · palette from the Thebes website: brown #1B2517, primary #D0BCFF, purple #836CBB · Inter + Libre Baskerville */
+:root{
+  --pink:#D0BCFF;--pink-soft:#EFE8FF;--purple:#836CBB;--ink:#1B2517;--ink-2:#1d1d33;--sub:#5a585e;--soft:#F3F1F7;--line:#E6E6E6;--white:#ffffff;
+  --green:#14a86a;--green-soft:#dff5ea;--blue-soft:#e2ecfd;--blue:#1e4fb8;
+  --safe-b:env(safe-area-inset-bottom,0px);--safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ink);font-family:Inter,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default}
+a{color:inherit}
+#app{position:relative;width:100%;height:100dvh;margin:0 auto;overflow:hidden;background:var(--ink);display:flex;flex-direction:column}
+@media (min-width:640px){body{display:flex;align-items:center;justify-content:center;background:#0b0b0b}#app{width:420px;height:min(100dvh - 32px,900px);border-radius:28px;box-shadow:0 30px 80px #000a}}
+.view{flex:1;min-height:0;display:none;flex-direction:column}
+.view.on{display:flex}
+.light{background:var(--white);color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* nav */
+nav{flex:none;display:flex;justify-content:space-around;align-items:center;height:calc(60px + var(--safe-b));padding-bottom:var(--safe-b);border-top:1px solid #2a2a2a;background:var(--ink)}
+#app.is-light nav{background:var(--white);border-top-color:var(--line)}
+nav a{width:76px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;font-size:11px;font-weight:600;color:#9a9a9a}
+#app.is-light nav a{color:var(--sub)}
+nav a.on{color:var(--white)}
+#app.is-light nav a.on{color:var(--ink)}
+nav .plus{width:50px;height:34px;border-radius:11px;background:var(--pink);color:var(--ink);display:flex;align-items:center;justify-content:center}
+#app.playing nav{display:none}
+
+/* feed */
+#feed{position:relative;background:var(--ink);color:var(--white)}
+.topbar{position:absolute;z-index:3;left:0;right:0;top:0;padding-top:var(--safe-t);height:calc(50px + var(--safe-t));display:flex;justify-content:center;align-items:center;gap:22px;background:linear-gradient(#1B2517e6,#1B251700);pointer-events:none}
+.topbar button{pointer-events:auto;background:none;border:0;padding:12px 2px;font-size:16px;font-weight:600;color:#a3a3a3}
+.topbar button.on{color:var(--white);box-shadow:inset 0 -2px 0 var(--pink)}
+#app.playing .topbar{display:none}
+.slides{flex:1;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slide{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:var(--ink)}
+.slide .poster,.slide iframe{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:contain;background:var(--ink);display:block}
+.slide.closed .poster{filter:saturate(.35) brightness(.45)}
+.scrim{position:absolute;left:0;right:0;bottom:0;height:46%;background:linear-gradient(#1B251700,#1B2517ee 72%);pointer-events:none}
+.chrome{position:absolute;inset:0;pointer-events:none;transition:opacity .2s}
+.chrome>*{pointer-events:auto}
+.chrome .scrim{pointer-events:none}
+#app.playing .slide.active .chrome{opacity:0;pointer-events:none}
+#app.playing .slide.active .chrome>*{pointer-events:none}
+.playbtn{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);height:54px;padding:0 30px;border-radius:999px;border:0;background:var(--pink);color:var(--ink);font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 10px 30px #0008}
+.rail{position:absolute;right:10px;bottom:124px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.rail .it{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:700;text-shadow:0 1px 3px #000,0 0 8px #000c}
+.rail button{width:48px;height:48px;border-radius:999px;border:0;background:#1B2517bf;color:var(--white);display:flex;align-items:center;justify-content:center}
+.rail button.liked{color:var(--pink)}
+.rail button.liked svg{fill:var(--pink)}
+.faces{display:flex}
+.faces span{width:22px;height:22px;border-radius:999px;border:2px solid var(--ink);margin-left:-7px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.faces span:first-child{margin-left:0}
+.rail .people{width:auto;min-width:48px;padding:0 8px;border-radius:999px}
+.rail .reportbtn{width:auto;height:auto;padding:4px 6px;background:none;color:var(--white);font-size:12px;font-weight:700;opacity:.8;text-shadow:0 1px 3px #000,0 0 8px #000c}
+.cap{position:absolute;left:16px;right:78px;bottom:18px;display:flex;flex-direction:column;gap:8px;text-shadow:0 1px 3px #000c}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
+.av{width:38px;height:38px;border-radius:999px;border:2px solid var(--white);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:none;overflow:hidden;background:var(--pink);color:var(--ink);text-shadow:none}
+.av img{width:100%;height:100%;object-fit:cover}
+.who b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.follow{height:30px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:700;border:1px solid var(--white);background:var(--white);color:var(--ink);text-shadow:none;flex:none}
+.follow.on{background:transparent;color:var(--white);border-color:#ffffff80}
+.cap .t{font-size:16px;font-weight:600;line-height:21px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{height:26px;padding:0 10px;border-radius:999px;background:#ffffff26;font-size:12px;font-weight:600;display:inline-flex;align-items:center;text-shadow:none}
+.chip.pink{background:var(--pink);color:var(--ink)}
+.chip.dark{background:var(--ink);color:var(--white);border:1px solid #ffffff40}
+.closedcard{position:absolute;left:16px;right:76px;top:calc(76px + var(--safe-t));padding:18px;border-radius:20px;background:#1B2517e6;border:1px solid #ffffff1f;display:flex;flex-direction:column;gap:12px}
+.closedcard h3{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em}
+.closedcard .sub{font-size:13px;color:#bdbdbd}
+.podium{display:flex;flex-direction:column;gap:6px}
+.podium .w{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:12px;background:#ffffff12;font-size:14px}
+.podium .w b{width:22px;font-weight:800;color:var(--pink)}
+.podium .w span{flex:1;font-weight:600}
+.podium .w em{font-style:normal;color:#bdbdbd;font-variant-numeric:tabular-nums}
+.playbar{position:absolute;z-index:4;left:0;right:0;top:calc(8px + var(--safe-t));display:none;justify-content:space-between;padding:0 12px;pointer-events:none}
+#app.playing .playbar{display:flex}
+.pill{pointer-events:auto;height:38px;padding:0 16px;border-radius:999px;border:0;background:#1B2517d9;color:var(--white);font-size:13px;font-weight:700}
+.empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:calc(64px + var(--safe-t)) 32px 32px;text-align:center;color:#d4d4d4}
+.empty h2{margin:0;font-size:22px;color:var(--white)}
+
+/* sheets */
+.veil{position:absolute;inset:0;z-index:10;background:#0009;border:0;display:none}
+.sheet{position:absolute;z-index:11;left:0;right:0;bottom:0;max-height:86%;background:var(--white);color:var(--ink);border-radius:22px 22px 0 0;display:none;flex-direction:column;padding:10px 0 var(--safe-b)}
+.sheet.tall{height:80%}
+.sheet.on,.veil.on{display:flex}
+.grab{width:38px;height:5px;border-radius:999px;background:#d4d4d4;align-self:center;flex:none}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 16px 8px}
+.sh-head h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.01em}
+.sh-head p{margin:3px 0 0;font-size:13px;color:var(--sub)}
+.x{width:36px;height:36px;border-radius:999px;border:0;background:var(--soft);display:flex;align-items:center;justify-content:center;flex:none}
+.seg{display:flex;padding:3px;border-radius:12px;background:var(--soft)}
+.seg button{flex:1;height:38px;border:0;border-radius:9px;background:transparent;font-size:14px;font-weight:700}
+.seg button.on{background:var(--white);box-shadow:0 1px 3px #00000024}
+.list{flex:1;overflow:auto;padding:0 16px 12px}
+.row{display:grid;grid-template-columns:38px 1fr 56px 64px;align-items:center;min-height:48px;padding:0 12px;font-size:15px;border-top:1px solid var(--soft)}
+.row .n{text-align:right;font-weight:700}.row .tm{text-align:right;color:var(--sub);font-variant-numeric:tabular-nums}
+.row.me{border:0;border-radius:14px;background:var(--ink);color:var(--white);margin:8px 0}
+.row.me .tm{color:#cfcfcf}
+.row.you{background:var(--pink-soft)}
+.row.hd{min-height:26px;border:0;font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.05em}
+.mini{width:28px;height:28px;border-radius:999px;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;margin-right:10px;color:var(--ink);flex:none}
+.nm{display:flex;align-items:center;font-weight:600;min-width:0}
+.nm span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{font-size:12px;font-weight:700;text-align:right}
+.banner{margin:4px 16px 8px;padding:12px 14px;border-radius:14px;background:var(--pink-soft);font-size:14px;line-height:20px}
+.banner b{font-weight:800}
+.cm{display:flex;gap:12px;padding:10px 0}
+.cm .body{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cm .meta{font-size:12px;color:var(--sub)}.cm .meta b{color:var(--ink);font-weight:700}
+.cm .txt{font-size:15px;line-height:21px;overflow-wrap:anywhere}
+.composer{display:flex;gap:10px;padding:10px 16px;border-top:1px solid var(--line)}
+.composer input{flex:1;height:44px;border-radius:999px;border:0;background:var(--soft);padding:0 16px;font-size:15px;min-width:0}
+.btn{height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--ink);color:var(--white);font-size:15px;font-weight:700;flex:none}
+.btn.pink{background:var(--pink);color:var(--ink)}
+.form{display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px;overflow:auto}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:18px;color:var(--ink-2)}
+.check input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--pink)}
+.err{color:#b4233c;font-size:13px;font-weight:600}
+
+/* light screens */
+.hdr{flex:none;height:calc(56px + var(--safe-t));padding:var(--safe-t) 8px 0;display:flex;align-items:center;justify-content:space-between}
+.hdr .ttl{font-size:16px;font-weight:700}
+.ib{width:44px;height:44px;border:0;background:none;display:flex;align-items:center;justify-content:center;color:var(--ink);text-decoration:none;flex:none}
+.prog{flex:none;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:0 16px}
+.prog span{height:4px;border-radius:999px;background:var(--line)}.prog span.on{background:var(--pink)}
+.main{flex:1;overflow:auto;padding:22px 16px 24px;display:flex;flex-direction:column;gap:20px}
+h1{margin:0;font-size:30px;line-height:34px;font-weight:800;letter-spacing:-.02em}
+.lede{margin:6px 0 0;font-size:15px;line-height:22px;color:var(--sub)}
+.grid2{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{min-height:156px;padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--white);text-align:left;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.tile.sel{border:2px solid var(--ink);padding:13px;box-shadow:0 0 0 3px var(--pink-soft)}
+.tile[disabled]{opacity:.5}
+.marks{display:flex;gap:3px}.marks i{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--ink)}
+.tile .n1{font-size:16px;font-weight:700}.tile .n2{font-size:12px;line-height:16px;color:var(--sub)}
+.tag{align-self:flex-start;height:22px;padding:0 9px;border-radius:999px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;background:var(--soft);color:var(--sub);white-space:nowrap}
+.tag.live{background:var(--green-soft);color:#0d6b43}.tag.dark{background:var(--ink);color:var(--white)}.tag.pink{background:var(--pink);color:var(--ink)}.tag.blue{background:var(--blue-soft);color:var(--blue)}.tag.red{background:#fde2e2;color:#9b1c1c}
+.look{padding:0;border-radius:18px;border:1px solid var(--line);background:var(--white);text-align:left;overflow:hidden;display:flex;flex-direction:column}
+.look.sel{border:2px solid var(--ink);box-shadow:0 0 0 3px var(--pink-soft)}
+.look img{width:100%;aspect-ratio:9/16;object-fit:cover;display:block;background:var(--soft)}
+.look .info{padding:12px;display:flex;flex-direction:column;gap:6px}
+.look .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.fld{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fld label,.fld .lb{font-size:13px;font-weight:700}
+.fld .note{font-size:12px;line-height:16px;color:var(--sub)}
+.in{height:48px;border-radius:12px;border:1px solid var(--line);padding:0 14px;font-size:16px;background:var(--white);width:100%;min-width:0}
+.in:focus,.composer input:focus{outline:2px solid var(--pink);outline-offset:1px}
+textarea.in{height:auto;padding:12px 14px;line-height:22px;resize:vertical}
+.upload{height:96px;border-radius:16px;border:1px dashed #9a9a9a;background:#fafafa;display:flex;align-items:center;justify-content:center;gap:14px;text-align:left;width:100%}
+.upload.done{border-style:solid;border-color:var(--line)}
+.upload img{width:56px;height:56px;border-radius:14px;object-fit:contain;background:var(--soft)}
+.sw{display:flex;gap:10px;flex-wrap:wrap}.sw label{position:relative;width:42px;height:42px;border-radius:999px;box-shadow:inset 0 0 0 1px #00000024;overflow:hidden;cursor:pointer}
+.sw input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.togs{display:flex;flex-wrap:wrap;gap:8px}
+.tog{height:38px;padding:0 15px;border-radius:999px;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--white)}
+.tog.on{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.preview{flex:none;align-self:center;width:72%;max-width:300px;aspect-ratio:9/16;border-radius:24px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 18px 44px #00000029;background:var(--ink);position:relative}
+.preview iframe{width:100%;height:100%;border:0;display:block}
+.preview .busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cfcfcf;font-size:14px;text-align:center;padding:20px}
+.foot{flex:none;padding:12px 16px calc(12px + var(--safe-b));border-top:1px solid var(--soft);display:flex;gap:10px;background:var(--white)}
+.cta{flex:1;height:54px;border-radius:14px;border:0;background:var(--pink);color:var(--ink);font-size:16px;font-weight:800}
+.cta.ghost{background:var(--white);color:var(--ink);border:1px solid var(--line);font-weight:700}
+.cta.dark{background:var(--ink);color:var(--white)}
+.cta:disabled{opacity:.5}
+.toast{position:absolute;z-index:30;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:var(--white);font-size:14px;font-weight:600;padding:11px 18px;border-radius:999px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center;box-shadow:0 6px 20px #0004}
+.toast.on{opacity:1}
+
+/* profile */
+.me{display:flex;align-items:center;gap:16px}
+.big{width:72px;height:72px;border-radius:999px;background:var(--pink);font-size:26px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;color:var(--ink)}
+.me .n1{font-size:22px;font-weight:800;letter-spacing:-.01em}.me .n2{font-size:14px;color:var(--sub);margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:12px;border-radius:14px;background:var(--soft);display:flex;flex-direction:column;gap:4px}
+.stat b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.stat span{font-size:12px;color:var(--sub)}
+.h3{font-size:16px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.h3 a,.h3 button{font-size:14px;font-weight:700;color:var(--ink);text-decoration:none;background:none;border:0;padding:0}
+.played{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.played a{position:relative;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:var(--soft);display:block}
+.played img{width:100%;height:100%;object-fit:cover;display:block}
+.played span{position:absolute;left:6px;bottom:6px;height:22px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:800;display:inline-flex;align-items:center}
+.co{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;border:1px solid var(--line)}
+.lg{width:46px;height:46px;border-radius:13px;background:var(--pink);color:var(--ink);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.lg img{width:100%;height:100%;object-fit:contain;background:var(--white)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{padding:14px;border-radius:14px;background:var(--soft);display:flex;flex-direction:column;gap:6px}
+.kpi span{font-size:12px;color:var(--sub)}.kpi b{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.cl{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--soft);text-decoration:none}
+.cl img{width:44px;height:78px;border-radius:9px;object-fit:cover;flex:none}
+.cl .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.cl .tx b{font-size:15px;font-weight:700}.cl .tx span{font-size:12px;color:var(--sub)}
+.linkbtn{height:48px;border-radius:14px;border:1px solid var(--line);background:var(--white);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--ink)}
+
+/* admin */
+.adm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.adm-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--soft);font-size:14px}
+.adm-row .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.adm-row .tx b{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-row .tx span{font-size:12px;color:var(--sub)}
+.mbtn{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--white);font-size:13px;font-weight:700;flex:none}
+.mbtn.red{border-color:#f3c0c0;color:#9b1c1c}
+.mselect{height:34px;border-radius:999px;border:1px solid var(--line);padding:0 10px;font-size:13px;font-weight:700;background:var(--white)}
+.form .cta{flex:none}
+
+h1,h2,h3,.big,.h3,.ttl{font-family:"Libre Baskerville",Georgia,serif}
+.sharebox{margin:4px 16px 12px;border-radius:18px;background:var(--ink);overflow:hidden;display:flex;justify-content:center;align-items:center;min-height:120px}
+.sharebox img{display:block;width:100%;max-height:52vh;object-fit:contain}
+#sbtn{display:flex;gap:10px;padding:0 16px 14px}
+:root{--pink:#CBD6A8;--pink-soft:#E7EDD3;--purple:#5B6F40;--ink:#26331F;--ink-2:#34432b;--sub:#5f6458;--soft:#F1F0E4;--line:#E1E0D0;--green:#4f7a2c;--green-soft:#dfe9c4}
+body{background:#0b0f09}
+#views{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;position:relative}
+.main{width:100%;max-width:640px;margin:0 auto}
+.flyer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:92px 28px 0;color:#F1F0E4}
+.flyer:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.12) 1.5px,transparent 1.6px);background-size:22px 22px}
+.flyer>*{position:relative}
+.flyer .brand{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.flyer .name{font-family:"Libre Baskerville",Georgia,serif;font-size:30px;line-height:1.2;margin-top:14px;max-width:340px}
+.flyer .big{font-family:"Libre Baskerville",Georgia,serif;font-size:96px;line-height:1;margin-top:34px;opacity:.95;width:auto;height:auto;background:none;color:inherit;display:block}
+.flyer .fine{font-size:14px;opacity:.8;margin-top:8px}
+.mini-flyer{position:relative;height:150px;border-radius:18px;overflow:hidden}
+.mini-flyer .flyer{padding:26px 20px 0}
+.mini-flyer .flyer .name{font-size:20px;margin-top:6px}.mini-flyer .flyer .big{font-size:44px;margin-top:10px}
+nav a svg{display:block}
+.playbtn{white-space:nowrap}
+.playbtn.alt{background:#ffffff26;color:#fff;backdrop-filter:blur(8px)}
+.int-head{display:flex;gap:12px;align-items:center}
+.int-av{width:44px;height:44px;border-radius:999px;background:var(--pink);color:var(--ink);font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.rowbtn{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--soft);width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0}
+.rowbtn .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.rowbtn .tx b{font-size:15px;font-weight:700}.rowbtn .tx span{font-size:12px;color:var(--sub)}
+.ok{color:#2f5a14}.no{color:#9b3a1c}
+.bubble{max-width:80%;padding:10px 14px;border-radius:18px;font-size:15px;line-height:21px;background:var(--soft)}
+.bubble.me{align-self:flex-end;background:var(--ink);color:#fff}
+.bubble small{display:block;font-size:11px;opacity:.6;margin-top:3px}
+.chat{display:flex;flex-direction:column;gap:8px}
+.dot{position:absolute;top:2px;right:14px;min-width:16px;height:16px;border-radius:8px;background:#e07a4f;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
+nav a{position:relative}
+@media(min-width:900px){
+ body{display:flex;align-items:center;justify-content:center}
+ #app{width:min(100vw - 40px,1080px);height:min(100dvh - 32px,900px);flex-direction:row-reverse}
+ nav{flex-direction:column;justify-content:flex-start;gap:14px;width:80px;height:auto;padding:22px 0;border-top:0;border-right:1px solid #3a4a33;flex:none}
+ #app.is-light nav{border-right-color:var(--line)}
+ nav a{width:54px;height:54px;border-radius:15px}
+ nav a .lb{display:none}
+ nav a.on:not(.plus){background:#ffffff18}
+ #app.is-light nav a.on:not(.plus){background:var(--soft)}
+ nav .plus{width:54px;height:54px;border-radius:15px}
+ #feed .slides{display:block}
+ #feed .slide{max-width:470px;margin:0 auto;border-radius:0}
+ .rail{right:10px}
+ .dot{right:6px}
+}
+@media(max-width:899px){nav a .lb{display:block}}
+.mini-flyer{flex:none}
+@media(min-width:900px){.sheet{left:50%;right:auto;width:min(580px,calc(100% - 80px));transform:translateX(-50%);margin-left:40px;border-radius:22px 22px 0 0}}
+.topbar{gap:16px}.topbar button{white-space:nowrap;font-size:15px}
+/* placement art, gallery, money */
+.flyer{justify-content:flex-start;padding:74px 24px 0}
+.flyer .art{width:min(310px,82%);margin-top:10px;filter:drop-shadow(0 18px 30px #0007)}
+.flyer .art svg,
+.flyer .name{font-size:26px;margin-top:6px}
+.flyer .rw{font-family:"Libre Baskerville",Georgia,serif;font-size:42px;line-height:1;margin-top:14px}
+.flyer .fine{margin-top:6px}
+.cap .row2{display:flex;gap:8px;margin-top:4px}
+.cap .row2 .playbtn{position:static;transform:none;height:46px;padding:0 22px;flex:1;box-shadow:none;justify-content:center}
+.cap .row2 .demo{width:46px;height:46px;border-radius:999px;border:0;background:#ffffff26;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.hero-art{position:relative;flex:none;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:26px 0 18px}
+.hero-art .art{width:min(300px,70%)}
+.hero-art .badge{position:absolute;top:12px;left:12px}
+.hero-art .vid{position:absolute;right:12px;bottom:12px;height:34px;padding:0 14px;border-radius:999px;border:0;background:#1B2517cc;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+.thumbs{display:flex;gap:8px;overflow-x:auto;flex:none}
+.thumb{position:relative;flex:none;width:92px;height:70px;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:6px;border:0}
+.thumb.on{box-shadow:0 0 0 2px var(--ink)}
+.thumb .pl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1B251766;color:#fff}
+.thumb .ln{position:absolute;right:5px;bottom:4px;font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden}.bar i{display:block;height:100%;background:var(--ink);border-radius:99px}
+.fin{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:var(--soft)}
+.fin .r{display:flex;justify-content:space-between;font-size:14px}.fin .r b{font-variant-numeric:tabular-nums}
+.fin .tot{border-top:1px solid #d6d4c3;padding-top:10px;font-size:16px;font-weight:800}
+.pick{display:flex;align-items:center;gap:12px;padding:10px;border-radius:16px;border:1px solid var(--line);background:#fff;width:100%;text-align:left}
+.pick.sel{border:2px solid var(--ink);padding:9px;box-shadow:0 0 0 3px var(--pink-soft)}
+.pick .thumb{width:64px;height:52px;background:var(--ink);padding:4px}
+.pick .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.pick .tx b{font-size:15px}.pick .tx span{font-size:12px;color:var(--sub)}
+.catgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.catgrid button{height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:13px}
+.catgrid button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.drop{position:relative;height:110px;border-radius:16px;border:1px dashed #9a9a9a;background:#fafaf5;display:flex;align-items:center;justify-content:center;gap:12px;overflow:hidden;cursor:pointer;text-align:center;font-size:14px;font-weight:700;color:var(--sub)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop.has{border-style:solid;border-color:var(--line);background:var(--ink)}
+.drop img{max-height:100%;max-width:100%;object-fit:contain}
+.player{position:relative;border-radius:18px;overflow:hidden;background:#1B2517;aspect-ratio:9/12;max-height:52vh;margin:0 auto;display:flex;align-items:center;justify-content:center;width:min(100%,300px)}
+.player .art{width:80%;opacity:.9}.player .pb{position:absolute;left:12px;right:12px;bottom:12px;height:5px;border-radius:9px;background:#ffffff33;overflow:hidden}.player .pb i{display:block;height:100%;width:0;background:var(--pink);transition:width 5s linear}
+.player .go{position:absolute;width:64px;height:64px;border-radius:50%;border:0;background:#CBD6A8e6;color:#26331F;display:flex;align-items:center;justify-content:center}
+.seeall{font-size:12px;color:var(--sub)}
+@media(min-width:900px){.flyer .art{width:min(330px,70%)}}
+.flyer .art svg,.hero-art .art svg,.thumb>svg,.player .art svg{display:block;width:100%;height:auto}
+.hero-art .vid,.player .go{white-space:nowrap}
+.hero-art .vid svg,.thumb .pl svg,.player .go svg{width:18px;height:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g2 .fld{min-width:0}
+.thumb .pl svg{width:22px;height:22px}
+.flyer .art{width:min(340px,86%)}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="views"></div>
+  <nav id="nav"></nav>
+  <button class="veil" id="veil" aria-label="Close"></button>
+  <div class="sheet" id="sheet"></div>
+  <div class="toast" id="toast"></div>
+</div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const initials=n=>String(n).split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+const svg=(d,w=24)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const I={
+ heart:svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'),
+ share:svg('<path d="M14 4l7 7-7 7M21 11H9a5 5 0 0 0-5 5v3"/>',22),
+ people:svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',22),
+ x:svg('<path d="M6 6l12 12M18 6L6 18"/>',16),
+ back:svg('<path d="M15 5l-7 7 7 7"/>',22),
+ feed:svg('<rect x="5" y="3" width="14" height="18" rx="3"/><path d="M10 9.5l5 2.5-5 2.5z" fill="currentColor"/>'),
+ plus:svg('<path d="M12 5v14M5 12h14"/>',22),
+ me:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>'),
+ play:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>',
+ up:svg('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',20)
+};
+/* ---------- product placement art: what the product looks like in context ---------- */
+const ART={
+ dashboard:`<svg viewBox="0 0 320 250"><rect x="18" y="14" width="284" height="190" rx="14" fill="#F1F0E4"/><path d="M18 28a14 14 0 0 1 14-14h256a14 14 0 0 1 14 14v12H18z" fill="#E1E0D0"/><circle cx="34" cy="27" r="4" fill="#e07a4f"/><circle cx="48" cy="27" r="4" fill="#d9c27a"/><circle cx="62" cy="27" r="4" fill="#9cc07a"/><rect x="28" y="50" width="54" height="146" rx="8" fill="#26331F"/><rect x="36" y="60" width="38" height="6" rx="3" fill="#CBD6A8"/><rect x="36" y="76" width="30" height="5" rx="2.5" fill="#CBD6A8" opacity=".5"/><rect x="36" y="90" width="34" height="5" rx="2.5" fill="#CBD6A8" opacity=".5"/><rect x="36" y="104" width="26" height="5" rx="2.5" fill="#CBD6A8" opacity=".5"/><rect x="92" y="50" width="62" height="44" rx="8" fill="#fff"/><rect x="162" y="50" width="62" height="44" rx="8" fill="#fff"/><rect x="232" y="50" width="62" height="44" rx="8" fill="#fff"/><rect x="100" y="60" width="26" height="6" rx="3" fill="#bbb"/><rect x="100" y="72" width="40" height="12" rx="4" fill="#26331F"/><rect x="170" y="60" width="26" height="6" rx="3" fill="#bbb"/><rect x="170" y="72" width="34" height="12" rx="4" fill="#5B6F40"/><rect x="240" y="60" width="26" height="6" rx="3" fill="#bbb"/><rect x="240" y="72" width="44" height="12" rx="4" fill="#CBD6A8"/><rect x="92" y="104" width="202" height="92" rx="8" fill="#fff"/><g fill="#CBD6A8"><rect x="104" y="160" width="16" height="26" rx="3"/><rect x="128" y="146" width="16" height="40" rx="3"/><rect x="152" y="152" width="16" height="34" rx="3"/><rect x="176" y="130" width="16" height="56" rx="3"/></g><path d="M200 168l24-18 24 8 30-34" fill="none" stroke="#26331F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M120 204h80v8h30v6H90v-6h30z" fill="#CBD6A8"/></svg>`,
+ app:`<svg viewBox="0 0 320 270"><rect x="96" y="6" width="128" height="256" rx="22" fill="#14200f" stroke="#CBD6A8" stroke-width="4"/><rect x="106" y="20" width="108" height="226" rx="12" fill="#F1F0E4"/><rect x="142" y="12" width="36" height="6" rx="3" fill="#CBD6A8"/><rect x="116" y="32" width="60" height="9" rx="4" fill="#26331F"/><g><rect x="116" y="52" width="88" height="34" rx="8" fill="#fff"/><rect x="124" y="60" width="50" height="6" rx="3" fill="#26331F"/><rect x="124" y="72" width="34" height="5" rx="2.5" fill="#bbb"/><rect x="116" y="94" width="88" height="34" rx="8" fill="#fff"/><rect x="124" y="102" width="62" height="6" rx="3" fill="#26331F"/><rect x="124" y="114" width="40" height="5" rx="2.5" fill="#bbb"/><rect x="116" y="136" width="88" height="34" rx="8" fill="#CBD6A8"/><rect x="124" y="144" width="44" height="6" rx="3" fill="#26331F"/><rect x="124" y="156" width="52" height="5" rx="2.5" fill="#5B6F40"/></g><circle cx="190" cy="214" r="18" fill="#26331F"/><path d="M190 206v16M182 214h16" stroke="#CBD6A8" stroke-width="3" stroke-linecap="round"/><rect x="40" y="82" width="86" height="40" rx="10" fill="#fff"/><rect x="50" y="93" width="40" height="6" rx="3" fill="#26331F"/><rect x="50" y="105" width="56" height="5" rx="2.5" fill="#bbb"/><rect x="208" y="150" width="80" height="44" rx="10" fill="#CBD6A8"/><path d="M222 172l8 8 16-18" stroke="#26331F" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+ bottle:`<svg viewBox="0 0 320 270"><ellipse cx="160" cy="250" rx="90" ry="12" fill="#000" opacity=".25"/><rect x="140" y="12" width="40" height="30" rx="6" fill="#e07a4f"/><rect x="146" y="40" width="28" height="22" fill="#d9c9a0"/><path d="M130 62h60c10 0 20 12 20 30v128c0 18-8 28-22 28h-56c-14 0-22-10-22-28V92c0-18 10-30 20-30z" fill="#b53a22"/><path d="M130 62h60c10 0 20 12 20 30v20H110V92c0-18 10-30 20-30z" fill="#d04a2e"/><rect x="108" y="122" width="104" height="82" rx="8" fill="#F1F0E4"/><circle cx="160" cy="152" r="16" fill="#26331F"/><path d="M160 140c8 6 8 18 0 24-8-6-8-18 0-24z" fill="#CBD6A8"/><rect x="126" y="178" width="68" height="6" rx="3" fill="#26331F"/><rect x="138" y="190" width="44" height="5" rx="2.5" fill="#5B6F40"/><path d="M128 70c-6 20-8 100-2 140" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".25" fill="none"/></svg>`,
+ music:`<svg viewBox="0 0 320 270"><circle cx="212" cy="140" r="96" fill="#14200f"/><circle cx="212" cy="140" r="82" fill="none" stroke="#2f3d27" stroke-width="2"/><circle cx="212" cy="140" r="64" fill="none" stroke="#2f3d27" stroke-width="2"/><circle cx="212" cy="140" r="30" fill="#CBD6A8"/><circle cx="212" cy="140" r="5" fill="#26331F"/><rect x="26" y="40" width="190" height="190" rx="10" fill="#26331F" stroke="#CBD6A8" stroke-width="3"/><circle cx="121" cy="112" r="40" fill="#CBD6A8"/><path d="M104 140c14-28 30-28 34-52" stroke="#26331F" stroke-width="5" fill="none" stroke-linecap="round"/><g fill="#F1F0E4"><rect x="46" y="176" width="150" height="7" rx="3.5"/><rect x="46" y="192" width="96" height="6" rx="3" opacity=".6"/></g><g fill="#5B6F40"><rect x="58" y="62" width="8" height="26" rx="4"/><rect x="72" y="52" width="8" height="46" rx="4"/><rect x="170" y="60" width="8" height="30" rx="4"/><rect x="184" y="50" width="8" height="44" rx="4"/></g></svg>`,
+ book:`<svg viewBox="0 0 320 270"><ellipse cx="164" cy="252" rx="100" ry="10" fill="#000" opacity=".25"/><path d="M74 20l12-8 124 8v224l-124-6-12 8z" fill="#14200f"/><path d="M86 12l124 8v224l-124-8z" fill="#2f3d27"/><rect x="104" y="40" width="88" height="8" rx="4" fill="#CBD6A8"/><rect x="104" y="58" width="68" height="8" rx="4" fill="#CBD6A8"/><circle cx="148" cy="136" r="34" fill="#CBD6A8"/><path d="M148 110v52M130 136h36" stroke="#26331F" stroke-width="6" stroke-linecap="round"/><rect x="104" y="196" width="64" height="6" rx="3" fill="#F1F0E4" opacity=".7"/><rect x="104" y="210" width="44" height="5" rx="2.5" fill="#F1F0E4" opacity=".5"/><path d="M210 20l8 6v212l-8 6z" fill="#F1F0E4"/></svg>`,
+ sneaker:`<svg viewBox="0 0 320 250"><ellipse cx="160" cy="228" rx="120" ry="12" fill="#000" opacity=".25"/><path d="M24 168c0-20 10-30 30-34l42-8c10-2 18-10 22-20l8-18c4-8 14-10 22-4l30 22c10 8 24 12 38 14l46 8c20 4 34 18 34 36v18c0 8-6 14-14 14H38c-8 0-14-6-14-14z" fill="#F1F0E4"/><path d="M24 188h272v16c0 8-6 14-14 14H38c-8 0-14-6-14-14z" fill="#CBD6A8"/><path d="M128 100l22 22 18-6M146 88l24 22" stroke="#26331F" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M60 150c30-10 60-4 86 4" stroke="#26331F" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/><path d="M200 140l60 14" stroke="#e07a4f" stroke-width="8" stroke-linecap="round"/></svg>`,
+ course:`<svg viewBox="0 0 320 250"><rect x="22" y="16" width="276" height="170" rx="14" fill="#14200f" stroke="#CBD6A8" stroke-width="3"/><circle cx="160" cy="98" r="34" fill="#CBD6A8"/><path d="M150 80l30 18-30 18z" fill="#26331F"/><rect x="36" y="162" width="248" height="6" rx="3" fill="#2f3d27"/><rect x="36" y="162" width="96" height="6" rx="3" fill="#CBD6A8"/><rect x="22" y="200" width="132" height="34" rx="10" fill="#F1F0E4"/><rect x="34" y="210" width="70" height="6" rx="3" fill="#26331F"/><rect x="34" y="221" width="48" height="5" rx="2.5" fill="#bbb"/><rect x="166" y="200" width="132" height="34" rx="10" fill="#F1F0E4" opacity=".7"/><rect x="178" y="210" width="60" height="6" rx="3" fill="#26331F"/><rect x="178" y="221" width="40" height="5" rx="2.5" fill="#bbb"/></svg>`,
+ service:`<svg viewBox="0 0 320 250"><rect x="40" y="20" width="200" height="214" rx="14" fill="#F1F0E4"/><rect x="58" y="42" width="90" height="10" rx="5" fill="#26331F"/><g fill="#bbb"><rect x="58" y="70" width="160" height="6" rx="3"/><rect x="58" y="86" width="140" height="6" rx="3"/><rect x="58" y="102" width="150" height="6" rx="3"/><rect x="58" y="118" width="110" height="6" rx="3"/></g><rect x="58" y="146" width="96" height="30" rx="8" fill="#CBD6A8"/><path d="M70 198c10-12 22-12 30 0 8-12 20-12 30 0" stroke="#26331F" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="244" cy="84" r="42" fill="#CBD6A8"/><path d="M226 84l12 12 24-26" stroke="#26331F" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="214" y="150" width="84" height="56" rx="12" fill="#26331F"/><text x="256" y="186" font-size="22" font-weight="800" fill="#CBD6A8" text-anchor="middle" font-family="Inter,sans-serif">$50k</text></svg>`
+};
+const CATS={software:'Software',digital:'Digital',physical:'Physical',service:'Services'};
+const CAT_BG={software:['#3b5a3f','#1B2517'],digital:['#6b5a2e','#261f0e'],physical:['#6a3b2a','#26150f'],service:['#2d4b55','#14232a']};
+const TYPES={
+ commission:{name:'Commission',blurb:'Sell my product, keep a cut of every sale',fields:[['percent','Commission %',15],['cookie_days','Cookie days',30]],reward:t=>t.percent+'%',sub:t=>'of every sale · '+t.cookie_days+'-day cookie',unit:'sale'},
+ attention:{name:'Attention',blurb:'Post to your audience, get paid per click or view',fields:[['rate_cents','Rate (cents)',5],['per','Paid per','click']],reward:t=>'$'+(t.rate_cents/100).toFixed(2),sub:t=>'per '+t.per,unit:'click'},
+ introduction:{name:'Introduction',blurb:'Introduce a buyer, share the contract',fields:[['share_percent','Your share %',10],['min_contract_cents','Min contract (cents)',2000000]],reward:t=>t.share_percent+'%',sub:t=>'of the contract · min $'+Math.round(t.min_contract_cents/100).toLocaleString(),unit:'deal'}
+};
+const SYM={USD:'$',EUR:'€',GBP:'£',NGN:'₦',GHS:'GH₵',KES:'KSh ',ZAR:'R'};
+const money=(c,cur='USD')=>(SYM[cur]||'$')+(c/100).toLocaleString(undefined,{minimumFractionDigits:c%100?2:0,maximumFractionDigits:2});
+const FEE=500;
+const ME={marketer:{id:'u-ada',handle:'ada.eats',name:'Ada Okafor',followers:4200,country:'NG',verified:true,socials:[['Instagram','@ada.eats',3100],['YouTube','Ada Eats Lagos',1100]]},
+          seller:{id:'u-kofi',handle:'kofi.sauce',name:'Kofi Mensah',company:"Kofi's Hot Sauce",verified:true}};
+const PEOPLE={
+ chidi:{name:'Chidi Eze',followers:2800,country:'NG',verified:true,socials:'Instagram @chidicooks · 2.8k'},
+ mira:{name:'Mira Bello',followers:640,country:'GH',verified:false,socials:'TikTok @mirabites · 640'},
+ zainab:{name:'Zainab Yusuf',followers:9100,country:'NG',verified:true,socials:'Instagram @zeeeats · 9.1k · YouTube Zee Kitchen · 4k'},
+ 'u-ada':{name:'Ada Okafor',followers:4200,country:'NG',verified:true,socials:'Instagram @ada.eats · 3.1k · YouTube Ada Eats Lagos · 1.1k'}
+};
+const S={role:'marketer',tab:'deals',dtab:'chat',fc:'all',from:'feed',pf:null,n:20,gal:{},
+ products:[
+  {id:'p1',owner:'u-kofi',name:'Scotch Bonnet Hot Sauce',category:'physical',art:'bottle',gallery:['bottle'],desc:'Small-batch scotch bonnet sauce made in Lagos.'},
+  {id:'p7',owner:'u-kofi',name:'Pepper Masterclass',category:'digital',art:'course',gallery:['course'],video:'0:48',desc:'A video course on growing and fermenting peppers.'},
+  {id:'p2',owner:'u-tunde',name:'Lagos Nights EP',category:'digital',art:'music',gallery:['music'],video:'0:30',desc:'A lo-fi EP for late nights.'},
+  {id:'p3',owner:'u-pay',name:'PayrollPilot HR suite',category:'software',art:'dashboard',gallery:['dashboard','app'],video:'1:05',desc:'Payroll for African SMEs.'},
+  {id:'p4',owner:'u-nia',name:'The Quiet Founder',category:'digital',art:'book',gallery:['book'],desc:'A short book on building slowly.'},
+  {id:'p5',owner:'u-kix',name:'Kix Drop 04',category:'physical',art:'sneaker',gallery:['sneaker'],desc:'Limited sneaker drop.'},
+  {id:'p6',owner:'u-notely',name:'Notely',category:'software',art:'app',gallery:['app','dashboard'],video:'0:42',desc:'A note app for busy people, on web and mobile.'}
+ ],
+ offers:[
+  {id:'o1',pid:'p1',owner:'u-kofi',co:"Kofi's Hot Sauce",coV:true,title:"Sell Kofi's small-batch hot sauce",type:'commission',terms:{percent:15,cookie_days:30},req:{min_followers:1000,countries:['NG','GH'],verified_only:false},desc:'Share your link in your food groups, stories or newsletter and earn on every bottle that sells.',status:'open',max:10,likes:128,fin:{cur:'USD',budget:150000,cap:30000,funded:true,spent:42000}},
+  {id:'o6',pid:'p6',owner:'u-notely',co:'Notely',coV:true,title:'Get people to try Notely',type:'commission',terms:{percent:25,cookie_days:60},req:{min_followers:2000,countries:[],verified_only:false},desc:'Review Notely for your audience. Earn 25% of every paid plan for the first year.',status:'open',max:40,likes:301,fin:{cur:'USD',budget:500000,cap:100000,funded:true,spent:118000}},
+  {id:'o3',pid:'p3',owner:'u-pay',co:'PayrollPilot',coV:true,title:'Introduce PayrollPilot to finance teams',type:'introduction',terms:{share_percent:10,min_contract_cents:2000000},req:{min_followers:0,countries:[],verified_only:true},desc:'B2B payroll for African SMEs. Introduce a buyer, take 10% of the signed contract. Average deal is $50k.',status:'open',max:5,likes:57,fin:{cur:'USD',budget:2000000,cap:500000,funded:true,spent:0}},
+  {id:'o2',pid:'p2',owner:'u-tunde',co:'Tunde Beats',coV:true,title:'Push the "Lagos Nights" lo-fi drop',type:'attention',terms:{rate_cents:4,per:'view'},req:{min_followers:2000,countries:[],verified_only:false},desc:'Post a clip or playlist feature to your audience and get paid for every verified view.',status:'open',max:25,likes:342,fin:{cur:'USD',budget:80000,cap:10000,funded:true,spent:21000}},
+  {id:'o7',pid:'p7',owner:'u-kofi',co:"Kofi's Hot Sauce",coV:true,title:'Share the Pepper Masterclass',type:'commission',terms:{percent:40,cookie_days:45},req:{min_followers:500,countries:[],verified_only:false},desc:'A video course for home cooks. Earn 40% of every enrolment.',status:'open',max:30,likes:76,fin:{cur:'USD',budget:null,cap:null,funded:false,spent:0}},
+  {id:'o4',pid:'p4',owner:'u-nia',co:'Nia Writes',coV:false,title:'Share "The Quiet Founder" with readers',type:'commission',terms:{percent:30,cookie_days:60},req:{min_followers:0,countries:[],verified_only:false},desc:'Recommend it to your readers or reading group and keep 30% of every copy sold.',status:'open',max:50,likes:89,fin:{cur:'USD',budget:null,cap:null,funded:false,spent:0}},
+  {id:'o5',pid:'p5',owner:'u-kix',co:'Kix Lagos',coV:true,title:'Post our new sneaker drop',type:'attention',terms:{rate_cents:5000,per:'post'},req:{min_followers:50000,countries:['NG'],verified_only:true},desc:'We pay per post for creators with a large Nigerian audience.',status:'open',max:8,likes:210,fin:{cur:'NGN',budget:50000000,cap:5000000,funded:true,spent:0}}
+ ],
+ interests:[
+  {id:'i1',offer:'o1',from:'chidi',msg:'I run a Lagos street-food group with 2.8k members. Spicy food is exactly their thing.',status:'pending'},
+  {id:'i2',offer:'o1',from:'mira',msg:'I do food reviews in Accra. Would love to try the sauce first.',status:'pending'}
+ ],
+ deals:[
+  {id:'d1',offer:'o4',marketer:'u-ada',status:'active',terms:{percent:30,cookie_days:60},since:'12 Nov',msgs:[{f:'u-nia',t:'Welcome Ada! Your link is live. Tell me if you need review copies.'},{f:'u-ada',t:'Thanks Nia. Posting to my reading group tonight.'}],dels:[{id:'x1',kind:'Social post',proof:'instagram.com/p/Cz8k2',status:'verified',amount:1200}]},
+  {id:'d2',offer:'o1',marketer:'zainab',status:'active',terms:{percent:15,cookie_days:30},since:'9 Nov',msgs:[{f:'zainab',t:'Posted the reel! 14k views so far.'},{f:'u-kofi',t:'Looks great Zainab, verifying now.'}],dels:[{id:'x2',kind:'Creator video',proof:'zainab-reel.mp4',video:'0:45',by:'Zainab Yusuf',status:'pending',amount:null},{id:'x3',kind:'Social post',proof:'instagram.com/p/Dk3a1',status:'verified',amount:18000}]}
+ ]};
+const offer=id=>S.offers.find(o=>o.id===id);
+const prod=id=>S.products.find(p=>p.id===id);
+const meId=()=>ME[S.role].id;
+const meOffer=o=>S.role==='seller'&&o.owner==='u-kofi';
+const who=id=>PEOPLE[id]||(id==='u-kofi'?{name:'Kofi Mensah'}:{name:(S.offers.find(o=>o.owner===id)||{}).co||id});
+const intsOn=id=>S.interests.filter(i=>i.offer===id);
+const pendOn=id=>intsOn(id).filter(i=>i.status==='pending');
+const myInt=o=>S.interests.find(i=>i.offer===o.id&&i.from==='u-ada'&&i.status==='pending');
+const dealFor=o=>S.deals.find(d=>d.offer===o.id&&d.marketer==='u-ada'&&d.status!=='ended');
+const creatorVideos=o=>S.deals.filter(d=>d.offer===o.id).flatMap(d=>d.dels.filter(x=>x.video).map(x=>({...x,deal:d.id})));
+const spent=o=>o.fin.spent;
+const left=o=>o.fin.budget==null?null:Math.max(0,o.fin.budget-spent(o));
+function elig(o){const r=o.req,m=ME.marketer,res=[];
+ if(r.min_followers)res.push({ok:m.followers>=r.min_followers,t:r.min_followers.toLocaleString()+'+ followers',you:'You have '+m.followers.toLocaleString()});
+ if(r.countries.length)res.push({ok:r.countries.includes(m.country),t:'Based in '+r.countries.join(' / '),you:'You are in '+m.country});
+ if(r.verified_only)res.push({ok:m.verified,t:'Verified marketer',you:m.verified?'You are verified':'Not verified'});
+ return {ok:res.every(x=>x.ok),res}}
+const tag=(s)=>`<span class="tag ${{open:'live',active:'live',verified:'live',accepted:'live',funded:'live',pending:'pink',paused:'blue',denied:'red',rejected:'red',ended:'dark',unfunded:'pink',draft:''}[s]||''}">${s}</span>`;
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400)}
+function openSheet(html,tall){const s=$('#sheet');s.innerHTML='<span class="grab"></span>'+html;s.classList.toggle('tall',!!tall);s.classList.add('on');$('#veil').classList.add('on')}
+function closeSheet(){$('#sheet').classList.remove('on');$('#veil').classList.remove('on')}
+$('#veil').onclick=closeSheet;
+const route=()=>{const h=(location.hash||'#feed').slice(1);const i=h.indexOf('-');return i<0?{n:h,a:''}:{n:h.slice(0,i),a:h.slice(i+1)}};
+const go=h=>{location.hash=h};
+addEventListener('hashchange',()=>{closeSheet();render()});
+
+/* ---------- shared pieces ---------- */
+const bgFor=p=>`linear-gradient(165deg,${CAT_BG[p.category][0]},${CAT_BG[p.category][1]})`;
+const artOf=(p,k)=>p.img&&(!k||k===p.art)?`<img src="${p.img}" alt="" style="width:100%;border-radius:14px;display:block">`:ART[k||p.art];
+const thumb=(p)=>`<span class="thumb" style="background:${bgFor(p)}">${artOf(p)}</span>`;
+function feedPoster(o){const p=prod(o.pid),T=TYPES[o.type];
+ return `<div class="flyer" style="background:${bgFor(p)}"><div class="brand">${esc(o.co)} · ${CATS[p.category]}</div><div class="art">${artOf(p)}</div><div class="name">${esc(p.name)}</div><div class="rw">${T.reward(o.terms)}</div><div class="fine">${T.sub(o.terms)}</div></div>`}
+function nav(){
+ const r=route().n,t=['offer','deal'].includes(r)?S.from:r;
+ const inbox=S.role==='seller'?S.offers.filter(o=>o.owner==='u-kofi').reduce((n,o)=>n+pendOn(o.id).length,0):0;
+ $('#nav').innerHTML=`<a href="#feed" class="${t==='feed'?'on':''}" aria-label="Feed">${I.feed}<span class="lb">Feed</span></a>
+ <a href="#plus" class="${t==='plus'?'on':''}" aria-label="Create"><span class="plus">${I.plus}</span></a>
+ <a href="#me" class="${t==='me'?'on':''}" aria-label="Profile">${I.me}<span class="lb">Profile</span>${inbox?`<span class="dot">${inbox}</span>`:''}</a>`;
+ $('#app').classList.toggle('is-light',r!=='feed');
+}
+function player(title,sub,art,bg){
+ openSheet(`<div class="sh-head"><div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div><div class="form" style="align-items:center"><div class="player" style="background:${bg}"><div class="art">${art}</div><button class="go" data-act="playvid" aria-label="Play">${I.play}</button><div class="pb"><i></i></div></div></div>`);
+}
+/* ---------- feed ---------- */
+function ctaFor(o){
+ if(meOffer(o))return `<button class="playbtn" data-act="open" data-id="${o.id}">${pendOn(o.id).length?pendOn(o.id).length+' new interests':'Manage offer'}</button>`;
+ if(S.role==='seller')return `<button class="playbtn alt" data-act="open" data-id="${o.id}">View offer</button>`;
+ const d=dealFor(o);if(d)return `<button class="playbtn" data-go="deal-${d.id}">Open deal</button>`;
+ if(myInt(o))return `<button class="playbtn alt" data-act="open" data-id="${o.id}">Request sent</button>`;
+ if(!elig(o).ok)return `<button class="playbtn alt" data-act="open" data-id="${o.id}">See requirements</button>`;
+ if(o.fin.budget!=null&&left(o)===0)return `<button class="playbtn alt" data-act="open" data-id="${o.id}">Budget used up</button>`;
+ return `<button class="playbtn" data-act="int" data-id="${o.id}">I'm interested</button>`}
+function renderFeed(){
+ const list=S.offers.filter(o=>S.fc==='all'||prod(o.pid).category===S.fc);
+ const tabs=[['all','For you'],...Object.entries(CATS)];
+ const slides=list.map(o=>{const p=prod(o.pid),T=TYPES[o.type],e=elig(o),ints=intsOn(o.id),cv=creatorVideos(o).length;
+  const faces=ints.slice(0,3).map(i=>`<span style="background:${['#CBD6A8','#E7D9B0','#BFD3CF'][i.from.length%3]}">${initials((PEOPLE[i.from]||{name:'A'}).name)}</span>`).join('');
+  const chips=meOffer(o)?'<span class="chip pink">Your offer</span>':(e.res.length?e.res.map(x=>`<span class="chip ${x.ok?'pink':'dark'}">${x.ok?'✓':'✕'} ${esc(x.t)}</span>`).join(''):'<span class="chip pink">Open to everyone</span>');
+  const bud=o.fin.budget!=null?`<span class="chip">${money(left(o),o.fin.cur)} left</span>`:'';
+  return `<article class="slide" data-id="${o.id}">${feedPoster(o)}<div class="chrome"><div class="scrim" style="height:52%"></div>
+   <div class="rail">
+    <div class="it"><button type="button" aria-label="Save" data-act="like">${I.heart}</button><span>${o.likes}</span></div>
+    <div class="it"><button type="button" aria-label="Interests" data-act="open" data-id="${o.id}" class="people">${faces?`<span class="faces">${faces}</span>`:I.people}</button><span>${ints.length}</span></div>
+    <div class="it"><button type="button" aria-label="Share" data-act="share">${I.share}</button><span>Share</span></div>
+   </div>
+   <div class="cap"><div class="who"><span class="av" style="background:${CAT_BG[p.category][0]};color:#fff">${esc(initials(o.co))}</span><b>${esc(o.co)}${o.coV?' ✓':''}</b><button type="button" class="follow" data-act="follow">Follow</button></div>
+    <div class="t">${esc(o.title)}</div><div class="chips"><span class="chip pink">${T.name}</span>${bud}${chips}</div>
+    <div class="row2">${ctaFor(o)}${p.video||cv?`<button type="button" class="demo" data-act="demo" data-id="${o.id}" aria-label="Watch the demo">${I.play}</button>`:''}</div></div></div></article>`}).join('');
+ $('#views').innerHTML=`<section class="view on" id="feed"><div class="topbar">${tabs.map(([k,l])=>`<button type="button" class="${S.fc===k?'on':''}" data-fc="${k}">${l}</button>`).join('')}</div><div class="slides">${slides||'<div class="empty"><h2>Nothing here yet</h2><p>No offers in this section.</p></div>'}</div></section>`;
+}
+/* ---------- offer detail ---------- */
+function heroArt(o){
+ const p=prod(o.pid),k=S.gal[o.id]||p.gallery[0];
+ const thumbs=p.gallery.map(g=>`<button type="button" class="thumb ${g===k?'on':''}" data-act="gal" data-id="${o.id}" data-v="${g}" style="background:${bgFor(p)}">${p.img&&g===p.art?`<img src="${p.img}" style="width:100%">`:ART[g]}</button>`).join('')
+  +(p.video?`<button type="button" class="thumb" data-act="demo" data-id="${o.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${p.video}</span></button>`:'');
+ return `<div class="hero-art" style="background:${bgFor(p)}"><span class="chip pink badge">${CATS[p.category]}</span><div class="art">${artOf(p,k)}</div>${p.video?`<button class="vid" data-act="demo" data-id="${o.id}">${I.play} Watch demo · ${p.video}</button>`:''}</div>${thumbs?`<div class="thumbs">${thumbs}</div>`:''}`}
+function renderOffer(id){
+ const o=offer(id);if(!o)return go('feed');const p=prod(o.pid),T=TYPES[o.type],mine=meOffer(o),e=elig(o),ints=intsOn(o.id),F=o.fin,cvs=creatorVideos(o);
+ const budget=F.budget==null?null:F.budget,fee=budget?Math.round(budget*FEE/10000):0;
+ let h=`<section class="view on light"><header class="hdr"><button class="ib" data-back aria-label="Back">${I.back}</button><span class="ttl">${mine?'Your offer':'Offer'}</span><span style="width:44px"></span></header><div class="main" style="padding-top:6px">
+  ${heroArt(o)}
+  <div><h1 style="font-size:24px;line-height:30px">${esc(o.title)}</h1><div class="lede" style="margin-top:4px">${esc(o.co)}${o.coV?' · verified':''} · ${T.name} · ${esc(p.name)}</div></div>
+  <div class="stats"><div class="stat"><b>${T.reward(o.terms)}</b><span>${esc(T.sub(o.terms).split(' · ')[0])}</span></div><div class="stat"><b>${budget==null?'No cap':money(left(o),F.cur)}</b><span>${budget==null?'Budget':'Budget left'}</span></div><div class="stat"><b>${F.cap?money(F.cap,F.cur):'None'}</b><span>Max per marketer</span></div></div>`;
+ if(mine){
+  const pct=budget?Math.min(100,Math.round(spent(o)/budget*100)):0;
+  h+=`<div class="fld"><div class="h3">Financials ${tag(budget?(F.funded?'funded':'unfunded'):'no budget')}</div><div class="fin">${budget?`<div class="bar"><i style="width:${pct}%"></i></div><div class="r"><span>Spent</span><b>${money(spent(o),F.cur)} of ${money(budget,F.cur)}</b></div><div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,F.cur)}</b></div><div class="r"><span>Paid in</span><b>${F.funded?money(budget+fee,F.cur):money(0,F.cur)}</b></div>`:'<div class="r"><span>No budget set. You settle payouts directly with each marketer.</span></div>'}</div></div>`;
+  h+=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Interests<button type="button" data-act="togglestatus" data-id="${o.id}">${o.status==='open'?'Pause offer':'Reopen offer'}</button></div>`;
+  h+=ints.length?ints.map(i=>{const q=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="rowbtn" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(q.name))}</span><span class="tx"><b>${esc(q.name)}${q.verified?' ✓':''}</b><span>${(q.followers||0).toLocaleString()} followers · ${q.country}</span></span>${tag(i.status)}</button>`}).join(''):'<span style="color:var(--sub)">No interests yet.</span>';
+  h+='</div>';
+ }else{
+  h+=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Requirements</div>${e.res.length?e.res.map(x=>`<div class="cl"><span class="tx"><b class="${x.ok?'ok':'no'}">${x.ok?'✓':'✕'} ${esc(x.t)}</b><span>${esc(x.you)}</span></span></div>`).join(''):'<div class="cl"><span class="tx"><b class="ok">✓ Open to every marketer</b></span></div>'}</div>`;
+ }
+ if(cvs.length)h+=`<div class="fld"><div class="h3">Creator videos <span class="seeall">${cvs.length} from marketers</span></div><div class="thumbs">${cvs.map(v=>`<button type="button" class="thumb" data-act="cv" data-id="${o.id}" data-v="${v.id}" style="background:${bgFor(p)}">${ART[p.art]}<span class="pl">${I.play}</span><span class="ln">${v.video}</span></button>`).join('')}</div></div>`;
+ h+=`<div class="fld"><div class="h3">About</div><p class="lede" style="margin:0">${esc(o.desc)}</p></div>
+  <div class="fld" style="gap:2px"><div class="h3" style="height:34px">Terms</div>${T.fields.map(f=>`<div class="cl"><span class="tx"><span>${f[1]}</span><b>${esc(o.terms[f[0]])}</b></span></div>`).join('')}<div class="cl"><span class="tx"><span>Product</span><b>${esc(p.name)} · ${CATS[p.category]}</b></span></div></div></div>`;
+ if(!mine&&S.role==='marketer'){const d=dealFor(o),mi=myInt(o);
+  h+=`<div class="foot">${d?`<button class="cta dark" data-go="deal-${d.id}">Open your deal</button>`:mi?`<button class="cta ghost" data-act="withdraw" data-id="${o.id}">Withdraw request</button>`:!e.ok?`<button class="cta" disabled>You don't meet the requirements</button>`:(budget!=null&&left(o)===0)?`<button class="cta" disabled>The budget is used up</button>`:`<button class="cta" data-act="int" data-id="${o.id}">I'm interested</button>`}</div>`}
+ $('#views').innerHTML=h+'</section>';
+}
+function intSheet(id){
+ const i=S.interests.find(x=>x.id===id),p=PEOPLE[i.from]||{name:i.from};
+ openSheet(`<div class="sh-head"><div><h2>${esc(p.name)}</h2><p>Interested in ${esc(offer(i.offer).title)}</p></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div>
+ <div class="form"><div class="stats"><div class="stat"><b>${(p.followers||0).toLocaleString()}</b><span>Followers</span></div><div class="stat"><b>${p.country}</b><span>Country</span></div><div class="stat"><b>${p.verified?'Yes':'No'}</b><span>Verified</span></div></div>
+ <div class="banner" style="margin:0">“${esc(i.msg)}”</div><div style="font-size:13px;color:var(--sub)">${esc(p.socials||'')}</div>
+ ${i.status==='pending'?`<button class="cta" data-act="accept" data-id="${i.id}">Accept · start deal</button><button class="cta ghost" data-act="deny" data-id="${i.id}">Deny</button><div style="font-size:12px;color:var(--sub)">Accepting freezes today's terms into the deal.</div>`:`<div>${tag(i.status)}</div>`}</div>`);
+}
+function verifySheet(id){
+ let x,d;S.deals.forEach(dd=>dd.dels.forEach(y=>{if(y.id===id){x=y;d=dd}}));const o=offer(d.offer),F=o.fin;
+ const earned=d.dels.filter(z=>z.status==='verified').reduce((n,z)=>n+(z.amount||0),0);
+ openSheet(`<div class="sh-head"><div><h2>Verify delivery</h2><p>${esc(x.kind)} · ${esc(x.proof)}</p></div><button class="x" data-act="close" aria-label="Close">${I.x}</button></div>
+ <div class="form">${x.video?`<button type="button" class="pick" data-act="cvplay" data-id="${x.id}"><span class="thumb" style="background:${bgFor(prod(o.pid))}">${ART[prod(o.pid).art]}</span><span class="tx"><b>Creator video · ${x.video}</b><span>by ${esc(x.by||'the marketer')}, tap to watch</span></span></button>`:''}
+ <div class="fld"><label>What did it earn? (${F.cur})</label><input class="in" id="amt" type="number" min="0" step="1" value="${x.amount??''}" placeholder="0"><div class="note">${F.budget?`Budget left ${money(left(o),F.cur)}${F.cap?` · this marketer has earned ${money(earned,F.cur)} of ${money(F.cap,F.cur)}`:''}`:'No budget set on this offer, so this is just a record.'}</div></div>
+ <button class="cta" data-act="verifygo" data-id="${x.id}">Verify</button><button class="cta ghost" data-act="reject" data-id="${x.id}">Reject</button></div>`);
+}
+/* ---------- deal ---------- */
+function renderDeal(id){
+ const d=S.deals.find(x=>x.id===id);if(!d)return go('me');const o=offer(d.offer),T=TYPES[o.type],F=o.fin;
+ const seller=o.owner==='u-kofi'&&S.role==='seller',marketer=d.marketer===meId()&&S.role==='marketer';
+ const other=seller?who(d.marketer).name:o.co,t=S.dtab;
+ const earned=d.dels.filter(x=>x.status==='verified').reduce((n,x)=>n+(x.amount||0),0);
+ let body='',foot='';
+ if(t==='chat'){body=`<div class="chat">${d.msgs.map(m=>{const me=(m.f==='u-kofi'&&S.role==='seller')||(m.f==='u-ada'&&S.role==='marketer');return `<div class="bubble ${me?'me':''}">${esc(m.t)}<small>${esc(who(m.f).name)}</small></div>`}).join('')}</div>`;
+  foot=`<div class="composer"><input id="msg" placeholder="Write a message…" autocomplete="off"><button class="btn" data-act="send" data-id="${d.id}">Send</button></div>`}
+ if(t==='dels'){
+  body=(marketer&&d.status==='active'?`<div class="fld"><label>Report a delivery</label><input class="in" id="dp" placeholder="Proof link, https://…"><div style="display:flex;gap:8px"><button class="cta" data-act="report" data-id="${d.id}" style="flex:1">Report link</button><button class="cta ghost" data-act="cvup" data-id="${d.id}" style="flex:1">${I.up}&nbsp;Creator video</button></div></div>`:'')
+   +`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Deliveries<span class="seeall">Earned ${money(earned,F.cur)}</span></div>`+(d.dels.length?d.dels.map(x=>`<div class="cl" style="align-items:center">${x.video?`<button type="button" class="thumb" data-act="cvplay" data-id="${x.id}" style="background:${bgFor(prod(o.pid))};width:64px;height:52px">${ART[prod(o.pid).art]}<span class="pl">${I.play}</span></button>`:''}<span class="tx"><b>${esc(x.kind)}${x.amount?' · '+money(x.amount,F.cur):''}</b><span>${esc(x.proof)}</span></span>${tag(x.status)}${seller&&x.status==='pending'?`<button class="mbtn" data-act="vsheet" data-id="${x.id}">Review</button>`:''}</div>`).join(''):'<span style="color:var(--sub)">No deliveries yet.</span>')+`</div><div style="font-size:12px;color:var(--sub)">The seller (or an admin) verifies each delivery before it earns anything.</div>`}
+ if(t==='terms'){
+  body=`<div class="banner" style="margin:0">Frozen when the interest was accepted. Later edits to the offer do not change this deal.</div><div class="fld" style="gap:2px">${T.fields.map(f=>`<div class="cl"><span class="tx"><span>${f[1]}</span><b>${esc(d.terms[f[0]])}</b></span></div>`).join('')}<div class="cl"><span class="tx"><span>Max you can earn</span><b>${F.cap?money(F.cap,F.cur):'No cap'}</b></span></div><div class="cl"><span class="tx"><span>Earned so far</span><b>${money(earned,F.cur)}</b></span></div></div>`
+   +(d.status!=='ended'?`<div style="display:flex;gap:8px">${seller?`<button class="mbtn" data-act="pausedeal" data-id="${d.id}">${d.status==='paused'?'Resume':'Pause'} deal</button>`:''}<button class="mbtn red" data-act="enddeal" data-id="${d.id}">End deal</button></div>`:'')}
+ $('#views').innerHTML=`<section class="view on light"><header class="hdr"><button class="ib" data-back aria-label="Back">${I.back}</button><span class="ttl">${esc(other)}</span><span style="width:44px"></span></header>
+ <div class="main" style="padding-top:6px;gap:16px"><div class="co"><span class="lg" style="background:none;padding:0;width:56px;height:46px">${thumb(prod(o.pid))}</span><div style="flex:1;min-width:0"><b style="font-size:16px">${esc(o.title)}</b><div style="font-size:12px;color:var(--sub);margin-top:2px">${T.name} · since ${d.since}</div></div>${tag(d.status)}</div>
+ <div class="seg">${[['chat','Chat'],['dels','Deliveries'],['terms','Terms']].map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-dt="${k}">${l}</button>`).join('')}</div>${body}</div>${foot}</section>`;
+ const m=$('.main');m.scrollTop=m.scrollHeight;
+}
+/* ---------- plus: offer type → product → details → budget → review ---------- */
+const newPF=()=>({kind:'offer',step:1,type:'commission',pid:null,newProd:false,np:{name:'',category:'software',desc:'',img:null,video:null},title:'',desc:'',terms:{},minf:1000,countries:'',verified:false,cur:'USD',budget:'',cap:'',nocap:false});
+const termsOf=P=>{const t={};TYPES[P.type].fields.forEach(f=>{const v=P.terms[f[0]]??f[2];t[f[0]]=typeof f[2]==='number'?+v:v});return t};
+const budgetC=P=>P.nocap?null:Math.round((+P.budget||0)*100);
+const capC=P=>P.nocap||!P.cap?null:Math.round((+P.cap||0)*100);
+function estimate(P){const T=TYPES[P.type],b=budgetC(P);if(!b)return '';const t=termsOf(P);
+ if(P.type==='attention')return `Pays for about ${Math.floor(b/Math.max(1,t.rate_cents)).toLocaleString()} ${t.per}s at ${money(t.rate_cents,P.cur)} each.`;
+ if(P.type==='commission')return `Covers about ${money(b,P.cur)} in commission. At ${t.percent}%, that is ${money(Math.round(b/(t.percent/100)),P.cur)} in sales.`;
+ return `Covers about ${money(b,P.cur)} in shares of signed contracts.`}
+function finBlock(P){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0;
+ return `<div class="fin">${b?`<div class="r"><span>Budget</span><b>${money(b,P.cur)}</b></div><div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,P.cur)}</b></div><div class="r tot"><span>Total to pay</span><b>${money(b+fee,P.cur)}</b></div><div class="note" style="font-size:12px;color:var(--sub)">${estimate(P)}</div>`:`<div class="r"><span>${P.nocap?'No budget, so no payment is needed to go live.':'Enter a budget to see what it costs.'}</span></div>`}</div>`}
+function productPick(P){
+ const mine=S.products.filter(p=>p.owner==='u-kofi'||p.mine);
+ if(P.newProd){const n=P.np;
+  return `<div><h1>New product</h1><p class="lede">Add a placement image so marketers can see what they are promoting.</p></div>
+  <div class="fld"><label>Name</label><input class="in" data-np="name" value="${esc(n.name)}" placeholder="Product name"></div>
+  <div class="fld"><label>Category</label><div class="catgrid">${Object.entries(CATS).map(([k,l])=>`<button type="button" class="${n.category===k?'on':''}" data-act="npcat" data-v="${k}">${l}</button>`).join('')}</div></div>
+  <div class="fld"><label>Description</label><textarea class="in" rows="3" data-np="desc" placeholder="What is it, and who is it for?">${esc(n.desc)}</textarea></div>
+  <div class="fld"><label>Placement image</label><label class="drop ${n.img||n.sample?'has':''}">${n.img?`<img src="${n.img}" alt="">`:n.sample?`<span style="width:150px;display:block">${ART[artFor(n.category)]}</span>`:`${I.up}<span>Add a screenshot, product photo or cover</span>`}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-file="img"></label><div class="note"><button type="button" class="mbtn" data-act="npsample">Use a sample placement</button> PNG, JPEG, WebP or GIF up to 5 MB.</div></div>
+  <div class="fld"><label>Demo video (optional)</label><label class="drop ${n.video?'has':''}" style="height:64px">${n.video?`<span style="color:#fff">${I.play}&nbsp;${esc(n.video)}</span>`:`${I.up}<span>Add an MP4, MOV or WebM up to 30 MB</span>`}<input type="file" accept="video/mp4,video/quicktime,video/webm" data-file="video"></label></div>
+  <button type="button" class="mbtn" data-act="npcancel" style="align-self:flex-start">Back to my products</button>`;}
+ return `<div><h1>Pick a product</h1><p class="lede">Which of your products is this offer for?</p></div>
+  <div style="display:flex;flex-direction:column;gap:10px">${mine.map(p=>`<button type="button" class="pick ${P.pid===p.id?'sel':''}" data-act="ppick" data-id="${p.id}">${thumb(p)}<span class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''}</span></span>${P.pid===p.id?tag('selected'):''}</button>`).join('')}
+  <button type="button" class="pick" data-act="npnew" style="border-style:dashed"><span class="thumb" style="background:var(--soft);color:var(--ink)">${I.plus}</span><span class="tx"><b>Add a new product</b><span>Software, digital, physical or a service</span></span></button></div>`}
+const artFor=c=>({software:'dashboard',digital:'course',physical:'bottle',service:'service'}[c]);
+function renderPlus(){
+ const P=S.pf;let h='';
+ if(!P){
+  h=`<section class="view on light"><header class="hdr"><span class="ttl" style="padding-left:8px">Create</span></header><div class="main" style="padding-top:6px"><div><h1>What do you want to add?</h1><p class="lede">Offers are what marketers see in the feed.</p></div><div class="grid2">
+  <button type="button" class="tile" data-act="pstart"><span class="marks"><i></i><i></i></span><span><span class="n1">Post an offer</span><br><span class="n2">Pick a type, a product and a budget</span></span></button>
+  <button type="button" class="tile" data-act="pstart" data-v="product"><span class="marks"><i></i></span><span><span class="n1">Add a product</span><br><span class="n2">Software, digital, physical or service</span></span></button>
+  <button type="button" class="tile" data-act="pstart" data-v="social"><span class="marks"><i></i><i></i><i></i></span><span><span class="n1">Add a social</span><br><span class="n2">Get verified to apply for offers</span></span></button></div></div></section>`;
+ }else if(P.kind==='offer'){
+  const T=TYPES[P.type],st=P.step,p=P.pid?prod(P.pid):null;
+  const prog=`<div class="prog" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4,5].map(n=>`<span class="${n<=st?'on':''}"></span>`).join('')}</div>`;
+  let main='';
+  if(st===1)main=`<div><h1>Offer type</h1><p class="lede">How will marketers be paid?</p></div><div class="grid2" style="grid-template-columns:1fr">${Object.entries(TYPES).map(([k,v])=>`<button type="button" class="tile ${P.type===k?'sel':''}" data-act="ptype" data-v="${k}" style="min-height:92px"><span class="n1">${v.name}</span><span class="n2">${v.blurb}</span></button>`).join('')}</div>`;
+  if(st===2)main=productPick(P);
+  if(st===3)main=`<div><h1>Details</h1><p class="lede">${T.name} offer for ${esc(p?p.name:'your product')}</p></div>
+   <div class="fld"><label>Title</label><input class="in" data-f="title" value="${esc(P.title)}" placeholder="${esc('Promote '+(p?p.name:'my product'))}"></div>
+   <div class="fld"><label>What should marketers do?</label><textarea class="in" rows="3" data-f="desc" placeholder="Where to share it, what to say, what to avoid">${esc(P.desc)}</textarea></div>
+   <div class="g2">${T.fields.map(f=>`<div class="fld"><label>${f[1]}</label>${f[0]==='per'?`<select class="in" data-tf="per">${['click','view','post'].map(x=>`<option ${(P.terms.per||'click')===x?'selected':''}>${x}</option>`).join('')}</select>`:`<input class="in" type="number" data-tf="${f[0]}" value="${esc(P.terms[f[0]]??f[2])}">`}</div>`).join('')}</div>
+   <div class="g2"><div class="fld"><label>Minimum followers</label><input class="in" type="number" data-f="minf" value="${P.minf}"></div><div class="fld"><label>Countries (blank = any)</label><input class="in" data-f="countries" value="${esc(P.countries)}" placeholder="NG, GH"></div></div>
+   <label class="check"><input type="checkbox" data-f="verified" ${P.verified?'checked':''}> Verified marketers only</label>`;
+  if(st===4){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0;
+   main=`<div><h1>Budget</h1><p class="lede">What will you spend in total? It is held until verified results draw it down.</p></div>
+   <div class="g2"><div class="fld"><label>Currency</label><select class="in" data-f="cur">${Object.keys(SYM).map(c=>`<option ${P.cur===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="fld"><label>Total budget</label><input class="in" type="number" min="1" data-f="budget" value="${esc(P.budget)}" placeholder="1000" ${P.nocap?'disabled':''}></div></div>
+   <div class="fld"><label>Most one marketer can earn</label><input class="in" type="number" min="1" data-f="cap" value="${esc(P.cap)}" placeholder="Optional" ${P.nocap?'disabled':''}></div>
+   <label class="check"><input type="checkbox" data-f="nocap" ${P.nocap?'checked':''}> No budget. I settle payouts directly with each marketer.</label>
+   ${finBlock(P)}`}
+  if(st===5){const b=budgetC(P),fee=b?Math.round(b*FEE/10000):0,t=termsOf(P);
+   main=`<div><h1>Review</h1><p class="lede">${b?'Pay to put the budget in. The offer goes live once it is received.':'No payment needed. The offer goes live right away.'}</p></div>
+   <div class="hero-art" style="background:${bgFor(p)}"><span class="chip pink badge">${CATS[p.category]}</span><div class="art">${artOf(p)}</div></div>
+   <div class="fld" style="gap:2px"><div class="cl"><span class="tx"><span>Offer</span><b>${esc(P.title||'Promote '+p.name)}</b></span></div><div class="cl"><span class="tx"><span>Type</span><b>${T.name} · ${T.reward(t)} ${esc(T.sub(t))}</b></span></div><div class="cl"><span class="tx"><span>Who can apply</span><b>${P.minf?(+P.minf).toLocaleString()+'+ followers':'Anyone'}${P.countries?' · '+esc(P.countries):''}${P.verified?' · verified':''}</b></span></div></div>
+   <div class="fin">${b?`<div class="r"><span>Budget</span><b>${money(b,P.cur)}</b></div>${capC(P)?`<div class="r"><span>Max per marketer</span><b>${money(capC(P),P.cur)}</b></div>`:''}<div class="r"><span>Listing fee (${FEE/100}%)</span><b>${money(fee,P.cur)}</b></div><div class="r tot"><span>Total to pay</span><b>${money(b+fee,P.cur)}</b></div>`:'<div class="r"><span>Budget</span><b>None</b></div>'}</div>`}
+  const last=st===5,b=budgetC(P);
+  h=`<section class="view on light"><header class="hdr"><button class="ib" data-act="pback" aria-label="Back">${I.back}</button><span class="ttl">Post an offer</span><span style="width:44px"></span></header>${prog}<div class="main" style="padding-top:18px">${main}</div><div class="foot"><button class="cta" data-act="pnext">${last?(b?'Pay '+money(b+Math.round(b*FEE/10000),P.cur)+' and publish':'Publish offer'):(st===2&&P.newProd?'Save product':'Continue')}</button></div></section>`;
+ }else{
+  h=`<section class="view on light"><header class="hdr"><button class="ib" data-act="pback" aria-label="Back">${I.back}</button><span class="ttl">${P.kind==='product'?'Add a product':'Add a social'}</span><span style="width:44px"></span></header><div class="main" style="padding-top:6px">${P.kind==='product'?productPick({...P,newProd:true,np:P.np}).replace(/<button type="button" class="mbtn" data-act="npcancel"[^]*?<\/button>/,''):'<div class="fld"><label>Platform</label><select class="in"><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Newsletter</option></select></div><div class="fld"><label>Handle or link</label><input class="in"></div><div class="banner" style="margin:0">An admin verifies each social before it counts toward offer requirements.</div>'}</div><div class="foot"><button class="cta" data-act="${P.kind==='product'?'npsave':'pdone'}">Save</button></div></section>`;
+ }
+ $('#views').innerHTML=h;
+}
+/* ---------- profile ---------- */
+function renderMe(){
+ const seller=S.role==='seller',u=seller?ME.seller:ME.marketer;
+ const mine=S.offers.filter(o=>o.owner==='u-kofi'),recv=mine.flatMap(o=>intsOn(o.id)),pend=recv.filter(i=>i.status==='pending').length;
+ const deals=S.deals.filter(d=>seller?offer(d.offer).owner==='u-kofi':d.marketer==='u-ada');
+ const sent=S.interests.filter(i=>i.from==='u-ada');
+ const tabs=seller?[['deals','Deals'],['inbox','Interests'+(pend?' · '+pend:'')],['offers','Offers'],['products','Products']]:[['deals','Deals'],['inbox','Requests'],['socials','Socials']];
+ if(!tabs.some(t=>t[0]===S.tab))S.tab='deals';
+ const t=S.tab;let box='';
+ const dealRow=d=>{const o=offer(d.offer),nm=seller?who(d.marketer).name:o.co;return `<button type="button" class="rowbtn" data-go="deal-${d.id}"><span class="int-av">${esc(initials(nm))}</span><span class="tx"><b>${esc(nm)}</b><span>${esc(o.title)}</span></span>${tag(d.status)}</button>`};
+ const earn=deals.reduce((n,d)=>n+d.dels.filter(x=>x.status==='verified').reduce((m,x)=>m+(x.amount||0),0),0);
+ if(t==='deals')box=`<div class="stats"><div class="stat"><b>${deals.filter(d=>d.status==='active').length}</b><span>Active deals</span></div><div class="stat"><b>${money(earn)}</b><span>${seller?'Paid out':'Earned'}</span></div><div class="stat"><b>${deals.reduce((n,d)=>n+d.dels.filter(x=>x.status==='pending').length,0)}</b><span>To verify</span></div></div><div class="fld" style="gap:2px"><div class="h3" style="height:34px">Deals</div>${deals.length?deals.map(dealRow).join(''):'<span style="color:var(--sub)">No deals yet. Accepted interests become deals.</span>'}</div>`;
+ if(t==='inbox'&&seller)box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Interests on your offers</div>${recv.length?recv.map(i=>{const p=PEOPLE[i.from]||{name:i.from};return `<button type="button" class="rowbtn" data-act="intsheet" data-id="${i.id}"><span class="int-av">${esc(initials(p.name))}</span><span class="tx"><b>${esc(p.name)}</b><span>${esc(offer(i.offer).title)}</span></span>${tag(i.status)}</button>`}).join(''):'<span style="color:var(--sub)">No interests yet.</span>'}</div>`;
+ if(t==='inbox'&&!seller)box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your requests</div>${sent.length?sent.map(i=>`<button type="button" class="rowbtn" data-act="open" data-id="${i.offer}"><span class="tx"><b>${esc(offer(i.offer).title)}</b><span>${esc(offer(i.offer).co)}</span></span>${tag(i.status)}</button>`).join(''):'<span style="color:var(--sub)">You have not asked to join any offer yet. Find one in the feed.</span>'}</div>`;
+ if(t==='offers')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your offers<a href="#plus">New offer</a></div>${mine.map(o=>{const F=o.fin,p=prod(o.pid);return `<button type="button" class="rowbtn" data-act="open" data-id="${o.id}">${thumb(p)}<span class="tx"><b>${esc(o.title)}</b><span>${TYPES[o.type].name} · ${F.budget?money(spent(o),F.cur)+' of '+money(F.budget,F.cur)+' spent':'no budget'}</span></span>${pendOn(o.id).length?`<span class="tag pink">${pendOn(o.id).length} new</span>`:''}${tag(F.budget&&!F.funded?'unfunded':o.status)}</button>`}).join('')}</div>`;
+ if(t==='products')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Your products<a href="#plus">Add</a></div>${S.products.filter(p=>p.owner==='u-kofi'||p.mine).map(p=>`<div class="rowbtn" style="cursor:default">${thumb(p)}<span class="tx"><b>${esc(p.name)}</b><span>${CATS[p.category]}${p.video?' · demo video':''} · ${S.offers.filter(o=>o.pid===p.id).length} offer(s)</span></span></div>`).join('')}</div>`;
+ if(t==='socials')box=`<div class="fld" style="gap:2px"><div class="h3" style="height:34px">Socials<a href="#plus">Add</a></div>${ME.marketer.socials.map(s=>`<div class="cl" style="align-items:center"><span class="tx"><b>${s[0]} · ${esc(s[1])}</b><span>${s[2].toLocaleString()} followers</span></span>${tag('verified')}</div>`).join('')}</div>`;
+ $('#views').innerHTML=`<section class="view on light"><header class="hdr" style="padding-left:16px"><span class="ttl">@${u.handle}</span><button type="button" class="mbtn" data-act="role">Demo: switch to ${seller?'marketer':'seller'}</button></header><div class="main" style="padding-top:6px">
+ <div class="me"><span class="big">${esc(initials(u.name))}</span><div><div class="n1">${esc(u.name)}</div><div class="n2">${seller?esc(ME.seller.company)+' · seller':ME.marketer.followers.toLocaleString()+' followers · '+ME.marketer.country} · verified</div></div></div>
+ <div class="seg">${tabs.map(([k,l])=>`<button type="button" class="${t===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</div>${box}</div></section>`;
+}
+function render(){const r=route();if(['feed','plus','me'].includes(r.n))S.from=r.n;nav();
+ ({plus:renderPlus,me:renderMe,offer:()=>renderOffer(r.a),deal:()=>renderDeal(r.a)}[r.n]||renderFeed)()}
+/* ---------- actions ---------- */
+function sendInterest(id){const o=offer(id);if(!elig(o).ok)return toast("You don't meet the requirements");S.interests.push({id:'i'+(++S.n),offer:id,from:'u-ada',msg:"Hi! I'd love to promote this to my local community in Lagos.",status:'pending'});toast('Interest sent. The seller will accept or deny.');render()}
+function act(k,id,el){
+ if(k==='close')return closeSheet();
+ if(k==='open')return go('offer-'+id);
+ if(k==='int')return sendInterest(id);
+ if(k==='like'||k==='follow'||k==='share'){el.classList.toggle('liked');return toast(k==='share'?'Share link copied':k==='follow'?'Following':'Saved')}
+ if(k==='gal'){S.gal[id]=el.dataset.v;return renderOffer(id)}
+ if(k==='demo'){const o=offer(id),p=prod(o.pid);return player(p.name+' demo',(p.video||'0:30')+' · from '+o.co,ART[p.art],bgFor(p))}
+ if(k==='cv'){const o=offer(id),v=creatorVideos(o).find(x=>x.id===el.dataset.v);return player('Creator video',(v.by||'A marketer')+' · '+v.video,ART[prod(o.pid).art],bgFor(prod(o.pid)))}
+ if(k==='cvplay'){let x,d;S.deals.forEach(dd=>dd.dels.forEach(y=>{if(y.id===id){x=y;d=dd}}));const o=offer(d.offer);return player('Creator video',(x.by||'You')+' · '+x.video,ART[prod(o.pid).art],bgFor(prod(o.pid)))}
+ if(k==='playvid'){const b=$('.player .pb i');b.style.width='100%';el.style.display='none';return}
+ if(k==='intsheet')return intSheet(id);
+ if(k==='vsheet')return verifySheet(id);
+ if(k==='role'){S.role=S.role==='marketer'?'seller':'marketer';S.tab='deals';toast('Now viewing as a '+S.role);return render()}
+ if(k==='accept'){const i=S.interests.find(x=>x.id===id);i.status='accepted';const o=offer(i.offer);const d={id:'d'+(++S.n),offer:o.id,marketer:i.from,status:'active',terms:{...o.terms},since:'today',msgs:[{f:'u-kofi',t:"Welcome! Your terms are locked in. Let's get started."}],dels:[]};S.deals.push(d);S.dtab='chat';closeSheet();toast('Accepted. Deal started.');return go('deal-'+d.id)}
+ if(k==='deny'){S.interests.find(x=>x.id===id).status='denied';closeSheet();toast('Interest denied');return render()}
+ if(k==='withdraw'){const i=myInt(offer(id));if(i)i.status='withdrawn';toast('Request withdrawn');return render()}
+ if(k==='togglestatus'){const o=offer(id);o.status=o.status==='open'?'paused':'open';return render()}
+ if(k==='send'){const v=$('#msg').value.trim();if(!v)return;S.deals.find(d=>d.id===id).msgs.push({f:meId(),t:v});return renderDeal(id)}
+ if(k==='report'){const p=$('#dp').value.trim();if(!p)return toast('Add a proof link');S.deals.find(d=>d.id===id).dels.push({id:'x'+(++S.n),kind:'Social post',proof:p,status:'pending',amount:null});toast('Reported. Waiting for the seller to verify.');return renderDeal(id)}
+ if(k==='cvup'){S.deals.find(d=>d.id===id).dels.push({id:'x'+(++S.n),kind:'Creator video',proof:'my-review.mp4',video:'0:45',by:'Ada Okafor',status:'pending',amount:null});toast('Creator video uploaded. Waiting for the seller.');return renderDeal(id)}
+ if(k==='verifygo'||k==='reject'){let x,d;S.deals.forEach(dd=>dd.dels.forEach(y=>{if(y.id===id){x=y;d=dd}}));const o=offer(d.offer),F=o.fin;
+  if(k==='reject'){x.status='rejected';closeSheet();toast('Delivery rejected');return render()}
+  const a=Math.round((+$('#amt').value||0)*100),earned=d.dels.filter(z=>z.status==='verified'&&z!==x).reduce((n,z)=>n+(z.amount||0),0);
+  if(F.budget&&a>left(o))return toast('Only '+money(left(o),F.cur)+' is left in the budget');
+  if(F.cap&&earned+a>F.cap)return toast('Over this marketer\'s cap of '+money(F.cap,F.cur));
+  x.status='verified';x.amount=a;F.spent+=a;closeSheet();toast('Verified'+(a?' · '+money(a,F.cur)+' drawn from the budget':''));return render()}
+ if(k==='pausedeal'){const d=S.deals.find(x=>x.id===id);d.status=d.status==='paused'?'active':'paused';return render()}
+ if(k==='enddeal'){S.deals.find(x=>x.id===id).status='ended';toast('Deal ended');return render()}
+ if(k==='pstart'){S.pf=el.dataset.v==='product'?{...newPF(),kind:'product',newProd:true}:el.dataset.v==='social'?{...newPF(),kind:'social'}:newPF();return render()}
+ if(k==='ptype'){S.pf.type=el.dataset.v;S.pf.terms={};return render()}
+ if(k==='ppick'){S.pf.pid=id;return render()}
+ if(k==='npnew'){S.pf.newProd=true;return render()}
+ if(k==='npcancel'){S.pf.newProd=false;return render()}
+ if(k==='npcat'){S.pf.np.category=el.dataset.v;return render()}
+ if(k==='npsample'){S.pf.np.sample=true;S.pf.np.img=null;return render()}
+ if(k==='npsave'||(k==='pnext'&&S.pf.step===2&&S.pf.newProd)){const n=S.pf.np;if(!n.name.trim())return toast('Give the product a name');
+  if(!n.img&&!n.sample)return toast('Add a placement image so marketers can see it');
+  const p={id:'p'+(++S.n),owner:'u-kofi',mine:true,name:n.name.trim(),category:n.category,art:artFor(n.category),gallery:[artFor(n.category)],img:n.img,video:n.video?'0:30':null,desc:n.desc};
+  S.products.push(p);toast('Product saved with its placement image');
+  if(S.pf.kind==='product'){S.pf=null;return go('me')}
+  S.pf.pid=p.id;S.pf.newProd=false;S.pf.np={name:'',category:'software',desc:'',img:null,video:null};return render()}
+ if(k==='pback'){if(S.pf.kind==='offer'&&S.pf.newProd){S.pf.newProd=false}else if(S.pf.kind==='offer'&&S.pf.step>1)S.pf.step--;else S.pf=null;return render()}
+ if(k==='pdone'){S.pf=null;toast('Saved');return render()}
+ if(k==='pnext'){const P=S.pf;
+  if(P.step===2&&!P.pid)return toast('Pick a product first');
+  if(P.step===4&&!P.nocap){if(!(+P.budget>=1))return toast('Enter a budget, or choose no budget');if(P.cap&&+P.cap>+P.budget)return toast('The cap cannot be more than the budget')}
+  if(P.step<5){P.step++;return render()}
+  const p=prod(P.pid),b=budgetC(P);
+  S.offers.unshift({id:'o'+(++S.n),pid:p.id,owner:'u-kofi',co:ME.seller.company,coV:true,title:P.title||'Promote '+p.name,type:P.type,terms:termsOf(P),req:{min_followers:+P.minf||0,countries:P.countries.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),verified_only:P.verified},desc:P.desc||p.desc,status:'open',max:10,likes:0,fin:{cur:P.cur,budget:b,cap:capC(P),funded:!!b,spent:0}});
+  S.pf=null;S.fc='all';toast(b?'Payment received. Your offer is live.':'Your offer is live');return go('feed')}
+}
+document.addEventListener('click',e=>{
+ let el;
+ if(el=e.target.closest('[data-act]'))return act(el.dataset.act,el.dataset.id,el);
+ if(el=e.target.closest('[data-go]'))return go(el.dataset.go);
+ if(el=e.target.closest('[data-back]'))return go(S.from);
+ if(el=e.target.closest('[data-fc]')){S.fc=el.dataset.fc;return render()}
+ if(el=e.target.closest('[data-tab]')){S.tab=el.dataset.tab.split(' ')[0];return render()}
+ if(el=e.target.closest('[data-dt]')){S.dtab=el.dataset.dt;return render()}
+ if(el=e.target.closest('.slide')&&!e.target.closest('button'))return go('offer-'+el.dataset.id);
+});
+document.addEventListener('input',e=>{const P=S.pf;if(!P)return;const t=e.target;
+ if(t.dataset.f){P[t.dataset.f]=t.type==='checkbox'?t.checked:t.value;
+  if(t.type==='checkbox'||t.tagName==='SELECT'){if(['nocap','cur'].includes(t.dataset.f))renderPlus()}
+  else if(['budget','cap'].includes(t.dataset.f)&&P.step===4){const f=$('.fin');if(f)f.outerHTML=finBlock(P)}}
+ if(t.dataset.tf)P.terms[t.dataset.tf]=t.value;
+ if(t.dataset.np)P.np[t.dataset.np]=t.value});
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.file||!S.pf)return;const f=t.files[0];if(!f)return;
+ if(t.dataset.file==='img'){if(f.size>5*1048576)return toast('Images can be up to 5 MB');const r=new FileReader();r.onload=()=>{S.pf.np.img=r.result;S.pf.np.sample=false;renderPlus()};r.readAsDataURL(f)}
+ else{if(f.size>30*1048576)return toast('Videos can be up to 30 MB');S.pf.np.video=f.name;renderPlus()}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='msg')act('send',route().a)});
+render();
+
+</script>
+</body>
+</html>

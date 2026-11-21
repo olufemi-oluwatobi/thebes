@@ -17,16 +17,27 @@ with the terms frozen. The marketer reports **deliveries** (of a **delivery type
 them, and both sides **message** each other on the relationship. Users, companies, sellers, marketers, socials,
 products, offers and deliveries carry `is_verified`, `is_deleted` and `is_blocked`.
 
-Schema: `db/migrations/0011_squad_offers.sql`. Routes: `src/squad-routes.js`. Tests: `node test/squad.mjs` (141 checks).
+Schema: `db/migrations/0011_squad_offers.sql`, `0012_media_financials.sql`. Routes: `src/squad-routes.js`.
+Tests: `node test/squad.mjs` (141 checks), `node test/squad-media.mjs` (81 checks: media, categories, budgets).
+UI reference: `design/app-prototype/index.html` (clickable, mock data).
 
 - Me: `GET/PATCH/DELETE /api/squad/me` (first and last name optional)
 - Companies: `POST /api/squad/companies`, `GET/PATCH /api/squad/companies/:id`
 - Sides: `POST /api/squad/sellers`, `POST /api/squad/marketers`, `GET /api/squad/marketers/:id`
 - Socials: `GET/POST /api/squad/socials`, `PATCH/DELETE /api/squad/socials/:id` (edits undo verification)
-- Products: `GET/POST /api/squad/products`, `GET/PATCH/DELETE /api/squad/products/:id`
+- Products: `GET/POST /api/squad/products`, `GET/PATCH/DELETE /api/squad/products/:id`. `category` is physical, digital, software, service, content or other.
+- Media (R2): `POST /api/squad/media?kind=image|video|creator_video` (raw body; type checked by its first bytes; images 5 MB, videos 30 MB; optional
+  `width`, `height`, `duration_ms`, `caption`, `poster_media_id`), `GET /api/squad/media` (yours), `GET /api/squad/media/:id`, `GET /api/squad/media/:id/file`
+  (public for images and videos, with Range; a creator video only for its owner, an admin and the seller it was delivered to), `PATCH/DELETE /api/squad/media/:id`,
+  `PUT /api/squad/products/:id/media` (`items: [{ media_id, role: cover|gallery|screenshot|demo }]`; the first image becomes the cover placement image)
 - Types: `GET/POST /api/squad/offer-types`, `GET/POST /api/squad/delivery-types`
-- Offers: `GET /api/squad/offers?type=&country=&q=&eligible=1`, `POST /api/squad/offers`, `GET /api/squad/seller/offers`,
+- Offers: `GET /api/squad/offers?type=&category=&country=&q=&eligible=1`, `POST /api/squad/offers`, `GET /api/squad/seller/offers`,
   `GET/PATCH/DELETE /api/squad/offers/:id`, `POST /api/squad/offers/:id/status` (open, paused, closed)
+- Money: an offer can carry `budget_cents`, `currency`, `payout_cap_cents` and `video_media_id`. The listing fee (`platform_fee_bps`, 5%) sits on top of the
+  budget; `financials` on every offer shows `payment_due_cents`, `funding_status`, `spent_cents` and `remaining_cents`. A budgeted offer opens once an admin
+  records the payment (`POST /api/admin/squad/offers/:id/fund { amount_cents }`; manual until payments are connected) and the budget is locked after that.
+  Verifying a delivery can set `amount_cents`, which draws down the budget and counts toward the marketer's cap; a used-up budget takes no new interest.
+  After closing, `POST /api/admin/squad/offers/:id/refund` frees the unspent budget (the fee stays). Deliveries can carry a `media_id` (a creator video) as proof.
 - Interests: `POST/GET /api/squad/offers/:id/interests`, `GET /api/squad/interests`,
   `POST /api/squad/interests/:id/accept|deny|withdraw`
 - Relationships: `GET /api/squad/relationships?as=seller|marketer`, `GET /api/squad/relationships/:id`,
