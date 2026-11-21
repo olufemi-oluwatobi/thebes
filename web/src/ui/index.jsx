@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ART } from '../lib/art.js';
 import { bgFor, initials, artFor } from '../lib/data.js';
 import * as Ic from './icons.jsx';
@@ -157,27 +157,36 @@ export function Sheet({ open, onClose, title, sub, children, footer }) {
     </div>
   );
 }
-export const Toast = ({ t }) => (
-  <div role="status" className={cx('pointer-events-none fixed left-1/2 top-4 z-[60] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-army py-3 pl-3.5 pr-5 text-small font-semibold text-white shadow-pop transition-all duration-200', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>
-    <span className="grid h-6 w-6 place-items-center rounded-full bg-sage text-army"><Ic.Check width="14" height="14" /></span>{t?.m}
-  </div>
-);
+export function Toast({ t }) {
+  const last = useRef(t); if (t) last.current = t;   // keep the text while it fades out
+  return (
+    <div role="status" className={cx('pointer-events-none fixed left-1/2 top-[max(16px,env(safe-area-inset-top))] z-[60] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-army py-3 pl-3.5 pr-5 text-small font-semibold text-white shadow-pop transition-all duration-200', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>
+      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sage text-army"><Ic.Check width="14" height="14" /></span>{last.current?.m}
+    </div>
+  );
+}
 
-/* ---------- page layout: top bar, optional sub bar, scroll body, action bar ---------- */
+/* ---------- page layout ----------
+   Main tabs (Feed, Create, Chats, Profile) have no top bar: the title sits in the page, and the floating nav sits over the bottom.
+   Pushed pages (offer, product, a create flow) get a slim back bar in the page colour and an action bar at the bottom; the nav hides on them. */
 export const W = { narrow: 'max-w-[720px]', wide: 'max-w-[1120px]' };
 export function Page({ crumb, onBack, right, sub, children, width = 'wide', bar, barDesktop = false }) {
+  const pushed = !!onBack;
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <header className="z-10 flex h-14 shrink-0 items-center border-b border-cream-200 bg-white/90 backdrop-blur sm:h-16">
-        <div className={cx('mx-auto flex w-full items-center gap-2 px-4 sm:px-8', W[width])}>
-          {onBack ? <button onClick={onBack} className="-ml-2 inline-flex h-10 items-center gap-1.5 rounded-xl pl-1.5 pr-3 text-small font-semibold text-ink-soft transition hover:bg-cream-100 hover:text-ink"><Ic.Back width="20" height="20" />{crumb}</button>
-            : <span className="text-subhead font-semibold">{crumb}</span>}
-          <span className="flex-1" />{right}
-        </div>
-      </header>
-      {sub && <div className="shrink-0 border-b border-cream-200 bg-white"><div className={cx('mx-auto w-full px-4 sm:px-8', W[width])}>{sub}</div></div>}
-      <div className="min-h-0 flex-1 overflow-y-auto"><div className={cx('mx-auto w-full px-4 pb-10 pt-6 sm:px-8 sm:pt-10', W[width])}>{children}</div></div>
-      {bar && <div className={cx('shrink-0 border-t border-cream-200 bg-white', !barDesktop && 'lg:hidden')}><div className={cx('mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8', W[width])}>{bar}</div></div>}
+    <div className="flex h-full min-h-0 flex-col bg-cream-50">
+      {pushed && (
+        <header className="z-10 flex h-14 shrink-0 items-center border-b border-cream-200/70 bg-cream-50/85 backdrop-blur-md sm:h-16">
+          <div className={cx('mx-auto flex w-full items-center gap-2 px-3 sm:px-8', W[width])}>
+            <button onClick={onBack} className="inline-flex h-10 items-center gap-1 rounded-full pl-1.5 pr-3.5 text-small font-semibold text-ink-soft transition hover:bg-cream-100 hover:text-ink"><Ic.Back width="20" height="20" />{crumb}</button>
+            <span className="flex-1" />{right}
+          </div>
+        </header>
+      )}
+      {sub && <div className="shrink-0 border-b border-cream-200/70 bg-cream-50"><div className={cx('mx-auto w-full px-4 sm:px-8', W[width])}>{sub}</div></div>}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className={cx('mx-auto w-full px-4 sm:px-8', W[width], pushed ? 'pt-6 sm:pt-10' : 'pt-[max(28px,env(safe-area-inset-top))] sm:pt-12', bar ? 'pb-10' : 'pb-32 lg:pb-12')}>{children}</div>
+      </div>
+      {bar && <div className={cx('shrink-0 border-t border-cream-200/70 bg-cream-50/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md', !barDesktop && 'lg:hidden')}><div className={cx('mx-auto flex w-full items-center gap-3 px-4 py-3 sm:px-8', W[width])}>{bar}</div></div>}
     </div>
   );
 }

@@ -20,13 +20,13 @@ function List({ deals, active }) {
   const shown = (deals || []).filter(d => { const c = ctx(S, d); return !q || ((c.other || '') + (d.offerTitle || '')).toLowerCase().includes(q.toLowerCase()); });
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 px-4 pb-3 pt-5"><h1 className="mb-4 px-1 font-serif text-[24px] leading-8">Chats</h1>
-        <div className="relative"><Ic.Search width="18" height="18" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search chats" className="h-11 w-full rounded-xl bg-cream-100 pl-10 pr-4 text-[15px] outline-none placeholder:text-ink-faint focus:bg-white focus:ring-2 focus:ring-army" /></div>
+      <div className="shrink-0 px-4 pb-3 pt-[max(28px,env(safe-area-inset-top))] sm:pt-8"><h1 className="mb-4 px-1 font-serif text-[26px] leading-[34px] sm:text-title">Chats</h1>
+        <div className="relative"><Ic.Search width="18" height="18" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search chats" className="h-11 w-full rounded-xl bg-white pl-10 shadow-card pr-4 text-[15px] outline-none placeholder:text-ink-faint focus:bg-white focus:ring-2 focus:ring-army" /></div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-32 md:pb-4">
         {!deals ? <Spinner /> : shown.length === 0 && <Empty icon={<Ic.Chat />} title={q ? 'No matches' : 'No chats yet'} text={q ? 'Try another name.' : S.role === 'seller' ? 'When you accept an application, the chat opens here.' : 'When a seller accepts your application, the chat opens here.'} action={!q && <Button tone="secondary" onClick={() => go(S.role === 'seller' ? 'me' : 'feed')}>{S.role === 'seller' ? 'See applications' : 'Browse offers'}</Button>} />}
         {shown.map(d => { const { other } = ctx(S, d); return (
-          <button key={d.id} onClick={() => go('chats/' + d.id)} className={cx('flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition', active === d.id ? 'bg-sage-50' : 'hover:bg-cream-50')}>
+          <button key={d.id} onClick={() => go('chats/' + d.id)} className={cx('flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition', active === d.id ? 'bg-white shadow-card' : 'hover:bg-white/70')}>
             <Avatar name={other} size={44} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2"><span className={cx('truncate', d.unread ? 'font-bold' : 'font-semibold')}>{other}</span><span className="tnum shrink-0 text-caption text-ink-faint">{ago(d.lastAt)}</span></div>
@@ -48,7 +48,7 @@ function Conversation({ d, onInfo, onBack }) {
   const mineId = a.me?.id;
   return (
     <div className="flex h-full min-h-0 flex-col bg-cream-50">
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-cream-200 bg-white px-3 sm:px-5">
+      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-cream-200/70 bg-cream-50/85 px-3 backdrop-blur-md sm:px-5">
         <IconButton size="sm" label="Back" className="md:hidden" onClick={onBack}><Ic.Back width="20" height="20" /></IconButton>
         <Avatar name={other} size={40} />
         <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 font-semibold leading-5"><span className="truncate">{other}</span>{verified && <Verified />}</div><button onClick={() => go('offer/' + o.id)} className="block max-w-full truncate text-caption text-ink-soft hover:text-ink">{o.title}</button></div>
@@ -66,10 +66,10 @@ function Conversation({ d, onInfo, onBack }) {
           <div ref={end} />
         </div>
       </div>
-      {d.status === 'ended' ? <div className="shrink-0 border-t border-cream-200 bg-white px-5 py-4 text-center text-small text-ink-soft">This deal has ended.</div> : (
-        <form onSubmit={submit} className="shrink-0 border-t border-cream-200 bg-white px-3 py-3 sm:px-5">
+      {d.status === 'ended' ? <div className="shrink-0 border-t border-cream-200/70 bg-cream-50 px-5 py-4 text-center text-small text-ink-soft">This deal has ended.</div> : (
+        <form onSubmit={submit} className="shrink-0 border-t border-cream-200/70 bg-cream-50 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
           <div className="mx-auto flex max-w-[720px] items-center gap-2">
-            <input value={t} onChange={e => setT(e.target.value)} maxLength={4000} placeholder={'Message ' + (other || '').split(' ')[0]} className="h-12 min-w-0 flex-1 rounded-full bg-cream-100 px-5 text-[15px] outline-none transition placeholder:text-ink-faint focus:bg-white focus:ring-2 focus:ring-army/30" />
+            <input value={t} onChange={e => setT(e.target.value)} maxLength={4000} placeholder={'Message ' + (other || '').split(' ')[0]} className="h-12 min-w-0 flex-1 rounded-full bg-white px-5 text-[15px] shadow-card outline-none transition placeholder:text-ink-faint focus:ring-2 focus:ring-army/30" />
             <button type="submit" aria-label="Send" className={cx('grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-95', t.trim() ? 'bg-army text-white hover:bg-army-600' : 'bg-sage-100 text-army/60')}><Ic.Send width="20" height="20" /></button>
           </div>
         </form>)}
@@ -92,8 +92,8 @@ function Panel({ d }) {
     <div className="flex flex-col gap-6">
       <button onClick={() => go('offer/' + o.id)} className="flex items-center gap-3 rounded-2xl text-left transition hover:opacity-80"><ProductArt p={p} fit="80%" className="h-14 w-14 shrink-0 rounded-2xl" /><div className="min-w-0 flex-1"><div className="line-clamp-2 font-semibold leading-5">{o.title}</div><div className="mt-1 text-caption text-ink-soft">{T.name} · {T.reward(d.terms, cur)}</div></div><Ic.Chev width="18" height="18" className="text-ink-faint" /></button>
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-cream-50 p-4"><div className="text-caption text-ink-soft">{seller ? 'Paid out' : 'Earned'}</div><div className="tnum mt-1 text-heading font-semibold">{money(earned, cur)}</div></div>
-        <div className="rounded-2xl bg-cream-50 p-4"><div className="text-caption text-ink-soft">Budget left</div><div className="tnum mt-1 text-heading font-semibold">{left == null ? <span className="text-subhead">Open</span> : money(left, cur)}</div></div>
+        <div className="rounded-2xl bg-white p-4 shadow-card"><div className="text-caption text-ink-soft">{seller ? 'Paid out' : 'Earned'}</div><div className="tnum mt-1 text-heading font-semibold">{money(earned, cur)}</div></div>
+        <div className="rounded-2xl bg-white p-4 shadow-card"><div className="text-caption text-ink-soft">Budget left</div><div className="tnum mt-1 text-heading font-semibold">{left == null ? <span className="text-subhead">Open</span> : money(left, cur)}</div></div>
       </div>
       <Tabs value={tab} onChange={setTab} items={[['overview', 'Overview'], ['dels', 'Deliveries', seller ? pend : 0], ['terms', 'Terms']]} />
       {tab === 'overview' && <Rows rows={[['Status', <Status s={d.status} />], ['Reward', T.reward(d.terms, cur) + ' ' + T.sub(d.terms, cur).split(' · ')[0]], ['Max you can earn', cap ? money(cap, cur) : 'No limit'], cap && ['Progress', <span className="inline-block w-24"><Bar pct={earned / cap * 100} /></span>], ['Started', d.since]]} />}
@@ -142,10 +142,10 @@ export default function Chats({ id }) {
   if (S.auth === 'out') return <div className="grid h-full place-items-center"><Empty icon={<Ic.Chat />} title="Your chats live here" text="Sign in to talk with sellers and marketers you work with." action={<Button onClick={() => a.openSignin()}>Sign in</Button>} /></div>;
   return (
     <div className="grid h-full grid-cols-1 md:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)_360px]">
-      <div className={cx('min-h-0 border-r border-cream-200 bg-white', id ? 'hidden md:block' : 'block')}><List deals={deals} active={sel?.id} /></div>
+      <div className={cx('min-h-0 border-r border-cream-200/70 bg-cream-50', id ? 'hidden md:block' : 'block')}><List deals={deals} active={sel?.id} /></div>
       {sel ? (<>
         <div className={cx('min-h-0', id ? 'block' : 'hidden md:block')}><Conversation d={sel} onBack={() => go('chats')} onInfo={() => setInfo(true)} /></div>
-        <aside className="hidden min-h-0 overflow-y-auto border-l border-cream-200 bg-white p-6 xl:block"><Panel d={sel} /></aside>
+        <aside className="hidden min-h-0 overflow-y-auto border-l border-cream-200/70 bg-cream-50 p-6 xl:block"><Panel d={sel} /></aside>
         <Sheet open={info} onClose={() => setInfo(false)} title="Deal details"><Panel d={sel} /></Sheet>
       </>) : <div className={cx('place-items-center', id ? 'grid' : 'hidden md:grid')}>{id ? <Spinner /> : <Empty icon={<Ic.Chat />} title="Pick a chat" text="Your conversations with sellers and marketers live here." />}</div>}
     </div>

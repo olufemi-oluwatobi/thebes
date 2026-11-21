@@ -40,7 +40,7 @@ export default function Profile() {
   }[t];
 
   return (
-    <Page crumb="Profile" right={<Button size="sm" tone="secondary" onClick={() => { setName(u.name); setEdit(true); }}>Edit profile</Button>}>
+    <Page crumb="Profile">
       <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-8">
         <aside className="flex flex-col gap-6 lg:sticky lg:top-0 lg:self-start">
           <Card>
@@ -51,6 +51,7 @@ export default function Profile() {
               {u.country && <div className="flex items-center gap-2.5"><Ic.Globe width="16" height="16" />{[u.city, u.country].filter(Boolean).join(', ')}</div>}
               <div className="flex items-center gap-2.5"><Ic.Shield width="16" height="16" />{u.verified ? 'Verified ' + (seller ? 'seller' : 'marketer') : 'Not verified yet'}</div>
             </div>
+            <Button tone="secondary" size="sm" block className="mt-5" onClick={() => { setName(u.name); setEdit(true); }}>Edit profile</Button>
           </Card>
         </aside>
         <div className="flex min-w-0 flex-col gap-6">
@@ -63,7 +64,7 @@ export default function Profile() {
           </>)}
           <div className="flex flex-wrap gap-3">
             {!(a.hasSeller && a.hasMarketer) && hasRole && <Button tone="secondary" onClick={() => a.openSetup(seller ? 'marketer' : 'seller')}>{seller ? 'Also promote offers' : 'Also sell products'}</Button>}
-            <Button tone="ghost" onClick={a.signOut}>Sign out</Button>
+            <Button tone="ghost" onClick={a.signOut}><Ic.Out width="18" height="18" />Sign out</Button>
           </div>
         </div>
       </div>

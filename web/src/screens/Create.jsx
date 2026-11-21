@@ -76,44 +76,60 @@ const TypeIcon = { commission: Ic.Wallet, attention: Ic.Share, introduction: Ic.
 
 export default function Create({ pid: arg }) {
   const { S, a } = useStore();
-  const pid = arg && arg !== 'social' && arg !== 'product' ? arg : null;
-  const [mode, setMode] = useState(arg === 'social' ? 'social' : arg === 'product' ? 'product' : pid ? 'offer' : null);
+  const pid = arg && !['social', 'product', 'offer'].includes(arg) ? arg : null;
+  const mode = arg === 'social' ? 'social' : arg === 'product' ? 'product' : arg ? 'offer' : null;
+  const setMode = (m) => go(m ? 'plus/' + m : 'plus');
   const [P, setP] = useState(() => newP(pid));
   const [prev, setPrev] = useState(false), [busy, setBusy] = useState(false);
   const [soc, setSoc] = useState({ platform: 'instagram', handle: '', followers: '' });
   const set = (x) => setP(q => ({ ...q, ...x }));
   useEffect(() => { if (S.auth === 'in' && a.hasSeller && !S.myProductIds) a.loadSeller(); }, [S.auth, a.hasSeller]);
+  // a draft saved before the sign-in email comes back here
+  useEffect(() => {
+    let d = null; try { d = JSON.parse(localStorage.getItem('gs_draft') || 'null'); } catch {}
+    if (!d || d.hash !== location.hash) return;
+    try { localStorage.removeItem('gs_draft'); } catch {}
+    const np = { ...d.P.np };
+    if (np.imgData) { fetch(np.imgData).then(r => r.blob()).then(b => { const f = new File([b], 'image', { type: b.type }); setP(q => ({ ...q, np: { ...q.np, file: f, img: URL.createObjectURL(f) } })); }); }
+    delete np.imgData; setP({ ...d.P, np }); if (d.soc) setSoc(d.soc);
+    a.toast('Welcome back. Your draft is here.');
+  }, []);
+  const stash = async () => {
+    const d = { hash: location.hash, P: { ...P, np: { ...P.np, file: null, img: null, videoFile: null, video: null } }, soc };
+    if (P.np.file && P.np.file.size < 1.5e6) d.P.np.imgData = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(P.np.file); });
+    try { localStorage.setItem('gs_draft', JSON.stringify(d)); localStorage.setItem('gs_next', location.hash); } catch {}
+  };
+  // ask for sign-in, then a seller or marketer profile, only when something is saved
+  const gate = (kind, then) => {
+    if (S.auth !== 'in') { stash(); a.openSignin('Sign in to save this'); return false; }
+    if (kind === 'seller' && !a.hasSeller) { a.openSetup('seller', then); return false; }
+    if (kind === 'marketer' && !a.hasMarketer) { a.openSetup('marketer', then); return false; }
+    return true;
+  };
   const p = P.pid ? prodOf(S, P.pid) : null, T = TYPES[P.type], st = P.step;
   const mineProducts = (S.myProductIds || []).map(id => prodOf(S, id)).filter(Boolean);
-
-  if (S.auth === 'out') return <Page crumb="Create" width="narrow"><Empty icon={<Ic.Plus />} title="Post offers, add products" text="Sign in to start selling or promoting on Gorilla Squad." action={<Button onClick={() => a.openSignin()}>Sign in</Button>} /></Page>;
-  const needSeller = (mode === 'offer' || mode === 'product') && !a.hasSeller, needMarketer = mode === 'social' && !a.hasMarketer;
-  if (needSeller || needMarketer) return (
-    <Page crumb="Create" onBack={() => setMode(null)} width="narrow">
-      <Card><Empty icon={needSeller ? <Ic.Box /> : <Ic.At />} title={needSeller ? 'Set up selling first' : 'Set up promoting first'} text={needSeller ? 'Tell marketers who you are, then add products and post offers.' : 'Add where you are based, then connect your accounts.'} action={<Button onClick={() => a.openSetup(needSeller ? 'seller' : 'marketer')}>Continue</Button>} /></Card>
-    </Page>
-  );
 
   if (!mode) return (
     <Page crumb="Create" width="narrow">
       <PageTitle h="What do you want to add?" p="Offers are what marketers see in the feed. Each offer is for one of your products." />
       <div className="flex flex-col gap-4">
-        <OptionCard onClick={() => { setMode('offer'); setP(newP()); }} title="Post an offer" text="Pick a type, a product and a budget" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-army text-sage"><Ic.Tag /></span>} />
-        <OptionCard onClick={() => { setMode('product'); setP(newP()); }} title="Add a product" text="Software, digital, physical or a service" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-100 text-army"><Ic.Box /></span>} />
+        <OptionCard onClick={() => setMode('offer')} title="Post an offer" text="Pick a type, a product and a budget" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-army text-sage"><Ic.Tag /></span>} />
+        <OptionCard onClick={() => setMode('product')} title="Add a product" text="Software, digital, physical or a service" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sage-100 text-army"><Ic.Box /></span>} />
         <OptionCard onClick={() => setMode('social')} title="Add a social" text="Connect an account to qualify for offers" icon={<span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cream-100 text-army"><Ic.At /></span>} />
       </div>
     </Page>
   );
 
-  const saveProduct = async () => { const n = P.np; if (n.name.trim().length < 2) { a.toast('Give the product a name'); return null; } if (n.desc.trim().length < 10) { a.toast('Describe it in at least 10 characters'); return null; } if (n.url && !/^https?:\/\//.test(n.url.trim())) { a.toast('The link should start with https://'); return null; } if (!n.file && !n.sample) { a.toast('Add a placement image'); return null; } setBusy(true); try { return await a.addProduct(n); } finally { setBusy(false); } };
+  const doSaveProduct = async () => { setBusy(true); try { return await a.addProduct(P.np); } finally { setBusy(false); } };
+  const saveProduct = async (after) => { const n = P.np; if (n.name.trim().length < 2) { a.toast('Give the product a name'); return null; } if (n.desc.trim().length < 10) { a.toast('Describe it in at least 10 characters'); return null; } if (n.url && !/^https?:\/\//.test(n.url.trim())) { a.toast('The link should start with https://'); return null; } if (!n.file && !n.sample) { a.toast('Add a placement image'); return null; } if (!gate('seller', async () => { const id = await doSaveProduct(); if (id) after(id); })) return null; return doSaveProduct(); };
   if (mode === 'product') return (
-    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy} onClick={async () => { const id = await saveProduct(); if (id) go('product/' + id); }}>{busy ? 'Saving…' : 'Save product'}</Button></>}>
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy} onClick={async () => { const done = (id) => go('product/' + id); const id = await saveProduct(done); if (id) done(id); }}>{busy ? 'Saving…' : 'Save product'}</Button></>}>
       <PageTitle h="Add a product" p="Add it once, then post as many offers for it as you like." />
       <ProductForm P={P} set={set} />
     </Page>
   );
   if (mode === 'social') return (
-    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy || !soc.handle.trim()} onClick={async () => { setBusy(true); const ok = await a.addSocial(soc); setBusy(false); if (ok) go('me'); }}>{busy ? 'Saving…' : 'Submit for review'}</Button></>}>
+    <Page crumb="Create" onBack={() => setMode(null)} width="narrow" barDesktop bar={<><Button tone="secondary" onClick={() => setMode(null)}>Cancel</Button><span className="flex-1" /><Button disabled={busy || !soc.handle.trim()} onClick={async () => { const run = async () => { setBusy(true); const ok = await a.addSocial(soc); setBusy(false); if (ok) go('me'); }; if (gate('marketer', run)) run(); }}>{busy ? 'Saving…' : 'Submit for review'}</Button></>}>
       <PageTitle h="Add a social" p="An admin checks each account before it counts toward offer requirements." />
       <Card><div className="flex flex-col gap-5"><Field label="Platform"><Pills value={soc.platform} onChange={v => setSoc({ ...soc, platform: v })} items={PLATFORMS} /></Field><div className="grid gap-5 sm:grid-cols-2"><Field label="Handle"><Input pre="@" placeholder="yourhandle" value={soc.handle} onChange={e => setSoc({ ...soc, handle: e.target.value })} /></Field><Field label="Followers"><Input type="number" min="0" placeholder="e.g. 4200" value={soc.followers} onChange={e => setSoc({ ...soc, followers: e.target.value })} /></Field></div></div></Card>
     </Page>
@@ -121,11 +137,12 @@ export default function Create({ pid: arg }) {
 
   const b = bC(P), fee = b ? Math.round(b * FEE / 10000) : 0, t = termsOf(P);
   const next = async () => {
-    if (st === 2 && P.newProd) { const id = await saveProduct(); return id && set({ pid: id, newProd: false }); }
+    if (st === 2 && P.newProd) { const done = (id) => set({ pid: id, newProd: false }); const id = await saveProduct(done); return id && done(id); }
     if (st === 2 && !P.pid) return a.toast('Pick a product first');
     if (st === 4 && !P.nocap) { if (!(+P.budget >= 1)) return a.toast('Enter a budget, or turn it off'); if (P.cap && +P.cap > +P.budget) return a.toast('The cap cannot be more than the budget'); }
     if (st < 5) return set({ step: st + 1 });
-    if (busy) return; setBusy(true); const id = await a.addOffer(P, p, t, b, cC(P)); setBusy(false); if (id) go('offer/' + id);
+    const publish = async () => { setBusy(true); const id = await a.addOffer(P, p, t, b, cC(P)); setBusy(false); if (id) go('offer/' + id); };
+    if (busy || !gate('seller', publish)) return; publish();
   };
   const back_ = () => { if (P.newProd) set({ newProd: false }); else if (st > 1) set({ step: st - 1 }); else setMode(null); };
   const label = st === 5 ? (busy ? 'Publishing…' : b ? 'Submit · pay ' + money(b + fee, P.cur) : 'Publish offer') : st === 2 && P.newProd ? 'Save product' : 'Continue';

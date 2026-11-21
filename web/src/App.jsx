@@ -10,7 +10,7 @@ import Create from './screens/Create.jsx';
 import Profile from './screens/Profile.jsx';
 import Product from './screens/Product.jsx';
 
-const TABS = [['feed', 'Feed', Ic.Feed], ['plus', 'Create', Ic.Plus], ['chats', 'Chats', Ic.Chat], ['me', 'Profile', Ic.Me]];
+const TABS = [['feed', 'Feed', Ic.Feed], ['plus', 'Create', Ic.Create], ['chats', 'Chats', Ic.Chat], ['me', 'Profile', Ic.Me]];
 const tabOf = (n) => ({ offer: 'feed', deal: 'chats', product: 'me', signin: 'feed', '': 'feed' }[n] ?? n);
 
 export default function App() {
@@ -18,6 +18,8 @@ export default function App() {
   const { S, a } = useStore();
   useEffect(() => { if (r.n === 'signin') { if (S.auth === 'out') a.openSignin(); else if (S.auth === 'in') go('feed'); } if (r.n === 'sell') go('plus'); if (r.n === 'board') go('feed'); }, [r.n, S.auth]);
   useEffect(() => { if (S.auth === 'in' && !S.deals) a.loadDeals(); }, [S.auth, S.role, !!S.deals]);
+  // after the email link signs someone in, take them back to what they were doing
+  useEffect(() => { if (S.auth !== 'in') return; let n = null; try { n = localStorage.getItem('gs_next'); localStorage.removeItem('gs_next'); } catch {} if (n && n !== location.hash) location.hash = n; }, [S.auth]);
   if (S.auth === 'loading') return <div className="grid h-full place-items-center"><span className="animate-pulse"><LogoMark size={48} /></span></div>;
   const tab = tabOf(r.n);
   const counts = { me: S.role === 'seller' ? S.me?.counts?.pending_interests || 0 : 0, chats: (S.deals || []).reduce((n, d) => n + (d.unread ? 1 : 0), 0) };
@@ -28,38 +30,40 @@ export default function App() {
   else if (r.n === 'chats') view = <Chats id={r.a} />;
   else if (r.n === 'me') view = <Profile />;
   else view = <Feed />;
-  const dark = tab === 'feed' && r.n !== 'offer';
+  const showNav = (['feed', 'me'].includes(r.n) || ((r.n === 'chats' || r.n === 'plus') && !r.a)) && !S.signin && !S.setup && !S.applyTo;
   const u = a.me, both = a.hasSeller && a.hasMarketer;
   return (
     <div className="flex h-full w-full flex-col lg:flex-row">
-      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-cream-200 bg-white px-4 pb-4 pt-5 lg:flex">
+      <aside className="hidden w-[248px] shrink-0 flex-col border-r border-cream-200/70 bg-cream-50 px-4 pb-4 pt-5 lg:flex">
         <a href="#feed" className="mb-8 px-2"><Logo /></a>
         <nav className="flex flex-col gap-1" aria-label="Main">
           {TABS.map(([k, l, I]) => { const on = tab === k, n = counts[k]; return (
-            <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={cx('flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-semibold transition', on ? 'bg-sage-50 text-army' : 'text-ink-soft hover:bg-cream-50 hover:text-ink')}>
+            <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={cx('flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] font-semibold transition', on ? 'bg-white text-army shadow-card' : 'text-ink-soft hover:bg-white/70 hover:text-ink')}>
               <I width="20" height="20" />{l}<span className="flex-1" />{n ? <span className="grid h-5 min-w-5 place-items-center rounded-full bg-ember px-1.5 text-[11px] font-bold text-white">{n}</span> : null}
             </button>); })}
         </nav>
         <div className="flex-1" />
         {u ? (
-          <div className="rounded-2xl bg-cream-50 p-3">
+          <div className="rounded-2xl bg-white p-3 shadow-card">
             <button onClick={() => go('me')} className="flex w-full items-center gap-3 text-left"><Avatar name={u.name} size={36} /><div className="min-w-0"><div className="truncate text-small font-semibold">{u.name}</div><div className="truncate text-caption text-ink-soft">{u.email}</div></div></button>
             {both ? <><div className="mt-3 text-caption font-semibold uppercase tracking-wider text-ink-faint">Working as</div>
               <div className="mt-1.5 [&>div]:h-9 [&_button]:text-caption"><Segmented value={S.role} onChange={(v) => v !== S.role && a.setRole(v)} items={[['marketer', 'Marketer'], ['seller', 'Seller']]} /></div></>
               : <button onClick={() => a.openSetup(a.hasSeller ? 'marketer' : 'seller')} className="mt-3 text-caption font-semibold text-sage-700 hover:underline">{a.hasSeller ? 'Also promote offers' : a.hasMarketer ? 'Also sell products' : 'Set up your profile'}</button>}
           </div>
         ) : (
-          <div className="rounded-2xl bg-cream-50 p-4"><div className="text-small font-semibold">Join Gorilla Squad</div><p className="mt-1 text-caption text-ink-soft">Post offers or promote them and get paid.</p><Button size="sm" block className="mt-3" onClick={() => a.openSignin()}>Sign in</Button></div>
+          <div className="rounded-2xl bg-white p-4 shadow-card"><div className="text-small font-semibold">Join Gorilla Squad</div><p className="mt-1 text-caption text-ink-soft">Post offers or promote them and get paid.</p><Button size="sm" block className="mt-3" onClick={() => a.openSignin()}>Sign in</Button></div>
         )}
       </aside>
       <main className="relative order-1 min-h-0 flex-1 overflow-hidden bg-cream-50 lg:order-2">{view}</main>
-      <nav aria-label="Main" className={cx('order-2 grid h-[64px] shrink-0 grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] lg:hidden', dark ? 'border-white/10 bg-army-900' : 'border-cream-200 bg-white')}>
-        {TABS.map(([k, l, I]) => { const on = tab === k, n = counts[k]; return (
-          <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={cx('relative flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition', on ? (dark ? 'text-white' : 'text-army') : (dark ? 'text-white/50' : 'text-ink-faint'))}>
-            <span className={cx('grid h-7 w-12 place-items-center rounded-full transition', on && (dark ? 'bg-white/15' : 'bg-sage-100'))}><I width="20" height="20" /></span>{l}
-            {n ? <span className="absolute left-1/2 top-1.5 ml-2 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 text-[10px] font-bold text-white">{n}</span> : null}
-          </button>); })}
-      </nav>
+      {showNav && (
+        <nav aria-label="Main" className="fixed bottom-[max(14px,env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full bg-army-900/85 p-1.5 shadow-[0_14px_34px_-10px_rgb(0_0_0/.55),0_0_28px_-8px_rgb(203_214_168/.45)] ring-1 ring-white/10 backdrop-blur-xl lg:hidden">
+          {TABS.map(([k, l, I]) => { const on = tab === k, n = counts[k]; return (
+            <button key={k} onClick={() => go(k)} aria-label={l} aria-current={on ? 'page' : undefined} className={cx('relative grid h-[52px] w-[60px] place-items-center rounded-full transition active:scale-95', on ? 'bg-sage/15 text-sage' : 'text-white/55 hover:text-white')}>
+              <I width="24" height="24" strokeWidth={on ? 2 : 1.75} className={on ? 'drop-shadow-[0_0_8px_rgb(203_214_168/.85)]' : ''} />
+              {n ? <span className="absolute right-3.5 top-3 h-2.5 w-2.5 rounded-full bg-ember ring-2 ring-army-900" /> : null}
+            </button>); })}
+        </nav>
+      )}
       <SignInSheet /><SetupSheet /><ApplySheet />
       <Toast t={S.toast} />
     </div>

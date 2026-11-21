@@ -34,7 +34,7 @@ function Slide({ o }) {
     <article onClick={() => go('offer/' + o.id)} className="relative h-full w-full cursor-pointer overflow-hidden text-white" style={{ background: bgFor(p) }}>
       <div className="absolute inset-0 opacity-[.12] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:22px_22px]" />
       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 to-transparent lg:hidden" />
-      <div className="relative mx-auto flex h-full w-full max-w-[1120px] flex-col px-5 pb-6 pt-[72px] lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center lg:gap-14 lg:px-10 lg:pb-10 lg:pt-24">
+      <div className="relative mx-auto flex h-full w-full max-w-[1120px] flex-col px-5 pb-[104px] pt-[72px] lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-center lg:gap-14 lg:px-10 lg:pb-10 lg:pt-24">
         {/* media + left rail */}
         <div className="relative flex min-h-0 flex-1 items-center justify-center lg:h-full lg:max-h-[560px]">
           
@@ -56,7 +56,7 @@ function Slide({ o }) {
         </div>
       </div>
         {/* action stack: bottom right, colour-coded */}
-        <div className="absolute bottom-6 right-4 z-10 flex flex-col items-center gap-4 lg:bottom-10 lg:right-8" onClick={e => e.stopPropagation()}>
+        <div className="absolute bottom-[104px] right-4 z-10 flex flex-col items-center gap-4 lg:bottom-10 lg:right-8" onClick={e => e.stopPropagation()}>
           {mine ? <RailButton label="Manage" tone="manage" onClick={() => go('offer/' + o.id)}><Ic.Tag width="22" height="22" /></RailButton>
             : <RailButton label={accepted ? 'Chat' : applied ? 'Applied' : 'Apply'} tone={applied ? 'applied' : 'apply'} disabled={!applied && e.known && !e.ok} onClick={apply}>{accepted ? <Ic.Chat width="22" height="22" /> : <Ic.Check width="24" height="24" />}</RailButton>}
           <RailButton label="Visit" tone="visit" onClick={visit}><Ic.Visit width="22" height="22" /></RailButton>
@@ -76,7 +76,7 @@ export default function Feed() {
   return (
     <div className="relative h-full bg-army-900">
       <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/45 to-transparent">
-        <div className="mx-auto flex max-w-[1120px] items-center gap-4 px-5 pb-6 pt-4 lg:px-10 lg:pt-6">
+        <div className="mx-auto flex max-w-[1120px] items-center gap-4 px-5 pb-6 pt-[max(16px,env(safe-area-inset-top))] lg:px-10 lg:pt-6">
           <span className="lg:hidden"><LogoMark size={30} /></span>
           <div className="no-scrollbar fade-r flex min-w-0 flex-1 gap-1 overflow-x-auto lg:[mask-image:none]">
             {cats.map(([k, l]) => <button key={k} onClick={() => a.loadFeed(k)} className={cx('h-9 shrink-0 rounded-full px-3.5 text-small font-semibold transition', fc === k ? 'bg-white text-army' : 'text-white/70 hover:text-white')}>{l}</button>)}

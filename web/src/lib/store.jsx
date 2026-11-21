@@ -101,9 +101,12 @@ export function StoreProvider({ children }) {
       setRole: (r) => patch((s) => { s.role = r || (s.role === 'seller' ? 'marketer' : 'seller'); s.roleSet = true; s.deals = null; }),
       openSignin: (why) => patch((s) => { s.signin = { why: why || 'Sign in to Gorilla Squad' }; }),
       closeSignin: () => patch((s) => { s.signin = null; }),
-      closeSetup: () => patch((s) => { s.setup = null; }),
-      openSetup: (k) => patch((s) => { s.setup = k; }),
-      async signIn(email) { return run(() => api('/auth/start', { method: 'POST', body: { email } })); },
+      closeSetup: () => patch((s) => { s.setup = null; s.setupThen = null; }),
+      openSetup: (k, then) => patch((s) => { s.setup = k; s.setupThen = then || null; }),
+      async signIn(email) {
+        try { return await api('/auth/start', { method: 'POST', body: { email } }); }
+        catch (e) { toast(e.status === 503 ? "Sign-in emails aren't switched on yet. Please try again soon." : e.status === 502 ? "We couldn't send the email. Check the address and try again." : e.message); return null; }
+      },
       async signOut() { await run(() => api('/auth/signout', { method: 'POST' })); location.hash = 'feed'; location.reload(); },
       async setupProfile(kind, f) {
         const ok = await run(async () => {
@@ -115,7 +118,7 @@ export function StoreProvider({ children }) {
           } else await api('/squad/marketers', { method: 'POST', body: { country: f.country, city: f.city || undefined } });
           return true;
         });
-        if (ok) { await loadMe(); patch((s) => { s.setup = null; s.role = kind; s.roleSet = true; s.deals = null; }); toast(kind === 'seller' ? 'Seller profile ready' : 'Marketer profile ready'); }
+        if (ok) { const then = ref.current.setupThen; await loadMe(); patch((s) => { s.setup = null; s.setupThen = null; s.role = kind; s.roleSet = true; s.deals = null; }); toast(kind === 'seller' ? 'Seller profile ready' : 'Marketer profile ready'); if (then) setTimeout(then, 60); }
         return ok;
       },
       async saveName(name) { const r = await run(() => api('/squad/me', { method: 'PATCH', body: { display_name: name } })); if (r) { await loadMe(); toast('Saved'); } return !!r; },
