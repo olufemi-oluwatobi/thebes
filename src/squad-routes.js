@@ -106,6 +106,7 @@ export function squadRoutes(app, h) {
     id: r.id, product_id: r.product_id, offer_type_id: r.offer_type_id, title: r.title, description: r.description,
     terms: json(r.terms, {}), requirements: json(r.requirements, {}), max_relationships: r.max_relationships, status: r.status,
     financials: financials(r), video_media_id: r.video_media_id || null, video: r.video_media_id ? mediaUrl(r.video_media_id) : null,
+    cover_media_id: r.cover_media_id || null, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : null,
     ...flags(r), created_at: r.created_at, updated_at: r.updated_at, ...extra,
   });
   const interestOut = (r) => r && ({ id: r.id, offer_id: r.offer_id, marketer_id: r.marketer_id, social_id: r.social_id, message: r.message, status: r.status, decided_at: r.decided_at, decision_note: r.decision_note, created_at: r.created_at });
@@ -713,6 +714,12 @@ export function squadRoutes(app, h) {
     if (!m || m.kind === 'image') no(400, 'that video is not one of yours', 'invalid');
     return m.id;
   };
+  const coverOf = async (c, u, id) => {
+    if (!id) return null;
+    const m = await DB(c).prepare(`SELECT * FROM media WHERE id = ? AND owner_user_id = ? AND kind = 'image' AND is_deleted = 0 AND is_blocked = 0`).bind(id, u.id).first();
+    if (!m) no(400, 'that thumbnail is not one of your images', 'invalid');
+    return m.id;
+  };
   const approvedOfferType = async (c, idOrSlug) => {
     const t = await DB(c).prepare('SELECT * FROM offer_types WHERE (id = ? OR slug = ?) AND is_deleted = 0').bind(idOrSlug, idOrSlug).first();
     if (!t) no(400, 'unknown offer type', 'invalid');
@@ -733,11 +740,11 @@ export function squadRoutes(app, h) {
     const max = intIn(b.max_relationships, 'max_relationships', 1, 100000);
     const status = b.status === 'open' ? 'open' : 'draft';
     if (status === 'open' && p.is_flagged) no(409, 'this product is flagged and cannot be offered until it is reviewed', 'flagged');
-    const fin = money(b), video = await videoOf(c, u, b.video_media_id);
+    const fin = money(b), video = await videoOf(c, u, b.video_media_id), cover = await coverOf(c, u, b.cover_media_id);
     if (status === 'open' && fin.budget_cents) no(409, 'a budgeted offer opens once its budget is funded: save it as a draft first', 'unfunded');
     const id = uid('of');
-    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null).run();
+    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents, cover_media_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null, cover).run();
     return c.json({ offer: offerOut(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()) }, 201);
   });
 
@@ -837,6 +844,7 @@ export function squadRoutes(app, h) {
       if (set.max_relationships != null && set.max_relationships < active) no(409, `there are already ${active} active relationships`, 'too_low');
     }
     if ('video_media_id' in b) set.video_media_id = await videoOf(c, u, b.video_media_id);
+    if ('cover_media_id' in b) set.cover_media_id = await coverOf(c, u, b.cover_media_id);
     if (['currency', 'budget_cents', 'payout_cap_cents'].some((k) => k in b)) {
       if (o.funded_cents > 0) no(409, 'the budget is locked once it is funded: close this offer and start a new one to change it', 'locked');
       Object.assign(set, money(b, o));

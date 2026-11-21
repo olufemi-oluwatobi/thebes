@@ -39,7 +39,7 @@ function Slide({ o }) {
         <div className="relative flex min-h-0 flex-1 items-center justify-center lg:h-full lg:max-h-[560px]">
           
           <div className="grid h-full max-h-[340px] w-full place-items-center lg:aspect-[4/3] lg:h-auto lg:max-h-none lg:rounded-[32px] lg:bg-black/15 lg:ring-1 lg:ring-inset lg:ring-white/10">
-            {p.img ? <img src={p.img} alt="" className="max-h-full max-w-full rounded-3xl object-contain shadow-pop" /> : <Art k={artFor(p.category)} className="h-full max-h-[300px] w-full max-w-[320px] lg:h-[72%] lg:max-h-none lg:max-w-[440px] [&>svg]:h-full [&>svg]:w-full" />}
+            {(o.cover || p.img) ? <img src={o.cover || p.img} alt="" className="max-h-full max-w-full rounded-3xl object-contain shadow-pop" /> : <Art k={artFor(p.category)} className="h-full max-h-[300px] w-full max-w-[320px] lg:h-[72%] lg:max-h-none lg:max-w-[440px] [&>svg]:h-full [&>svg]:w-full" />}
           </div>
         </div>
         {/* info */}
@@ -87,7 +87,7 @@ export default function Feed() {
       <div className="snap-feed no-scrollbar h-full overflow-y-auto">
         {!S.feed ? <div className="grid h-full place-items-center"><span className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-sage" /></div>
           : list.length ? list.map(o => <div key={o.id} className="h-full"><Slide o={o} /></div>)
-          : <div className="grid h-full place-items-center px-8 text-center text-white"><div><span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-sage"><Ic.Tag /></span><div className="text-subhead font-semibold">No offers here yet</div><p className="mx-auto mt-1 max-w-xs text-small text-white/60">{fc === 'all' ? 'Be the first: post an offer and marketers will see it here.' : 'Nothing in this category yet. Try For you.'}</p><Button tone="sage" className="mt-5" onClick={() => go('plus')}>Post an offer</Button></div></div>}
+          : <div className="grid h-full place-items-center px-8 text-center text-white"><div><span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-sage"><Ic.Tag /></span><div className="text-subhead font-semibold">No offers here yet</div><p className="mx-auto mt-1 max-w-xs text-small text-white/60">{fc === 'all' ? 'Be the first: list a product and creators will see it here.' : 'Nothing in this category yet. Try For you.'}</p><Button tone="sage" className="mt-5" onClick={() => go('plus')}>List a product</Button></div></div>}
       </div>
     </div>
   );

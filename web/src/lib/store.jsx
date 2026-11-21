@@ -1,7 +1,7 @@
 // App state backed by the Worker API (/api/squad/*). Screens read S and call actions on `a`; they never fetch directly.
 import { createContext, useContext, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { api, qs } from './api.js';
-import { artFor, CAT_BG, day } from './data.js';
+import { artFor, CAT_BG, day, kindOf, kindFromCategory, PLATFORMS } from './data.js';
 import { ART } from './art.js';
 
 const Ctx = createContext(null);
@@ -13,16 +13,17 @@ export function productA(p, media = []) {
   const images = media.filter((m) => m.kind === 'image').map((m) => m.url);
   const demo = media.find((m) => m.role === 'demo' || m.kind === 'video');
   const cover = p.cover || images[0] || null;
-  return { id: p.id, name: p.name, desc: p.description || '', url: p.url || null, category: p.category || 'other', art: artFor(p.category),
+  const kind = p.details?.kind || kindFromCategory(p.category);
+  return { id: p.id, name: p.name, desc: p.description || '', url: p.url || null, category: p.category || 'other', kind, details: p.details || {}, art: kindOf(kind)[3],
     img: cover, images: images.length ? images : cover ? [cover] : [], gallery: [artFor(p.category)], video: demo ? 'Demo' : null, videoUrl: demo?.url || null,
     company: null, owner: false };
 }
 export function offerA(o) {
   const f = o.financials || {}, r = o.requirements || {};
   return {
-    id: o.id, pid: o.product_id, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
+    id: o.id, pid: o.product_id, cover: o.cover || null, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
     co: o.company?.name || o.product?.name || 'Seller', coV: !!(o.company?.is_verified || o.seller_verified),
-    req: { min_followers: r.min_followers || 0, countries: r.countries || [], verified_only: !!r.verified_only },
+    req: { min_followers: r.min_followers || 0, countries: r.countries || [], platforms: r.platforms || [], verified_only: !!r.verified_only },
     fin: { cur: f.currency || 'USD', budget: f.budget_cents ?? null, cap: f.payout_cap_cents ?? null, funded: f.funding_status === 'funded', spent: f.spent_cents || 0, fee: f.listing_fee_cents || 0, due: f.payment_due_cents || 0 },
     eligible: o.eligible, reasons: o.reasons || [], myInterest: o.my_interest && typeof o.my_interest === 'object' ? o.my_interest : o.my_interest ? { status: o.my_interest } : null,
     myRel: o.my_relationship || null, mine: !!o.is_owner, full: !!o.full, pending: o.pending_interests || 0, active: o.active_relationships || 0, created: o.created_at,
@@ -41,8 +42,8 @@ const interestA = (i, offerId) => ({ id: i.id, offer: offerId || i.offer_id, sta
   offerTitle: i.offer?.title, relId: i.relationship_id || null });
 
 /* a placement image drawn from our built-in art, for "use a sample image" */
-export async function sampleImage(category) {
-  const svg = ART[artFor(category)], [c1, c2] = CAT_BG[category] || CAT_BG.other;
+export async function sampleImage(kind) {
+  const k = kindOf(kind), svg = ART[k[3]], [c1, c2] = CAT_BG[k[4]] || CAT_BG.other;
   const cv = document.createElement('canvas'); cv.width = 1200; cv.height = 900;
   const g = cv.getContext('2d'), grd = g.createLinearGradient(0, 0, 600, 900); grd.addColorStop(0, c1); grd.addColorStop(1, c2);
   g.fillStyle = grd; g.fillRect(0, 0, 1200, 900);
@@ -203,11 +204,12 @@ export function StoreProvider({ children }) {
         return r?.media || null;
       },
       async addProduct(n) {
-        const r = await run(() => api('/squad/products', { method: 'POST', body: { name: n.name.trim(), description: n.desc.trim(), category: n.category, url: n.url?.trim() || undefined } }));
+        const r = await run(() => api('/squad/products', { method: 'POST', body: { name: n.name.trim(), description: n.desc.trim(), category: kindOf(n.kind)[4], url: n.url?.trim() || undefined, details: { kind: n.kind, ...(n.details || {}) } } }));
         if (!r) return null;
         const id = r.product.id, items = [];
-        const file = n.file || (n.sample ? await sampleImage(n.category).catch(() => null) : null);
+        const file = n.file || (n.sample ? await sampleImage(n.kind).catch(() => null) : null);
         if (file) { const m = await act.uploadMedia(file, 'image'); if (m) items.push({ media_id: m.id, role: 'cover' }); }
+        for (const g of n.gallery || []) { const m = await act.uploadMedia(g.file, 'image'); if (m) items.push({ media_id: m.id, role: 'gallery' }); }
         if (n.videoFile) { const m = await act.uploadMedia(n.videoFile, 'video'); if (m) items.push({ media_id: m.id, role: 'demo' }); }
         let media = [];
         if (items.length) media = (await run(() => api(`/squad/products/${id}/media`, { method: 'PUT', body: { items } })))?.media || [];
@@ -216,15 +218,17 @@ export function StoreProvider({ children }) {
         toast('Product saved');
         return id;
       },
-      async addOffer(P, p, terms, budget, cap) {
-        const body = { product_id: p.id, offer_type: P.type, title: P.title || 'Promote ' + p.name, description: P.desc || undefined, terms,
-          requirements: { min_followers: +P.minf || undefined, countries: P.countries.length ? P.countries : undefined, verified_only: P.verified || undefined },
-          status: budget ? 'draft' : 'open', currency: P.cur, ...(budget ? { budget_cents: budget } : {}), ...(cap ? { payout_cap_cents: cap } : {}) };
+      async addOffer(L, p) {
+        let cover_media_id = L.thumbMediaId || undefined;
+        if (L.thumbFile) { const m = await act.uploadMedia(L.thumbFile, 'image'); if (!m) return null; cover_media_id = m.id; }
+        const budget = L.budget, body = { product_id: p.id, offer_type: L.type, title: L.title || 'Promote ' + p.name, description: L.desc || undefined, terms: L.terms,
+          requirements: { min_followers: +L.minf || undefined, countries: L.countries.length ? L.countries : undefined, platforms: L.platforms.length ? L.platforms : undefined, verified_only: L.verified || undefined },
+          status: budget ? 'draft' : 'open', currency: L.cur, cover_media_id, ...(budget ? { budget_cents: budget } : {}), ...(L.cap ? { payout_cap_cents: L.cap } : {}) };
         const r = await run(() => api('/squad/offers', { method: 'POST', body }));
         if (!r) return null;
         putOffers([{ ...offerA(r.offer), mine: true, co: me?.companies?.[0]?.name || p.name }]);
         patch((s) => { s.myOfferIds = [r.offer.id, ...(s.myOfferIds || [])]; s.feed = null; });
-        toast(budget ? 'Saved. It goes live once the budget is paid.' : 'Your offer is live');
+        toast(budget ? 'Saved. It goes live once the budget is paid.' : 'Your listing is live');
         return r.offer.id;
       },
       async addSocial(f) {
@@ -307,6 +311,7 @@ export function elig(o, a) {
   const r = o.req || {}, res = [], known = o.eligible !== undefined && o.eligible !== null, bad = (w) => known && !o.eligible && o.reasons.some((x) => x.includes(w));
   if (r.min_followers) res.push({ ok: !bad('account'), t: r.min_followers.toLocaleString() + '+ followers', you: a?.me ? 'You have ' + a.me.followers.toLocaleString() : '' });
   if (r.countries?.length) res.push({ ok: !bad('based'), t: 'Based in ' + r.countries.join(' / '), you: a?.me?.country ? 'You are in ' + a.me.country : '' });
+  if (r.platforms?.length) res.push({ ok: !bad('account'), t: 'Posts on ' + r.platforms.map((p) => PLATFORMS.find((x) => x[0] === p)?.[1] || p).join(' or '), you: !a?.me ? '' : a.me.socials.length ? 'You have ' + a.me.socials.map((x) => PLATFORMS.find((q) => q[0] === x.platform)?.[1] || x.platform).join(', ') : 'Add your accounts in Profile' });
   if (r.verified_only) res.push({ ok: !bad('verified'), t: 'Verified marketers', you: a?.me ? (a.me.verified ? 'You are verified' : 'Not verified yet') : '' });
   return { ok: known ? !!o.eligible : true, res, known };
 }
