@@ -79,7 +79,11 @@ app.post('/api/auth/start', async (c) => {
     method: 'POST', headers: { authorization: `Bearer ${c.env.RESEND_API_KEY}`, 'content-type': 'application/json' },
     body: JSON.stringify({ from: c.env.EMAIL_FROM, to: e, subject: 'Your Gorilla Squad sign-in link', text: `Sign in to Gorilla Squad:\n\n${link}\n\nThe link works once, for 20 minutes.` }),
   });
-  if (!r.ok) return fail(c, 502, 'the email could not be sent');
+  if (!r.ok) {
+    const why = await r.json().catch(() => ({}));
+    console.log('resend error', r.status, JSON.stringify(why));
+    return fail(c, 502, `the email could not be sent (${r.status}${why.message ? ': ' + why.message : ''})`);
+  }
   return c.json({ sent: true });
 });
 

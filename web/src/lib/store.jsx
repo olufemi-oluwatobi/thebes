@@ -106,7 +106,7 @@ export function StoreProvider({ children }) {
       openSetup: (k, then) => patch((s) => { s.setup = k; s.setupThen = then || null; }),
       async signIn(email) {
         try { return await api('/auth/start', { method: 'POST', body: { email } }); }
-        catch (e) { toast(e.status === 503 ? "Sign-in emails aren't switched on yet. Please try again soon." : e.status === 502 ? "We couldn't send the email. Check the address and try again." : e.message); return null; }
+        catch (e) { toast(e.status === 503 ? "Sign-in emails aren't switched on yet. Please try again soon." : e.status === 502 ? "We couldn't send the email. " + ((e.message.match(/\((.*)\)$/) || [])[1] || "Check the address and try again.") : e.message); return null; }
       },
       async signOut() { await run(() => api('/auth/signout', { method: 'POST' })); location.hash = 'feed'; location.reload(); },
       async setupProfile(kind, f) {
