@@ -21,9 +21,9 @@
   "rules": [{ "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }],
   "observability": { "enabled": true },
   "vars": {
-    "APP_URL": "https://gorillasquad.co",   // tracked links are built from this (empty: the address the request came in on)
+    "APP_URL": "https://gorillasquad.xyz",   // tracked links are built from this (empty: the address the request came in on)
     "EMAIL_MODE": "resend",               // "resend" sends sign-in links (secret RESEND_API_KEY); "show" returns them (local only)
-    "EMAIL_FROM": "Gorilla Squad <hello@gorillasquad.co>",
+    "EMAIL_FROM": "Gorilla Squad <hello@gorillasquad.xyz>",
     "ADMIN_EMAILS": "",                   // comma-separated: these accounts become admins when they sign in
     "AI_MODE": "live"                     // "live" uses Workers AI to word and colour designs; "off" uses the template defaults
   },
