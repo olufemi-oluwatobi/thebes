@@ -1,60 +1,77 @@
 import { useEffect, useState } from 'react';
 import { useStore, prodOf } from '../lib/store.jsx';
 import { go } from '../lib/router.js';
-import { TYPES, GOALS, SYM, FEE, money, kindOf, bgFor, PLATFORMS, COUNTRIES } from '../lib/data.js';
+import { TYPES, GOALS, NEW_GOALS, SYM, FEE, money, kindOf, bgFor, PLATFORMS, COUNTRIES } from '../lib/data.js';
+import { GoalIcon } from '../ui/goals.jsx';
 import { Page, PageTitle, Card, Rows, Button, Input, Textarea, Field, Switch, Segmented, Pills, Select, Radio, Ic, ProductArt, Art, Sheet, Avatar, Chip, cx } from '../ui/index.jsx';
 import { Stepper, useGate, takeDraft, fileToData, dataToFile } from '../ui/wizard.jsx';
-import { CropSheet } from '../ui/crop.jsx';
 
-const GOAL_ICON = { attention: Ic.Share, commission: Ic.Wallet, introduction: Ic.Me };
-const DEFAULTS = { attention: { rate: '0.10', per: 'click' }, commission: { percent: '15', cookie_days: '30' }, introduction: { share_percent: '10', min_contract: '' } };
-const TITLE = { attention: (p) => 'Get the word out about ' + p, commission: (p) => 'Sell ' + p + ' and earn on every sale', introduction: (p) => 'Introduce ' + p + ' to companies that need it' };
-const TODO = { attention: 'e.g. Post a short video or story showing how you use it. Add your link in the caption. No spam groups.', commission: 'e.g. Share your link with people who would actually buy it. Tell them what you like about it.', introduction: 'e.g. Connect us with the person who buys tools like this at your company or a client\'s.' };
-const empty = (pid) => ({ step: pid ? 2 : 1, pid: pid || null, type: null, terms: {}, budgetOn: false, cur: 'USD', budget: '', cap: '', platforms: [], minf: 0, countries: [], verified: false, title: '', desc: '', thumb: 'product', thumbFile: null, thumbUrl: null });
-// the terms the API stores (money in cents)
-const termsOf = (L) => { const t = { ...DEFAULTS[L.type], ...L.terms };
-  if (L.type === 'attention') return { rate_cents: Math.round(+t.rate * 100), per: t.per };
-  if (L.type === 'commission') return { percent: +t.percent, ...(t.cookie_days ? { cookie_days: +t.cookie_days } : {}) };
-  return { share_percent: +t.share_percent, ...(t.min_contract ? { min_contract_cents: Math.round(+t.min_contract * 100) } : {}) }; };
+// each goal: its reward fields (entered in currency units), suggested amounts and who it suits by default
+const DEF = {
+  traffic: { terms: { rate: '0.10', daily_cap: '' }, platforms: [], minf: 0, delivery: null },
+  sales: { terms: { mode: 'percent', percent: '15', amount: '' }, platforms: [], minf: 0, delivery: null },
+  newsletter: { terms: { rate: '0.50' }, platforms: [], minf: 0, delivery: null },
+  story: { terms: { fee: '10' }, platforms: ['instagram', 'whatsapp', 'tiktok', 'facebook'], minf: 0, delivery: 'social_post' },
+  review: { terms: { fee: '50' }, platforms: ['youtube', 'tiktok', 'instagram'], minf: 1000, delivery: 'video' },
+};
+const TITLE = { traffic: (p) => 'Send people to ' + p, sales: (p) => 'Sell ' + p + ' and earn on every order', newsletter: (p) => 'Grow the ' + p + ' newsletter', story: (p) => 'Put ' + p + ' in your story', review: (p) => 'Review ' + p + ' on video' };
+const UNIT = { traffic: 'click', sales: 'sale', newsletter: 'subscriber', story: 'story', review: 'video' };
+const PROOF = { traffic: 'Counted automatically through their link.', sales: 'Counted through their link. Paid once the order clears.', newsletter: 'Counted through their sign-up link.', story: 'They send a screenshot and link. You approve it.', review: 'They send the video link. You approve it.' };
+const empty = (pid) => ({ step: pid ? 2 : 1, pid: pid || null, type: null, terms: {}, budgetOn: false, cur: 'USD', budget: '', cap: '', platforms: [], minf: 0, countries: [], verified: false, verifiedSocials: false, max: 0, delivery: null, title: '', files: [] });
 const cents = (v) => Math.round((+v || 0) * 100);
+// the terms the API stores (money in cents)
+const termsOf = (L) => { const t = { ...DEF[L.type]?.terms, ...L.terms };
+  if (L.type === 'traffic') return { rate_cents: cents(t.rate), ...(+t.daily_cap ? { daily_cap: Math.round(+t.daily_cap) } : {}) };
+  if (L.type === 'sales') return t.mode === 'fixed' ? { amount_cents: cents(t.amount) } : { percent: +t.percent };
+  if (L.type === 'newsletter') return { rate_cents: cents(t.rate) };
+  return { fee_cents: cents(t.fee) }; };
+const unitCents = (t) => t.rate_cents || t.amount_cents || t.fee_cents || 0;
 
 export default function NewListing({ pid }) {
   const { S, a } = useStore(), gate = useGate();
-  const [L, setL] = useState(() => empty(pid)), [busy, setBusy] = useState(false), [prev, setPrev] = useState(false), [cropFile, setCropFile] = useState(null);
+  const [L, setL] = useState(() => empty(pid)), [busy, setBusy] = useState(false), [prev, setPrev] = useState(false);
   const set = (x) => setL(q => ({ ...q, ...x }));
   useEffect(() => { if (S.auth === 'in' && a.hasSeller && !S.myProductIds) a.loadSeller(); }, [S.auth, a.hasSeller]);
   useEffect(() => { if (pid && !prodOf(S, pid)?.full) a.loadProduct(pid); }, [pid]);
-  useEffect(() => { const d = takeDraft(); if (!d?.L) return; const { thumbData, ...rest } = d.L; setL({ ...empty(pid), ...rest }); if (thumbData) dataToFile(thumbData).then(f => setL(q => ({ ...q, thumbFile: f, thumbUrl: URL.createObjectURL(f) }))); a.toast('Welcome back. Your listing is still here.'); }, []);
+  useEffect(() => { const d = takeDraft(); if (!d?.L) return; const { fileData, ...rest } = d.L; setL({ ...empty(pid), ...rest, files: [] });
+    if (fileData?.length) Promise.all(fileData.map(dataToFile)).then(fs => setL(q => ({ ...q, files: fs.filter(Boolean).map(f => ({ file: f, url: URL.createObjectURL(f) })) })));
+    a.toast('Welcome back. Your listing is still here.'); }, []);
   const p = L.pid ? prodOf(S, L.pid) : null, products = (S.myProductIds || []).map(id => prodOf(S, id)).filter(Boolean);
-  const steps = pid ? ['Goal', 'Reward', 'Creators', 'Details', 'Review'] : ['Product', 'Goal', 'Reward', 'Creators', 'Details', 'Review'];
+  const steps = pid ? ['Goal', 'Reward', 'Creators', 'Brief', 'Review'] : ['Product', 'Goal', 'Reward', 'Creators', 'Brief', 'Review'];
   const st = L.step, idx = pid ? st - 1 : st, T = L.type ? TYPES[L.type] : null, t = L.type ? termsOf(L) : null;
   const budget = L.budgetOn ? cents(L.budget) : null, cap = L.budgetOn && L.cap ? cents(L.cap) : null, fee = budget ? Math.round(budget * FEE / 10000) : 0;
-  const tv = (k) => (L.terms[k] ?? DEFAULTS[L.type]?.[k] ?? '');
+  const tv = (k) => (L.terms[k] ?? DEF[L.type]?.terms?.[k] ?? '');
   const setT = (k, v) => set({ terms: { ...L.terms, [k]: v } });
-  const thumb = L.thumb === 'upload' ? L.thumbUrl : L.thumb === 'product' ? p?.img : L.thumb;
+  const thumb = p?.img;
+  const pickGoal = (k) => set({ type: k, terms: {}, platforms: DEF[k].platforms, minf: DEF[k].minf, delivery: DEF[k].delivery, step: 3 });
+  const addFiles = (e) => { const fs = [...e.target.files]; e.target.value = '';
+    const ok = fs.filter(f => /^(image|video)\//.test(f.type) && f.size <= (f.type.startsWith('video/') ? 50 : 5) * 1048576);
+    if (ok.length < fs.length) a.toast('Images up to 5 MB, videos up to 50 MB');
+    set({ files: [...L.files, ...ok.map(f => ({ file: f, url: URL.createObjectURL(f) }))].slice(0, 6) }); };
 
   const valid = () => {
     if (st === 1) return !L.pid && 'Pick a product, or add a new one';
     if (st === 2) return !L.type && 'Pick what you want creators to do';
     if (st === 3) {
-      if (L.type === 'attention' && !(+tv('rate') >= 0.01)) return 'The rate must be at least ' + SYM[L.cur].trim() + '0.01';
-      if (L.type === 'commission' && !(+tv('percent') >= 1 && +tv('percent') <= 90)) return 'Commission is between 1% and 90%';
-      if (L.type === 'introduction' && !(+tv('share_percent') >= 1 && +tv('share_percent') <= 50)) return 'The share is between 1% and 50%';
+      if (L.type === 'sales' && tv('mode') === 'percent' && !(+tv('percent') >= 1 && +tv('percent') <= 90)) return 'Commission is between 1% and 90%';
+      if (L.type === 'sales' && tv('mode') === 'fixed' && !(+tv('amount') >= 0.01)) return 'Enter what each sale pays';
+      if (['traffic', 'newsletter'].includes(L.type) && !(+tv('rate') >= 0.01)) return 'The rate must be at least ' + SYM[L.cur].trim() + '0.01';
+      if (['story', 'review'].includes(L.type) && !(+tv('fee') >= 1)) return 'The fee must be at least ' + SYM[L.cur].trim() + '1';
       if (L.budgetOn && !(+L.budget >= 1)) return 'Enter a budget, or turn it off';
       if (cap && cap > budget) return 'The cap per creator cannot be more than the budget';
     }
-    if (st === 5 && L.title.trim() && L.title.trim().length < 3) return 'The title needs at least 3 characters';
+    if (st === 5 && L.title.trim() && L.title.trim().length < 3) return 'The name needs at least 3 characters';
     return null;
   };
-  const publish = async () => { setBusy(true); const id = await a.addOffer({ ...L, title: L.title.trim() || TITLE[L.type](p.name), desc: L.desc.trim(), terms: t, budget, cap, thumbFile: L.thumb === 'upload' ? L.thumbFile : null, thumbMediaId: !['product', 'upload'].includes(L.thumb) ? (L.thumb.match(/media\/([^/]+)\/file/) || [])[1] : null }, p); setBusy(false); if (id) go('offer/' + id); };
+  const publish = async () => { setBusy(true); const id = await a.addOffer({ ...L, title: L.title.trim() || TITLE[L.type](p.name), terms: t, budget, cap }, p); setBusy(false); if (id) go('offer/' + id); };
   const next = () => {
     const err = valid(); if (err) return a.toast(err);
     if (st < 6) return set({ step: st + 1 });
     if (busy) return;
-    if (gate('seller', publish, async () => ({ L: { ...L, thumbFile: null, thumbUrl: null, thumbData: await fileToData(L.thumbFile) } }))) publish();
+    if (gate('seller', publish, async () => ({ L: { ...L, files: [], fileData: (await Promise.all(L.files.filter(f => f.file.size < 2 * 1048576).map(f => fileToData(f.file)))).filter(Boolean) } }))) publish();
   };
   const back = () => st > (pid ? 2 : 1) ? set({ step: st - 1 }) : go('plus');
-  const titles = { 1: ['Which product is this listing for?', 'A listing is one ask for one product. You can make several per product.'], 2: ['What do you want the community to do?', 'Pick one. You can make another listing for a different ask.'], 3: ['How do you want to reward them?', 'What a creator earns, and whether you put in a budget.'], 4: ['What kind of creator?', 'Leave it open to get more applicants. You still accept each one.'], 5: ['Listing details', 'The title and brief creators see before they apply.'], 6: ['Review and publish', budget ? "We'll email you how to pay the budget. The listing goes live once it lands." : 'No payment needed. Your listing goes live right away.'] }[st];
+  const titles = { 1: ['Which product is this listing for?', 'A listing is one ask for one product. You can make several per product.'], 2: ['What do you want the community to do for you?', 'One goal per listing. Make another listing for a different goal.'], 3: ['How do you want to reward them?', 'You only pay for results. Set the amount and an optional budget.'], 4: ['What kind of creator?', 'Leave it open to get more applicants. You still accept each one.'], 5: ['Name your listing', 'Links and details come from your product. Attach anything that helps.'], 6: ['Review and publish', budget ? "We'll email you how to pay the budget. The listing goes live once it lands." : 'No payment needed. Your listing goes live right away.'] }[st];
   const label = st === 6 ? (busy ? 'Publishing…' : budget ? 'Submit · pay ' + money(budget + fee, L.cur) : 'Publish listing') : 'Continue';
 
   return (
@@ -70,57 +87,60 @@ export default function NewListing({ pid }) {
               {products.map(x => <button key={x.id} onClick={() => set({ pid: x.id, step: 2 })} className={cx('relative flex flex-col overflow-hidden rounded-card bg-paper text-left transition hover:shadow-lift', L.pid === x.id && 'ring-2 ring-army')}><ProductArt p={x} fit="70%" className="aspect-[4/3] w-full" /><span className="p-4"><span className="line-clamp-1 block font-semibold">{x.name}</span><span className="text-caption text-ink-soft">{kindOf(x.kind)[1]}</span></span></button>)}
             </div>)}
           {st === 2 && (
-            <div className="flex flex-col gap-4">{GOALS.map(([k, h, d, , ex]) => { const I = GOAL_ICON[k], on = L.type === k; return (
-              <button key={k} onClick={() => set({ type: k, terms: {}, step: 3 })} className={cx('flex items-start gap-4 rounded-card bg-paper p-5 text-left transition hover:shadow-lift', on && 'ring-2 ring-army')}>
-                <span className={cx('grid h-12 w-12 shrink-0 place-items-center rounded-2xl', on ? 'bg-army text-sage' : 'bg-sage-50 text-army')}><I /></span>
-                <span className="min-w-0 flex-1"><span className="block text-subhead font-semibold">{h}</span><span className="mt-0.5 block text-small text-ink-soft">{d}</span><span className="mt-2 block text-caption text-ink-faint">{ex}</span></span><Radio on={on} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{NEW_GOALS.map(([k, h, d]) => { const on = L.type === k; return (
+              <button key={k} onClick={() => pickGoal(k)} aria-pressed={on} className={cx('flex aspect-square flex-col items-center justify-center gap-3 rounded-card bg-paper p-4 text-center transition', on ? 'ring-2 ring-army' : 'hover:bg-cream-100')}>
+                <GoalIcon k={k} className="h-16 w-16 sm:h-20 sm:w-20" />
+                <span><span className="block font-semibold leading-tight">{h}</span><span className="mt-1 hidden text-caption text-ink-soft sm:block">{d}</span></span>
               </button>); })}</div>)}
           {st === 3 && T && (<>
-            <Card title={L.type === 'attention' ? 'Pay per result' : L.type === 'commission' ? 'Commission' : 'Share of the contract'} sub={GOALS.find(g => g[0] === L.type)[2]}>
-              {L.type === 'attention' && <div className="grid gap-5 sm:grid-cols-2"><Field label="Rate" help="What one result earns a creator."><Input type="number" min="0.01" step="0.01" pre={SYM[L.cur].trim()} value={tv('rate')} onChange={e => setT('rate', e.target.value)} /></Field><Field label="For each"><Segmented value={tv('per')} onChange={v => setT('per', v)} items={[['click', 'Click'], ['view', 'View'], ['post', 'Post']]} /></Field></div>}
-              {L.type === 'commission' && <div className="grid gap-5 sm:grid-cols-2"><Field label="Commission" help="Of each sale a creator brings."><Input type="number" min="1" max="90" suf="%" value={tv('percent')} onChange={e => setT('percent', e.target.value)} /></Field><Field label="Attribution window" help="How long a click counts."><Input type="number" min="1" max="365" suf="days" value={tv('cookie_days')} onChange={e => setT('cookie_days', e.target.value)} /></Field></div>}
-              {L.type === 'introduction' && <div className="grid gap-5 sm:grid-cols-2"><Field label="Creator's share" help="Of a contract they help you sign."><Input type="number" min="1" max="50" suf="%" value={tv('share_percent')} onChange={e => setT('share_percent', e.target.value)} /></Field><Field label="Minimum contract" aside={<span className="text-caption text-ink-faint">Optional</span>}><Input type="number" min="0" pre={SYM[L.cur].trim()} placeholder="Any size" value={tv('min_contract')} onChange={e => setT('min_contract', e.target.value)} /></Field></div>}
+            <Card title={GOALS.find(g => g[0] === L.type)[1]} sub={'You pay for: ' + GOALS.find(g => g[0] === L.type)[3].toLowerCase() + '. ' + PROOF[L.type]}>
+              {L.type === 'traffic' && <div className="grid gap-5 sm:grid-cols-2"><Field label="Per click"><Input type="number" min="0.01" step="0.01" pre={SYM[L.cur].trim()} value={tv('rate')} onChange={e => setT('rate', e.target.value)} /></Field><Field label="Daily limit per creator" aside={<span className="text-caption text-ink-faint">Optional</span>}><Input type="number" min="1" suf="clicks" placeholder="No limit" value={tv('daily_cap')} onChange={e => setT('daily_cap', e.target.value)} /></Field></div>}
+              {L.type === 'sales' && <div className="flex flex-col gap-5"><Segmented value={tv('mode')} onChange={v => setT('mode', v)} items={[['percent', '% of each order'], ['fixed', 'Fixed per sale']]} />
+                {tv('mode') === 'percent' ? <Field label="Commission" help="Of each order a creator brings."><Input type="number" min="1" max="90" suf="%" value={tv('percent')} onChange={e => setT('percent', e.target.value)} /></Field>
+                  : <Field label="Per sale"><Input type="number" min="0.01" step="0.01" pre={SYM[L.cur].trim()} placeholder="5.00" value={tv('amount')} onChange={e => setT('amount', e.target.value)} /></Field>}</div>}
+              {L.type === 'newsletter' && <Field label="Per subscriber"><Input type="number" min="0.01" step="0.01" pre={SYM[L.cur].trim()} value={tv('rate')} onChange={e => setT('rate', e.target.value)} /></Field>}
+              {(L.type === 'story' || L.type === 'review') && <Field label={L.type === 'story' ? 'Per story' : 'Per video'}><Input type="number" min="1" step="1" pre={SYM[L.cur].trim()} value={tv('fee')} onChange={e => setT('fee', e.target.value)} /></Field>}
             </Card>
             <Card><div className="flex flex-col gap-5">
               <Switch on={L.budgetOn} onChange={v => set({ budgetOn: v })} label="Put in a budget" sub="Creators trust funded listings more. Off means you pay each creator directly." />
               {L.budgetOn && <><div className="h-px bg-cream-100" /><div className="grid gap-5 sm:grid-cols-2"><Field label="Currency"><Select value={L.cur} onChange={v => set({ cur: v })} options={Object.keys(SYM).map(c => [c, c])} /></Field><Field label="Total budget"><Input type="number" min="1" pre={SYM[L.cur].trim()} placeholder="1,000" value={L.budget} onChange={e => set({ budget: e.target.value })} /></Field></div>
                 <div className="grid gap-5 sm:grid-cols-2"><Field label="Max per creator" aside={<span className="text-caption text-ink-faint">Optional</span>} help="Stops one creator using it all."><Input type="number" min="1" pre={SYM[L.cur].trim()} placeholder="No limit" value={L.cap} onChange={e => set({ cap: e.target.value })} /></Field></div>
-                {budget > 0 && <div className="rounded-2xl bg-cream-50 p-4"><Rows rows={[['Budget', money(budget, L.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, L.cur)], ['Total to pay', <span className="text-heading">{money(budget + fee, L.cur)}</span>]]} /><p className="mt-3 text-small text-sage-700">{L.type === 'attention' ? 'Pays for about ' + Math.floor(budget / Math.max(1, t.rate_cents)).toLocaleString() + ' ' + t.per + 's.' : L.type === 'commission' ? 'Covers ' + money(Math.round(budget / (t.percent / 100)), L.cur) + ' in sales.' : 'Covers ' + money(budget, L.cur) + ' in contract shares.'}</p></div>}</>}
+                {budget > 0 && <div className="rounded-2xl bg-cream-50 p-4"><Rows rows={[['Budget', money(budget, L.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, L.cur)], ['Total to pay', <span className="text-heading">{money(budget + fee, L.cur)}</span>]]} /><p className="mt-3 text-small text-sage-700">{t.percent ? 'Covers about ' + money(Math.round(budget / (t.percent / 100)), L.cur) + ' in sales.' : 'Pays for about ' + Math.floor(budget / Math.max(1, unitCents(t))).toLocaleString() + ' ' + (UNIT[L.type] === 'story' ? 'stories' : UNIT[L.type] + 's') + '.'}</p></div>}</>}
             </div></Card>
           </>)}
           {st === 4 && (
             <Card><div className="flex flex-col gap-6">
-              <Field label="Where should they post?" help="Leave all off to accept any platform."><Pills multi value={L.platforms} onChange={c => set({ platforms: L.platforms.includes(c) ? L.platforms.filter(x => x !== c) : [...L.platforms, c] })} items={PLATFORMS} /></Field>
+              <Field label="Where should they post?" help={L.delivery ? 'Suggested for this goal. Leave all off to accept any platform.' : 'Leave all off to accept any platform.'}><Pills multi value={L.platforms} onChange={c => set({ platforms: L.platforms.includes(c) ? L.platforms.filter(x => x !== c) : [...L.platforms, c] })} items={PLATFORMS} /></Field>
               <Field label="Audience size"><Pills value={String(L.minf)} onChange={v => set({ minf: +v })} items={[['0', 'Any size'], ['1000', '1k+'], ['10000', '10k+'], ['50000', '50k+'], ['100000', '100k+']]} /></Field>
               <Field label="Where they're based" help="Leave all off to accept creators anywhere."><Pills multi value={L.countries} onChange={c => set({ countries: L.countries.includes(c) ? L.countries.filter(x => x !== c) : [...L.countries, c] })} items={COUNTRIES} /></Field>
+              <Field label="How many creators"><Pills value={String(L.max)} onChange={v => set({ max: +v })} items={[['0', 'No limit'], ['5', '5'], ['10', '10'], ['25', '25'], ['50', '50']]} /></Field>
               <div className="h-px bg-cream-100" />
-              <Switch on={L.verified} onChange={v => set({ verified: v })} label="Verified creators only" sub="Only accounts an admin has checked can apply." />
+              <Switch on={L.verifiedSocials} onChange={v => set({ verifiedSocials: v })} label="Verified accounts only" sub="Follower counts are checked by us, not just claimed." />
+              <Switch on={L.verified} onChange={v => set({ verified: v })} label="Verified creators only" sub="The creator's identity has been checked." />
             </div></Card>)}
           {st === 5 && p && (<>
-            <Card><div className="flex flex-col gap-5">
-              <Field label="Title"><Input value={L.title} maxLength={120} onChange={e => set({ title: e.target.value })} placeholder={TITLE[L.type](p.name)} /></Field>
-              <Field label="What should creators do?" help="Where to share it, what to say, what to avoid." aside={<span className="text-caption text-ink-faint">{L.desc.length}/2000</span>}><Textarea maxLength={2000} value={L.desc} onChange={e => set({ desc: e.target.value })} placeholder={TODO[L.type]} /></Field>
-            </div></Card>
-            <Card title="Thumbnail" sub="What people see in the feed.">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {[['product', p.img], ...(p.images || []).filter(u => u && u !== p.img).map(u => [u, u])].map(([key, src]) => (
-                  <button key={key} onClick={() => set({ thumb: key })} className={cx('relative aspect-[4/3] overflow-hidden rounded-2xl transition', L.thumb === key ? '' : 'opacity-70 hover:opacity-100')}>{L.thumb === key && <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-army text-onarmy"><Ic.Check width="13" height="13" /></span>}{src ? <img src={src} alt="" className="h-full w-full object-cover" /> : <ProductArt p={p} fit="70%" className="h-full w-full" />}{key === 'product' && <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/50 px-1.5 text-[11px] font-semibold text-onarmy">Cover</span>}</button>))}
-                {L.thumbUrl && <button onClick={() => set({ thumb: 'upload' })} className={cx('relative aspect-[4/3] overflow-hidden rounded-2xl', L.thumb === 'upload' ? '' : 'opacity-70 hover:opacity-100')}>{L.thumb === 'upload' && <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-army text-onarmy"><Ic.Check width="13" height="13" /></span>}<img src={L.thumbUrl} alt="" className="h-full w-full object-cover" /></button>}
-                <label className="grid aspect-[4/3] cursor-pointer place-items-center rounded-2xl border-2 border-dashed border-cream-300 text-center text-caption font-semibold text-ink-soft hover:border-army/40"><span className="flex flex-col items-center gap-1"><Ic.Up width="18" height="18" />Upload</span><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; if (f.size > 5 * 1048576) return a.toast('Images can be up to 5 MB'); setCropFile(f); }} /></label>
+            <Card><Field label="Listing name"><Input value={L.title} maxLength={120} onChange={e => set({ title: e.target.value })} placeholder={TITLE[L.type](p.name)} /></Field></Card>
+            <Card title="Attachments" sub="Optional. Photos, clips or anything creators should see. Up to 6.">
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {L.files.map((f, i) => (
+                  <div key={f.url} className="relative aspect-[4/3] overflow-hidden rounded-xl bg-cream-100">
+                    {f.file.type.startsWith('video/') ? <video src={f.url} muted playsInline className="h-full w-full object-cover" /> : <img src={f.url} alt="" className="h-full w-full object-cover" />}
+                    <button aria-label="Remove" onClick={() => set({ files: L.files.filter((_, j) => j !== i) })} className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/55 text-white"><Ic.X_ width="14" height="14" /></button>
+                  </div>))}
+                {L.files.length < 6 && <label className="grid aspect-[4/3] cursor-pointer place-items-center rounded-xl border-2 border-dashed border-cream-300 text-center text-caption font-semibold text-ink-soft hover:border-army/40"><span className="flex flex-col items-center gap-1"><Ic.Up width="18" height="18" />Add</span><input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/quicktime,video/webm" className="sr-only" onChange={addFiles} /></label>}
               </div>
             </Card>
           </>)}
           {st === 6 && p && (<>
             <div className="lg:hidden"><FeedPreview L={L} p={p} thumb={thumb} /></div>
-            <Card title="What you're asking" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 2 })}>Edit</button>}><Rows rows={[['Product', p.name], ['Goal', GOALS.find(g => g[0] === L.type)[1]], ['Reward', T.reward(t, L.cur) + ' ' + T.sub(t, L.cur)]]} /></Card>
-            <Card title="Who can apply" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 4 })}>Edit</button>}><Rows rows={[['Platforms', L.platforms.length ? L.platforms.map(x => PLATFORMS.find(q => q[0] === x)[1]).join(', ') : 'Any'], ['Audience', L.minf ? L.minf.toLocaleString() + '+ followers' : 'Any size'], ['Based in', L.countries.length ? L.countries.join(', ') : 'Anywhere'], ['Verified only', L.verified ? 'Yes' : 'No']]} /></Card>
+            <Card title="What you're asking" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 2 })}>Edit</button>}><Rows rows={[['Product', p.name], ['Goal', GOALS.find(g => g[0] === L.type)[1]], ['Reward', T.reward(t, L.cur) + ' ' + T.sub(t, L.cur)], ['Name', L.title.trim() || TITLE[L.type](p.name)], L.files.length > 0 && ['Attachments', L.files.length + ' file' + (L.files.length > 1 ? 's' : '')]]} /></Card>
+            <Card title="Who can apply" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 4 })}>Edit</button>}><Rows rows={[['Platforms', L.platforms.length ? L.platforms.map(x => PLATFORMS.find(q => q[0] === x)[1]).join(', ') : 'Any'], ['Audience', L.minf ? L.minf.toLocaleString() + '+ followers' : 'Any size'], ['Based in', L.countries.length ? L.countries.join(', ') : 'Anywhere'], ['How many', L.max ? 'Up to ' + L.max : 'No limit'], ['Verified', [L.verifiedSocials && 'Accounts', L.verified && 'Creators'].filter(Boolean).join(' and ') || 'Not required']]} /></Card>
             <Card title="Payment" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}>{budget ? <Rows rows={[['Budget', money(budget, L.cur)], cap && ['Max per creator', money(cap, L.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, L.cur)], ['Total to pay', <span className="text-heading">{money(budget + fee, L.cur)}</span>]]} /> : <Rows rows={[['Budget', 'None, you pay creators directly']]} />}</Card>
           </>)}
         </div>
         <aside className="hidden lg:block"><div className="sticky top-0">{p && st > 1 ? <FeedPreview L={L} p={p} thumb={thumb} /> : null}</div></aside>
       </div>
       <Sheet open={prev} onClose={() => setPrev(false)} title="Feed preview">{p && <FeedPreview L={L} p={p} thumb={thumb} />}</Sheet>
-      <CropSheet file={cropFile} title="Fit your thumbnail" onCancel={(m) => { if (m) a.toast(m); setCropFile(null); }} onDone={(f, url) => { setCropFile(null); set({ thumb: 'upload', thumbFile: f, thumbUrl: url }); }} />
     </Page>
   );
 }

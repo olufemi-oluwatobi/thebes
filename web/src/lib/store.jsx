@@ -21,9 +21,9 @@ export function productA(p, media = []) {
 export function offerA(o) {
   const f = o.financials || {}, r = o.requirements || {};
   return {
-    id: o.id, pid: o.product_id, cover: o.cover || null, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
+    id: o.id, pid: o.product_id, cover: o.cover || null, files: o.attachments || [], max: o.max_relationships || null, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
     co: o.company?.name || o.product?.name || 'Seller', coV: !!(o.company?.is_verified || o.seller_verified),
-    req: { min_followers: r.min_followers || 0, countries: r.countries || [], platforms: r.platforms || [], verified_only: !!r.verified_only },
+    req: { min_followers: r.min_followers || 0, countries: r.countries || [], platforms: r.platforms || [], verified_only: !!r.verified_only, verified_socials: !!r.verified_socials, delivery_types: r.delivery_types || [] },
     fin: { cur: f.currency || 'USD', budget: f.budget_cents ?? null, cap: f.payout_cap_cents ?? null, funded: f.funding_status === 'funded', spent: f.spent_cents || 0, fee: f.listing_fee_cents || 0, due: f.payment_due_cents || 0 },
     eligible: o.eligible, reasons: o.reasons || [], myInterest: o.my_interest && typeof o.my_interest === 'object' ? o.my_interest : o.my_interest ? { status: o.my_interest } : null,
     myRel: o.my_relationship || null, mine: !!o.is_owner, full: !!o.full, pending: o.pending_interests || 0, active: o.active_relationships || 0, created: o.created_at,
@@ -234,11 +234,13 @@ export function StoreProvider({ children }) {
         return id;
       },
       async addOffer(L, p) {
-        let cover_media_id = L.thumbMediaId || undefined;
-        if (L.thumbFile) { const m = await act.uploadMedia(L.thumbFile, 'image'); if (!m) return null; cover_media_id = m.id; }
-        const budget = L.budget, body = { product_id: p.id, offer_type: L.type, title: L.title || 'Promote ' + p.name, description: L.desc || undefined, terms: L.terms,
-          requirements: { min_followers: +L.minf || undefined, countries: L.countries.length ? L.countries : undefined, platforms: L.platforms.length ? L.platforms : undefined, verified_only: L.verified || undefined },
-          status: budget ? 'draft' : 'open', currency: L.cur, cover_media_id, ...(budget ? { budget_cents: budget } : {}), ...(L.cap ? { payout_cap_cents: L.cap } : {}) };
+        const files = [];
+        for (const f of L.files || []) { const m = await act.uploadMedia(f.file, f.file.type.startsWith('video/') ? 'video' : 'image'); if (!m) return null; files.push(m.id); }
+        const budget = L.budget, body = { product_id: p.id, offer_type: L.type, title: L.title || 'Promote ' + p.name, terms: L.terms, attachments: files,
+          requirements: { min_followers: +L.minf || undefined, countries: L.countries.length ? L.countries : undefined, platforms: L.platforms.length ? L.platforms : undefined,
+            verified_only: L.verified || undefined, verified_socials: L.verifiedSocials || undefined, delivery_types: L.delivery ? [L.delivery] : undefined },
+          ...(L.max ? { max_relationships: L.max } : {}),
+          status: budget ? 'draft' : 'open', currency: L.cur, ...(budget ? { budget_cents: budget } : {}), ...(L.cap ? { payout_cap_cents: L.cap } : {}) };
         const r = await run(() => api('/squad/offers', { method: 'POST', body }));
         if (!r) return null;
         putOffers([{ ...offerA(r.offer), mine: true, co: me?.companies?.[0]?.name || p.name }]);
@@ -327,6 +329,7 @@ export function elig(o, a) {
   if (r.min_followers) res.push({ ok: !bad('account'), t: r.min_followers.toLocaleString() + '+ followers', you: a?.me ? 'You have ' + a.me.followers.toLocaleString() : '' });
   if (r.countries?.length) res.push({ ok: !bad('based'), t: 'Based in ' + r.countries.join(' / '), you: a?.me?.country ? 'You are in ' + a.me.country : '' });
   if (r.platforms?.length) res.push({ ok: !bad('account'), t: 'Posts on ' + r.platforms.map((p) => PLATFORMS.find((x) => x[0] === p)?.[1] || p).join(' or '), you: !a?.me ? '' : a.me.socials.length ? 'You have ' + a.me.socials.map((x) => PLATFORMS.find((q) => q[0] === x.platform)?.[1] || x.platform).join(', ') : 'Add your accounts in Profile' });
+  if (r.verified_socials && !r.verified_only) res.push({ ok: !bad('verified'), t: 'A verified account', you: a?.me ? (a.me.socials.some((x) => x.is_verified) ? 'You have one' : 'None verified yet') : '' });
   if (r.verified_only) res.push({ ok: !bad('verified'), t: 'Verified marketers', you: a?.me ? (a.me.verified ? 'You are verified' : 'Not verified yet') : '' });
   return { ok: known ? !!o.eligible : true, res, known };
 }

@@ -109,7 +109,7 @@ function Panel({ d }) {
             <div key={x.id} className={cx('flex min-h-[64px] items-center gap-3', i && 'border-t border-cream-100')}>
               {x.media ? <button onClick={() => setVid(x)} className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-army text-onarmy"><Ic.Play width="14" height="14" /></button> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cream-100 text-ink-soft"><Ic.Globe width="18" height="18" /></span>}
               <div className="min-w-0 flex-1"><div className="text-small font-semibold">{x.kind}{x.amount ? <span className="tnum text-sage-700"> · {money(x.amount, cur)}</span> : ''}</div>{x.url ? <a href={x.url} target="_blank" rel="noopener" className="block truncate text-caption text-ink-soft hover:underline">{x.url.replace(/^https?:\/\//, '')}</a> : <div className="truncate text-caption text-ink-soft">{x.status === 'rejected' && x.note ? x.note : x.proof}</div>}</div>
-              {seller && x.status === 'pending' ? <Button size="sm" onClick={() => { setVer(x); setAmt(''); setNote(''); }}>Review</Button> : <Status s={x.status} />}
+              {seller && x.status === 'pending' ? <Button size="sm" onClick={() => { setVer(x); setAmt(o.terms?.fee_cents ? (o.terms.fee_cents / 100).toFixed(2) : ''); setNote(''); }}>Review</Button> : <Status s={x.status} />}
             </div>))}</div>}
         <p className="text-caption text-ink-soft">The seller verifies each delivery before it earns anything.</p>
       </div>)}

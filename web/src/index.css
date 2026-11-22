@@ -31,3 +31,22 @@ input,textarea,select{font:inherit;color:inherit}
   .tnum{font-variant-numeric:tabular-nums}
 }
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}
+/* goal icons */
+.g-ic *{transform-box:fill-box}
+.g-ripple{transform-origin:50% 50%;animation:g-ripple 2s ease-out infinite}
+@keyframes g-ripple{0%{transform:scale(.35);opacity:1}80%,100%{transform:scale(1.25);opacity:0}}
+.g-press{animation:g-press 2s ease-in-out infinite}
+@keyframes g-press{0%,100%{transform:translate(4px,4px)}12%{transform:translate(0,0)}22%{transform:translate(1.5px,1.5px)}}
+.g-coin{animation:g-drop 2.2s ease-in infinite}
+@keyframes g-drop{0%{transform:translateY(-6px);opacity:0}20%{opacity:1}60%{transform:translateY(18px);opacity:1}75%,100%{transform:translateY(22px);opacity:0}}
+.g-letter{animation:g-rise 2.8s ease-in-out infinite}
+@keyframes g-rise{0%,15%{transform:translateY(12px)}50%,75%{transform:translateY(0)}100%{transform:translateY(12px)}}
+.g-ring{transform-origin:50% 50%;animation:g-spin 6s linear infinite}
+@keyframes g-spin{to{transform:rotate(360deg)}}
+.g-bar{transform-origin:0 50%;animation:g-fill 3s ease-in-out infinite}
+@keyframes g-fill{0%{transform:scaleX(.1)}80%,100%{transform:scaleX(1)}}
+.g-rec{animation:g-blink 1.2s steps(2,start) infinite}
+@keyframes g-blink{to{visibility:hidden}}
+.g-star{transform-origin:50% 50%;animation:g-pop 2.4s cubic-bezier(.3,1.6,.5,1) infinite}
+@keyframes g-pop{0%,20%{transform:scale(0)}40%,85%{transform:scale(1)}100%{transform:scale(0)}}
+@media (prefers-reduced-motion:reduce){.g-ic *{animation:none!important;opacity:1!important}}

@@ -9,18 +9,29 @@ import { Gallery, Steps, Player } from '../ui/parts.jsx';
 const HOW = {
   commission: [['Apply', 'Send a short note. The seller reviews it.'], ['Share your link', 'Promote it to your audience in your own words.'], ['Earn per sale', 'Each verified sale pays your commission.']],
   attention: [['Apply', 'Send a short note. The seller reviews it.'], ['Post it', 'Share it and report the proof link or video.'], ['Get paid per result', 'Each verified click or view earns the rate.']],
+  traffic: [['Apply', 'Show the seller where you can share it.'], ['Share your link', 'Every unique, real click is counted.'], ['Get paid', 'Paid per click from the budget.']],
+  sales: [['Apply', 'Tell the seller who would buy it.'], ['Share your link', 'Orders through your link are tracked.'], ['Get paid', 'Your cut lands once the order clears.']],
+  newsletter: [['Apply', 'Show the seller where your readers are.'], ['Share the sign-up', 'Each confirmed subscriber counts.'], ['Get paid', 'Paid per subscriber.']],
+  story: [['Apply', 'Show the seller your account.'], ['Post the story', 'Keep it up for 24 hours, then send proof.'], ['Get paid', 'Paid per story once it is approved.']],
+  review: [['Apply', 'Show the seller your channel.'], ['Post your review', 'Film it, post it, send the link.'], ['Get paid', 'Paid per video once it is approved.']],
   introduction: [['Apply', 'Tell the seller who you can introduce.'], ['Make the intro', 'Connect them with a real buyer.'], ['Share the contract', 'When it signs, you earn your share.']],
 };
-export const fieldLabel = (k) => ({ percent: 'Commission', cookie_days: 'Attribution window', rate_cents: 'Rate', per: 'Paid per', share_percent: 'Your share', min_contract_cents: 'Minimum contract' }[k] || k.replace(/_/g, ' '));
+export const fieldLabel = (k) => ({ daily_cap: 'Daily limit', amount_cents: 'Per sale', fee_cents: 'Per post', percent: 'Commission', cookie_days: 'Attribution window', rate_cents: 'Rate', per: 'Paid per', share_percent: 'Your share', min_contract_cents: 'Minimum contract' }[k] || k.replace(/_/g, ' '));
 export const fmtTerm = (k, v, cur = 'USD') => { switch (k) {
   case 'percent': case 'share_percent': return v + '%';
   case 'cookie_days': return v + ' days';
-  case 'rate_cents': case 'min_contract_cents': return money(v, cur);
+  case 'rate_cents': case 'min_contract_cents': case 'amount_cents': case 'fee_cents': return money(v, cur);
+  case 'daily_cap': return v + ' clicks per creator';
   case 'per': return String(v).charAt(0).toUpperCase() + String(v).slice(1);
   default: return String(v); } };
 export const Bar = ({ pct }) => <div className="h-1.5 overflow-hidden rounded-full bg-cream-100"><i className="block h-full rounded-full bg-sage-700" style={{ width: Math.max(0, Math.min(100, pct || 0)) + '%' }} /></div>;
 // one plain sentence about what a creator earns
-export const earnLine = (type, t, cur) => type === 'attention' ? 'Earn ' + money(t.rate_cents || 0, cur) + ' for every ' + (t.per || 'click') + ' you bring.'
+export const earnLine = (type, t, cur) => type === 'traffic' ? 'Earn ' + money(t.rate_cents || 0, cur) + ' for every real click you bring.'
+  : type === 'sales' ? 'Earn ' + (t.percent ? t.percent + '% of' : money(t.amount_cents || 0, cur) + ' for') + ' every sale you bring.'
+  : type === 'newsletter' ? 'Earn ' + money(t.rate_cents || 0, cur) + ' for every confirmed subscriber.'
+  : type === 'story' ? 'Earn ' + money(t.fee_cents || 0, cur) + ' for each story that stays up 24 hours.'
+  : type === 'review' ? 'Earn ' + money(t.fee_cents || 0, cur) + ' for each review video you post.'
+  : type === 'attention' ? 'Earn ' + money(t.rate_cents || 0, cur) + ' for every ' + (t.per || 'click') + ' you bring.'
   : type === 'commission' ? 'Earn ' + t.percent + '% of every sale you bring' + (t.cookie_days ? ', counted for ' + t.cookie_days + ' days after a click.' : '.')
   : 'Earn ' + t.share_percent + '% of any contract you help sign' + (t.min_contract_cents ? ' (from ' + money(t.min_contract_cents, cur) + ').' : '.');
 const plat = (k) => PLATFORMS.find((p) => p[0] === k)?.[1] || k;
@@ -58,7 +69,8 @@ export default function Offer({ id }) {
         <div className="flex min-w-0 flex-col gap-6">
           <Gallery p={o.cover ? { ...p, images: [o.cover, ...(p.images || []).filter(u => u !== o.cover)] } : p} onDemo={() => setDemo(true)} />
           <Card title={mine ? 'Your brief' : 'The brief'} sub={mine ? 'What creators are asked to do.' : 'What the seller wants you to do.'}>
-            <p className="whitespace-pre-line text-body text-ink/90">{o.desc || (o.type === 'attention' ? 'Post about ' + p.name + ' to your audience and share your link.' : o.type === 'commission' ? 'Share your link with people who would buy ' + p.name + '.' : 'Introduce ' + p.name + ' to a company that needs it.')}</p>
+            <p className="whitespace-pre-line text-body text-ink/90">{o.desc || ({ traffic: 'Share your link to ' + p.name + ' wherever your people are.', sales: 'Share your link with people who would buy ' + p.name + '.', newsletter: 'Get your people to subscribe to ' + p.name + '.', story: 'Feature ' + p.name + ' in a story and keep it up for 24 hours.', review: 'Film an honest review of ' + p.name + ' and post it.', attention: 'Post about ' + p.name + ' to your audience and share your link.', commission: 'Share your link with people who would buy ' + p.name + '.' }[o.type] || 'Introduce ' + p.name + ' to a company that needs it.')}</p>
+            {o.files?.length > 0 && <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">{o.files.map(f => <a key={f.id} href={f.url} target="_blank" rel="noreferrer" className="relative block aspect-[4/3] overflow-hidden rounded-xl bg-cream-100">{f.kind === 'image' ? <img src={f.url} alt="" className="h-full w-full object-cover" /> : <><video src={f.url} muted playsInline preload="metadata" className="h-full w-full object-cover" /><span className="absolute inset-0 grid place-items-center"><span className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white"><Ic.Play width="12" height="12" /></span></span></>}</a>)}</div>}
             <div className="mt-4 flex gap-3 rounded-2xl bg-sage-50 p-4"><Ic.Wallet width="20" height="20" className="shrink-0 text-sage-700" /><p className="text-small font-semibold text-sage-700">{earnLine(o.type, o.terms, F.cur)}</p></div>
           </Card>
           {mine ? (

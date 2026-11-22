@@ -3,6 +3,11 @@ export const CAT_BG={software:['#3b5a3f','#1B2517'],digital:['#6b5a2e','#261f0e'
 export const TYPES={
  commission:{name:'Commission',blurb:'Sell my product, keep a cut of every sale',fields:[['percent','Commission %',15],['cookie_days','Cookie days',30]],reward:t=>t.percent+'%',sub:t=>'of every sale'+(t.cookie_days?' · '+t.cookie_days+'-day cookie':''),unit:'sale'},
  attention:{name:'Attention',blurb:'Post to your audience, get paid per click or view',fields:[['rate_cents','Rate (cents)',5],['per','Paid per','click']],reward:(t,cur='USD')=>money(t.rate_cents||0,cur),sub:t=>'per '+t.per,unit:'click'},
+ traffic:{name:'Traffic',reward:(t,cur='USD')=>money(t.rate_cents||0,cur),sub:t=>'per click'+(t.daily_cap?' · up to '+t.daily_cap+' a day':''),unit:'click'},
+ sales:{name:'Sales',reward:(t,cur='USD')=>t.percent?t.percent+'%':money(t.amount_cents||0,cur),sub:t=>t.percent?'of every sale':'per sale',unit:'sale'},
+ newsletter:{name:'Newsletter',reward:(t,cur='USD')=>money(t.rate_cents||0,cur),sub:()=>'per subscriber',unit:'subscriber'},
+ story:{name:'Story',reward:(t,cur='USD')=>money(t.fee_cents||0,cur),sub:()=>'per story',unit:'story'},
+ review:{name:'Review',reward:(t,cur='USD')=>money(t.fee_cents||0,cur),sub:()=>'per review video',unit:'video'},
  introduction:{name:'Introduction',blurb:'Introduce a buyer, share the contract',fields:[['share_percent','Your share %',10],['min_contract_cents','Min contract (cents)',2000000]],reward:t=>t.share_percent+'%',sub:(t,cur='USD')=>'of the contract'+(t.min_contract_cents?' · min '+money(t.min_contract_cents,cur):''),unit:'deal'}
 };
 export const SYM={USD:'$',EUR:'€',GBP:'£',NGN:'₦',GHS:'GH₵',KES:'KSh ',ZAR:'R'};
@@ -33,8 +38,16 @@ export const KINDS=[
 export const kindOf=(k)=>KINDS.find(x=>x[0]===k)||KINDS[KINDS.length-1];
 export const kindFromCategory=(c)=>({physical:'physical',software:'software',digital:'ebook',content:'newsletter',service:'service'}[c]||'other');
 // what the seller wants the community to do (an offer type)
+// one goal per listing. [key, name, what the creator does, what counts]
 export const GOALS=[
- ['attention','Get me attention','Creators post about it and send people your way. You pay per click, view or post.','Share','e.g. a TikTok about your app, a story with your link'],
- ['commission','Sell it for me','Creators sell it with their own link. You pay a cut of each sale.','Wallet','e.g. 15% of every order they bring in'],
- ['introduction','Introduce me to buyers','Creators connect you with a company that needs it. You share the contract.','Me','e.g. 10% of a signed deal'],
+ ['traffic','Drive traffic','Share a link. You pay for each real click.','A unique, real click'],
+ ['sales','Get sales','Bring in orders. You pay a cut of each one.','A paid order'],
+ ['newsletter','Grow my newsletter','Bring in readers. You pay per subscriber.','A confirmed subscriber'],
+ ['story','Post in your story','Feature it in a story. You pay per story.','A story that stays up 24 hours'],
+ ['review','Review video','Film an honest review. You pay per video.','A published review video'],
+ // older listings
+ ['attention','Get me attention','Creators post about it and send people your way.','A click, view or post'],
+ ['commission','Sell it for me','Creators sell it with their own link.','A sale'],
+ ['introduction','Introduce me to buyers','Creators connect you with a company that needs it.','A signed contract'],
 ];
+export const NEW_GOALS=GOALS.slice(0,5);

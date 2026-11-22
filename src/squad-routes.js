@@ -107,6 +107,7 @@ export function squadRoutes(app, h) {
     terms: json(r.terms, {}), requirements: json(r.requirements, {}), max_relationships: r.max_relationships, status: r.status,
     financials: financials(r), video_media_id: r.video_media_id || null, video: r.video_media_id ? mediaUrl(r.video_media_id) : null,
     cover_media_id: r.cover_media_id || null, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : null,
+    attachments: json(r.attachments, []).map((x) => ({ ...x, url: mediaUrl(x.id) })),
     ...flags(r), created_at: r.created_at, updated_at: r.updated_at, ...extra,
   });
   const interestOut = (r) => r && ({ id: r.id, offer_id: r.offer_id, marketer_id: r.marketer_id, social_id: r.social_id, message: r.message, status: r.status, decided_at: r.decided_at, decision_note: r.decision_note, created_at: r.created_at });
@@ -162,6 +163,10 @@ export function squadRoutes(app, h) {
         out[k] = str;
       }
     }
+    for (const group of criteria?.one_of || []) {
+      if (!group.some((k) => out[k] != null)) no(400, `set one of: ${group.map((k) => (spec[k]?.label || k)).join(' or ')}`, 'invalid_terms');
+      if (group.filter((k) => out[k] != null).length > 1) no(400, `set only one of: ${group.map((k) => (spec[k]?.label || k)).join(' or ')}`, 'invalid_terms');
+    }
     return out;
   }
 
@@ -190,6 +195,7 @@ export function squadRoutes(app, h) {
       if (ds.length) out.delivery_types = ds;
     }
     if (r.verified_only) out.verified_only = true;
+    if (r.verified_socials) out.verified_socials = true;
     return out;
   }
 
@@ -198,16 +204,16 @@ export function squadRoutes(app, h) {
     const reasons = [];
     if (req.verified_only && !marketer.is_verified) reasons.push('the seller only works with verified marketers');
     if (req.countries && !req.countries.includes(marketer.country)) reasons.push(`you must be based in ${req.countries.join(', ')}`);
-    const needsSocial = req.min_followers || req.platforms || req.audience_countries;
+    const needsSocial = req.min_followers || req.platforms || req.audience_countries || req.verified_socials;
     if (needsSocial) {
       const rows = (await DB(c).prepare('SELECT * FROM socials WHERE marketer_id = ? AND is_deleted = 0 AND is_blocked = 0').bind(marketer.id).all()).results;
       const fits = (s) => (!req.platforms || req.platforms.includes(s.platform)) && (!req.min_followers || s.followers >= req.min_followers)
         && (!req.audience_countries || json(s.audience_countries, []).some((x) => req.audience_countries.includes(x)))
-        && (!req.verified_only || s.is_verified);
+        && (!(req.verified_only || req.verified_socials) || s.is_verified);
       const pool = socialId ? rows.filter((s) => s.id === socialId) : rows;
       if (!pool.some(fits)) {
         const want = [req.platforms && `on ${req.platforms.join(' or ')}`, req.min_followers && `with ${req.min_followers}+ followers`,
-          req.audience_countries && `with an audience in ${req.audience_countries.join(', ')}`, req.verified_only && 'that is verified'].filter(Boolean).join(' ');
+          req.audience_countries && `with an audience in ${req.audience_countries.join(', ')}`, (req.verified_only || req.verified_socials) && 'that is verified'].filter(Boolean).join(' ');
         reasons.push(`you need an account ${want}`);
       }
     }
@@ -720,6 +726,19 @@ export function squadRoutes(app, h) {
     if (!m) no(400, 'that thumbnail is not one of your images', 'invalid');
     return m.id;
   };
+  const attachmentsOf = async (c, u, list) => {
+    if (list == null) return [];
+    if (!Array.isArray(list)) no(400, 'attachments must be a list of media ids', 'invalid');
+    const ids = [...new Set(list.map(String))];
+    if (ids.length > 6) no(400, 'attach up to 6 files', 'invalid');
+    const out = [];
+    for (const id of ids) {
+      const m = await DB(c).prepare('SELECT id, kind FROM media WHERE id = ? AND owner_user_id = ? AND is_deleted = 0 AND is_blocked = 0').bind(id, u.id).first();
+      if (!m) no(400, 'that attachment is not one of your files', 'invalid');
+      out.push({ id: m.id, kind: m.kind });
+    }
+    return out;
+  };
   const approvedOfferType = async (c, idOrSlug) => {
     const t = await DB(c).prepare('SELECT * FROM offer_types WHERE (id = ? OR slug = ?) AND is_deleted = 0').bind(idOrSlug, idOrSlug).first();
     if (!t) no(400, 'unknown offer type', 'invalid');
@@ -740,11 +759,11 @@ export function squadRoutes(app, h) {
     const max = intIn(b.max_relationships, 'max_relationships', 1, 100000);
     const status = b.status === 'open' ? 'open' : 'draft';
     if (status === 'open' && p.is_flagged) no(409, 'this product is flagged and cannot be offered until it is reviewed', 'flagged');
-    const fin = money(b), video = await videoOf(c, u, b.video_media_id), cover = await coverOf(c, u, b.cover_media_id);
+    const fin = money(b), video = await videoOf(c, u, b.video_media_id), cover = await coverOf(c, u, b.cover_media_id), files = await attachmentsOf(c, u, b.attachments);
     if (status === 'open' && fin.budget_cents) no(409, 'a budgeted offer opens once its budget is funded: save it as a draft first', 'unfunded');
     const id = uid('of');
-    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents, cover_media_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null, cover).run();
+    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents, cover_media_id, attachments)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null, cover, JSON.stringify(files)).run();
     return c.json({ offer: offerOut(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()) }, 201);
   });
 
@@ -845,6 +864,7 @@ export function squadRoutes(app, h) {
     }
     if ('video_media_id' in b) set.video_media_id = await videoOf(c, u, b.video_media_id);
     if ('cover_media_id' in b) set.cover_media_id = await coverOf(c, u, b.cover_media_id);
+    if ('attachments' in b) set.attachments = JSON.stringify(await attachmentsOf(c, u, b.attachments));
     if (['currency', 'budget_cents', 'payout_cap_cents'].some((k) => k in b)) {
       if (o.funded_cents > 0) no(409, 'the budget is locked once it is funded: close this offer and start a new one to change it', 'locked');
       Object.assign(set, money(b, o));
