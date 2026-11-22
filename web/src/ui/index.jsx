@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { getTheme, setTheme } from '../lib/theme.js';
 import { ART } from '../lib/art.js';
 import { bgFor, initials, artFor } from '../lib/data.js';
 import * as Ic from './icons.jsx';
@@ -22,12 +23,12 @@ const B = {
   base: 'inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition duration-150 active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-40 select-none',
   size: { sm: 'h-9 px-3.5 text-small', md: 'h-11 px-5 text-[15px]', lg: 'h-12 px-6 text-[15px]' },
   tone: {
-    primary: 'bg-army text-white shadow-sm hover:bg-army-600',
+    primary: 'bg-army text-onarmy shadow-sm hover:bg-army-600',
     sage: 'bg-sage text-army hover:bg-sage-200',
-    secondary: 'bg-white text-army ring-1 ring-inset ring-cream-300 hover:bg-cream-50',
+    secondary: 'bg-paper text-army ring-1 ring-inset ring-cream-300 hover:bg-cream-50',
     soft: 'bg-cream-100 text-army hover:bg-cream-200',
     ghost: 'text-army hover:bg-cream-100',
-    danger: 'bg-white text-[#A23B17] ring-1 ring-inset ring-[#EBC2B3] hover:bg-[#FCF1EC]',
+    danger: 'bg-paper text-[#A23B17] ring-1 ring-inset ring-[#EBC2B3] hover:bg-[#FCF1EC]',
   },
 };
 export const Button = ({ tone = 'primary', size = 'md', block, className, ...p }) => <button className={cx(B.base, B.size[size], B.tone[tone], block && 'w-full', className)} {...p} />;
@@ -36,7 +37,7 @@ export const IconButton = ({ tone = 'ghost', size = 'md', className, label, chil
 );
 
 /* ---------- fields: 48px controls ---------- */
-const field = 'w-full rounded-xl bg-white text-[15px] text-ink placeholder:text-ink-faint outline-none ring-1 ring-inset ring-cream-300 transition hover:ring-cream-300/80 focus:ring-2 focus:ring-army';
+const field = 'w-full rounded-xl bg-paper text-[15px] text-ink placeholder:text-ink-faint outline-none ring-1 ring-inset ring-cream-300 transition hover:ring-cream-300/80 focus:ring-2 focus:ring-army';
 export const Input = ({ pre, suf, className, wrap, ...p }) => (
   <div className={cx('relative flex h-12 items-center', wrap)}>
     {pre && <span className="pointer-events-none absolute left-4 text-[15px] font-medium text-ink-soft">{pre}</span>}
@@ -61,7 +62,7 @@ export const Field = ({ label, help, children, aside }) => (
 
 /* ---------- surfaces ---------- */
 export const Card = ({ title, sub, action, children, className, pad = true, as: As = 'section' }) => (
-  <As className={cx('rounded-card bg-white', pad && 'p-5 sm:p-6', className)}>
+  <As className={cx('rounded-card bg-paper', pad && 'p-5 sm:p-6', className)}>
     {(title || action) && (
       <header className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0"><h3 className="text-subhead font-semibold text-ink">{title}</h3>{sub && <p className="mt-0.5 text-small text-ink-soft">{sub}</p>}</div>
@@ -79,13 +80,13 @@ export const Rows = ({ rows }) => (
   </dl>
 );
 export const StatGroup = ({ items, className }) => (
-  <div className={cx('grid divide-x divide-cream-100 rounded-card bg-white py-4', className)} style={{ gridTemplateColumns: `repeat(${items.length},minmax(0,1fr))` }}>
+  <div className={cx('grid divide-x divide-cream-100 rounded-card bg-paper py-4', className)} style={{ gridTemplateColumns: `repeat(${items.length},minmax(0,1fr))` }}>
     {items.map(([v, l]) => <div key={l} className="min-w-0 px-4 sm:px-6"><div className="tnum truncate text-heading font-semibold text-ink">{v}</div><div className="mt-0.5 truncate text-caption text-ink-soft">{l}</div></div>)}
   </div>
 );
 /* category chip: neutral outline; status: dot + label. They never look alike. */
 export const Chip = ({ children, icon, tone = 'neutral', className }) => (
-  <span className={cx('inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-small font-medium', { neutral: 'bg-white text-ink ring-1 ring-inset ring-cream-300', sage: 'bg-sage text-army', glass: 'bg-white/12 text-white ring-1 ring-inset ring-white/20 backdrop-blur', solid: 'bg-white text-army' }[tone], className)}>{icon}{children}</span>
+  <span className={cx('inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-small font-medium', { neutral: 'bg-paper text-ink ring-1 ring-inset ring-cream-300', sage: 'bg-sage text-army', glass: 'bg-white/12 text-white ring-1 ring-inset ring-white/20 backdrop-blur', solid: 'bg-paper text-army' }[tone], className)}>{icon}{children}</span>
 );
 const ST = { open: ['Open', 'g'], active: ['Active', 'g'], verified: ['Verified', 'g'], accepted: ['Accepted', 'g'], funded: ['Funded', 'g'], pending: ['Pending', 'a'], unfunded: ['Awaiting payment', 'a'], paused: ['Paused', 'b'], denied: ['Denied', 'r'], rejected: ['Rejected', 'r'], ended: ['Ended', 'n'], withdrawn: ['Withdrawn', 'n'] };
 export const Status = ({ s, className }) => { const [l, t] = ST[s] || [s, 'n']; return (
@@ -105,23 +106,35 @@ export const Switch = ({ on, onChange, label, sub }) => (
     </button>
   </div>
 );
+/* Appearance: light, dark, or follow the device */
+export function ThemePicker() {
+  const [m, setM] = useState(getTheme);
+  const pick = (k) => { setM(k); setTheme(k); };
+  return (
+    <div role="radiogroup" aria-label="Appearance" className="flex h-12 gap-1 rounded-xl bg-cream-100 p-1">
+      {[['light', 'Light', Ic.Sun], ['dark', 'Dark', Ic.Moon], ['system', 'System', Ic.Device]].map(([k, l, I]) => (
+        <button key={k} type="button" role="radio" aria-checked={m === k} onClick={() => pick(k)} className={cx('flex flex-1 items-center justify-center gap-1.5 rounded-[10px] text-small font-semibold transition', m === k ? 'bg-paper text-army shadow-sm' : 'text-ink-soft hover:text-ink')}><I width="16" height="16" />{l}</button>
+      ))}
+    </div>
+  );
+}
 export const Segmented = ({ value, onChange, items }) => (
   <div className="flex h-12 gap-1 rounded-xl bg-cream-100 p-1">
-    {items.map(([k, l]) => <button key={k} type="button" onClick={() => onChange(k)} className={cx('flex-1 rounded-[10px] text-small font-semibold capitalize transition', value === k ? 'bg-white text-army shadow-sm' : 'text-ink-soft hover:text-ink')}>{l}</button>)}
+    {items.map(([k, l]) => <button key={k} type="button" onClick={() => onChange(k)} className={cx('flex-1 rounded-[10px] text-small font-semibold capitalize transition', value === k ? 'bg-paper text-army shadow-sm' : 'text-ink-soft hover:text-ink')}>{l}</button>)}
   </div>
 );
 export const Pills = ({ value, onChange, items, multi }) => (
   <div className="flex flex-wrap gap-2">
-    {items.map(([k, l]) => { const on = multi ? value.includes(k) : value === k; return <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-small font-semibold transition', on ? 'bg-army text-white' : 'bg-white text-ink ring-1 ring-inset ring-cream-300 hover:ring-army/40')}>{on && multi && <Ic.Check width="14" height="14" />}{l}</button>; })}
+    {items.map(([k, l]) => { const on = multi ? value.includes(k) : value === k; return <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-small font-semibold transition', on ? 'bg-army text-onarmy' : 'bg-paper text-ink ring-1 ring-inset ring-cream-300 hover:ring-army/40')}>{on && multi && <Ic.Check width="14" height="14" />}{l}</button>; })}
   </div>
 );
-export const Radio = ({ on }) => <span className={cx('grid h-5 w-5 shrink-0 place-items-center rounded-full transition', on ? 'bg-army' : 'ring-2 ring-inset ring-cream-300')}>{on && <span className="h-2 w-2 rounded-full bg-white" />}</span>;
+export const Radio = ({ on }) => <span className={cx('grid h-5 w-5 shrink-0 place-items-center rounded-full transition', on ? 'bg-army' : 'ring-2 ring-inset ring-cream-300')}>{on && <span className="h-2 w-2 rounded-full bg-paper" />}</span>;
 export const Tabs = ({ value, onChange, items, className }) => (
   <div className={cx('relative', className)}>
     <div className="no-scrollbar flex gap-1 overflow-x-auto pr-6">
       {items.map(([k, l, n]) => (
-        <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-small font-semibold transition', value === k ? 'bg-army text-white' : 'text-ink-soft hover:bg-white hover:text-ink')}>
-          {l}{n ? <span className={cx('grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[11px] font-bold', value === k ? 'bg-white text-army' : 'bg-ember text-white')}>{n}</span> : null}
+        <button key={k} type="button" onClick={() => onChange(k)} className={cx('inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-3.5 text-small font-semibold transition', value === k ? 'bg-army text-onarmy' : 'text-ink-soft hover:bg-paper hover:text-ink')}>
+          {l}{n ? <span className={cx('grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 text-[11px] font-bold', value === k ? 'bg-paper text-army' : 'bg-ember text-white')}>{n}</span> : null}
         </button>
       ))}
     </div>
@@ -148,7 +161,7 @@ export function Sheet({ open, onClose, title, sub, children, footer }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
       <button aria-label="Close" className="absolute inset-0 bg-army-900/50 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative flex max-h-[90vh] w-full flex-col rounded-t-3xl bg-white shadow-pop sm:max-w-[460px] sm:rounded-3xl">
+      <div className="relative flex max-h-[90vh] w-full flex-col rounded-t-3xl bg-paper shadow-pop sm:max-w-[460px] sm:rounded-3xl">
         <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-cream-200 sm:hidden" />
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5"><div className="min-w-0"><h2 className="text-heading font-semibold text-ink">{title}</h2>{sub && <p className="mt-0.5 text-small text-ink-soft">{sub}</p>}</div><IconButton size="sm" tone="soft" label="Close" onClick={onClose}><Ic.X width="18" height="18" /></IconButton></div>
         <div className="flex flex-col gap-5 overflow-y-auto px-6 pb-6 pt-3">{children}</div>
@@ -160,7 +173,7 @@ export function Sheet({ open, onClose, title, sub, children, footer }) {
 export function Toast({ t }) {
   const last = useRef(t); if (t) last.current = t;   // keep the text while it fades out
   return (
-    <div role="status" className={cx('pointer-events-none fixed left-1/2 top-[max(16px,env(safe-area-inset-top))] z-[60] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-army py-3 pl-3.5 pr-5 text-small font-semibold text-white shadow-pop transition-all duration-200', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>
+    <div role="status" className={cx('pointer-events-none fixed left-1/2 top-[max(16px,env(safe-area-inset-top))] z-[60] flex w-max max-w-[90vw] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-army py-3 pl-3.5 pr-5 text-small font-semibold text-onarmy shadow-pop transition-all duration-200', t ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0')}>
       <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-sage text-army"><Ic.Check width="14" height="14" /></span>{last.current?.m}
     </div>
   );

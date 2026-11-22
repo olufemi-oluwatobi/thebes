@@ -15,7 +15,7 @@ export function SignInSheet() {
           <Field label="Email"><Input type="email" required autoFocus placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} /></Field>
           <Button size="lg" block disabled={busy || !email.includes('@')}>{busy ? 'Sending…' : 'Email me a sign-in link'}</Button>
         </form>
-      ) : res.link ? <a href={res.link} className="inline-flex h-12 items-center justify-center rounded-xl bg-army font-semibold text-white">Open sign-in link</a>
+      ) : res.link ? <a href={res.link} className="inline-flex h-12 items-center justify-center rounded-xl bg-army font-semibold text-onarmy">Open sign-in link</a>
         : <div className="flex flex-col items-center gap-3 py-4 text-center"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-sage-50 text-sage-700"><Ic.Send /></span><p className="text-small text-ink-soft">Open the email on this device to finish signing in.</p><Button tone="secondary" onClick={() => setRes(null)}>Use another email</Button></div>}
     </Sheet>
   );

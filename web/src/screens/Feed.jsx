@@ -6,11 +6,11 @@ import { Ic, Chip, Avatar, Art, Button, Verified, LogoMark, cx } from '../ui/ind
 
 const TONE = {
   apply: 'bg-[#6E9A2F] text-white shadow-[0_8px_20px_-6px_rgb(110_154_47/.7)]',
-  applied: 'bg-sage text-army shadow-[0_8px_20px_-6px_rgb(203_214_168/.6)]',
+  applied: 'bg-moss text-forest shadow-[0_8px_20px_-6px_rgb(203_214_168/.6)]',
   visit: 'bg-[#2F6FA3] text-white shadow-[0_8px_20px_-6px_rgb(47_111_163/.7)]',
-  details: 'bg-[#E0B06A] text-army shadow-[0_8px_20px_-6px_rgb(224_176_106/.6)]',
-  share: 'bg-white text-army shadow-[0_8px_20px_-6px_rgb(0_0_0/.45)]',
-  manage: 'bg-army text-sage ring-1 ring-sage/40 shadow-[0_8px_20px_-6px_rgb(0_0_0/.5)]',
+  details: 'bg-[#E0B06A] text-forest shadow-[0_8px_20px_-6px_rgb(224_176_106/.6)]',
+  share: 'bg-white text-forest shadow-[0_8px_20px_-6px_rgb(0_0_0/.45)]',
+  manage: 'bg-forest text-moss ring-1 ring-moss/40 shadow-[0_8px_20px_-6px_rgb(0_0_0/.5)]',
 };
 function RailButton({ label, tone, disabled, onClick, children }) {
   return (
@@ -79,7 +79,7 @@ export default function Feed() {
         <div className="mx-auto flex max-w-[1120px] items-center gap-4 px-5 pb-6 pt-[max(16px,env(safe-area-inset-top))] lg:px-10 lg:pt-6">
           <span className="lg:hidden"><LogoMark size={30} /></span>
           <div className="no-scrollbar fade-r flex min-w-0 flex-1 gap-1 overflow-x-auto lg:[mask-image:none]">
-            {cats.map(([k, l]) => <button key={k} onClick={() => a.loadFeed(k)} className={cx('h-9 shrink-0 rounded-full px-3.5 text-small font-semibold transition', fc === k ? 'bg-white text-army' : 'text-white/70 hover:text-white')}>{l}</button>)}
+            {cats.map(([k, l]) => <button key={k} onClick={() => a.loadFeed(k)} className={cx('h-9 shrink-0 rounded-full px-3.5 text-small font-semibold transition', fc === k ? 'bg-white text-forest' : 'text-white/70 hover:text-white')}>{l}</button>)}
           </div>
           {S.auth === 'out' && <Button size="sm" tone="sage" onClick={() => a.openSignin()}>Sign in</Button>}
         </div>
@@ -87,7 +87,7 @@ export default function Feed() {
       <div className="snap-feed no-scrollbar h-full overflow-y-auto">
         {!S.feed ? <div className="grid h-full place-items-center"><span className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-sage" /></div>
           : list.length ? list.map(o => <div key={o.id} className="h-full"><Slide o={o} /></div>)
-          : <div className="grid h-full place-items-center px-8 text-center text-white"><div><span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-sage"><Ic.Tag /></span><div className="text-subhead font-semibold">No offers here yet</div><p className="mx-auto mt-1 max-w-xs text-small text-white/60">{fc === 'all' ? 'Be the first: list a product and creators will see it here.' : 'Nothing in this category yet. Try For you.'}</p><Button tone="sage" className="mt-5" onClick={() => go('plus')}>List a product</Button></div></div>}
+          : <div className="grid h-full place-items-center px-8 text-center text-white"><div><span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/10 text-moss"><Ic.Tag /></span><div className="text-subhead font-semibold">No offers here yet</div><p className="mx-auto mt-1 max-w-xs text-small text-white/60">{fc === 'all' ? 'Be the first: list a product and creators will see it here.' : 'Nothing in this category yet. Try For you.'}</p><Button tone="sage" className="mt-5" onClick={() => go('plus')}>List a product</Button></div></div>}
       </div>
     </div>
   );

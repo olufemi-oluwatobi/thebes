@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore, prodOf, offerOf } from '../lib/store.jsx';
 import { go } from '../lib/router.js';
 import { CATS, TYPES, PLATFORMS, money } from '../lib/data.js';
-import { Page, Card, StatGroup, Tabs, Button, Status, Avatar, Ic, ProductArt, Verified, Segmented, Empty, Sheet, Field, Input, cx } from '../ui/index.jsx';
+import { Page, Card, StatGroup, Tabs, Button, Status, Avatar, Ic, ProductArt, Verified, Segmented, Empty, Sheet, Field, Input, ThemePicker, cx } from '../ui/index.jsx';
 import { Bar } from './Offer.jsx';
 import { afterSeller } from '../ui/wizard.jsx';
 
@@ -18,7 +18,7 @@ export default function Profile() {
   const seller = S.role === 'seller', u = a.me;
   const [tab, setTab] = useState('deals'), [edit, setEdit] = useState(false), [name, setName] = useState('');
   useEffect(() => { if (S.auth !== 'in') return; a.loadDeals(); if (seller && a.hasSeller) a.loadSeller(); if (!seller && a.hasMarketer) a.loadSent(); }, [S.auth, seller, a.hasSeller, a.hasMarketer]);
-  if (S.auth === 'out') return <Page crumb="Profile"><Empty icon={<Ic.Me />} title="Your profile" text="Sign in to post offers, apply to promote them and track what you earn." action={<Button onClick={() => a.openSignin()}>Sign in</Button>} /></Page>;
+  if (S.auth === 'out') return <Page crumb="Profile"><Empty icon={<Ic.Me />} title="Your profile" text="Sign in to post offers, apply to promote them and track what you earn." action={<Button onClick={() => a.openSignin()}>Sign in</Button>} /><Card title="Appearance" className="mx-auto mt-8 max-w-md"><ThemePicker /></Card></Page>;
   const hasRole = seller ? a.hasSeller : a.hasMarketer;
   const deals = S.deals || [];
   const earned = deals.reduce((n, d) => n + (d.earned || 0), 0);
@@ -64,6 +64,7 @@ export default function Profile() {
             <StatGroup items={[[money(earned), seller ? 'Paid out' : 'Earned'], [deals.filter(d => d.status === 'active').length, 'Active deals'], seller ? [pend, 'To review'] : [sent.filter(i => i.status === 'pending').length, 'Pending']]} />
             <div><Tabs value={t} onChange={setTab} items={tabs} className="mb-3" /><Card pad={false} className="overflow-hidden">{list}</Card></div>
           </>)}
+          <Card title="Appearance" sub="Light, dark, or match your device."><ThemePicker /></Card>
           <div className="flex flex-wrap gap-3">
             {!(a.hasSeller && a.hasMarketer) && hasRole && <Button tone="secondary" onClick={() => seller ? a.openSetup('marketer') : go('plus/seller')}>{seller ? 'Also promote offers' : 'Create a seller account'}</Button>}
             <Button tone="ghost" onClick={a.signOut}><Ic.Out width="18" height="18" />Sign out</Button>

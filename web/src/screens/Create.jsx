@@ -29,13 +29,13 @@ function Start() {
     <Page crumb="Create">
       <PageTitle h="What do you want to list?" p="Start with the product. Then create a listing that tells creators what you want them to do." />
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-        <button onClick={newProduct} className="group flex items-center gap-3.5 rounded-card bg-army p-3 pr-4 text-left text-white">
+        <button onClick={newProduct} className="group flex items-center gap-3.5 rounded-card bg-army p-3 pr-4 text-left text-onarmy">
           <span className="grid h-12 w-16 shrink-0 place-items-center rounded-xl bg-sage text-army transition group-hover:scale-105"><Ic.Plus width="22" height="22" /></span>
-          <span className="min-w-0 flex-1"><span className="block font-semibold">New product</span><span className="block truncate text-small text-white/65">Add something to list</span></span>
-          <Ic.Chev width="18" height="18" className="text-white/50" />
+          <span className="min-w-0 flex-1"><span className="block font-semibold">New product</span><span className="block truncate text-small text-onarmy/65">Add something to list</span></span>
+          <Ic.Chev width="18" height="18" className="text-onarmy/50" />
         </button>
         {products.map(p => { const n = offersOn(p.id); return (
-          <button key={p.id} onClick={() => go('plus/' + p.id)} className="group flex items-center gap-3.5 rounded-card bg-white p-3 pr-4 text-left">
+          <button key={p.id} onClick={() => go('plus/' + p.id)} className="group flex items-center gap-3.5 rounded-card bg-paper p-3 pr-4 text-left">
             <ProductArt p={p} fit="76%" className="h-12 w-16 shrink-0 rounded-xl" />
             <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{p.name}</span>
               <span className="block truncate text-small text-sage-700">{n ? n + ' listing' + (n > 1 ? 's' : '') + ' · add another' : 'Create a listing'}</span></span>
@@ -43,7 +43,7 @@ function Start() {
           </button>); })}
       </div>
       {S.auth === 'in' && a.hasSeller && !S.myProductIds && <div className="mt-6 h-8 w-8 animate-spin rounded-full border-2 border-cream-200 border-t-army" />}
-      <button onClick={() => go('plus/social')} className="mt-6 flex w-full items-center gap-3.5 rounded-card bg-white p-3 pr-4 text-left sm:max-w-md">
+      <button onClick={() => go('plus/social')} className="mt-6 flex w-full items-center gap-3.5 rounded-card bg-paper p-3 pr-4 text-left sm:max-w-md">
         <span className="grid h-12 w-16 shrink-0 place-items-center rounded-xl bg-cream-100 text-army"><Ic.At width="22" height="22" /></span>
         <span className="min-w-0 flex-1"><span className="block font-semibold">Promoting instead?</span><span className="block truncate text-small text-ink-soft">Add your socials to qualify for listings</span></span><Ic.Chev width="18" height="18" className="text-ink-faint" />
       </button>

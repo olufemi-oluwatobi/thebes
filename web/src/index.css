@@ -8,10 +8,21 @@
 @tailwind components;
 @tailwind utilities;
 html,body,#root{height:100%}
+:root{color-scheme:light;
+  --army:38 51 31;--army-600:52 67 43;--onarmy:255 255 255;
+  --sage:203 214 168;--sage-50:244 247 234;--sage-100:233 238 216;--sage-200:220 229 189;--sage-700:94 122 46;
+  --cream-50:248 247 240;--cream-100:241 240 228;--cream-200:230 228 211;--cream-300:214 211 190;
+  --ink:31 42 25;--ink-soft:100 107 90;--ink-faint:141 147 132;--paper:255 255 255}
+:root.dark{color-scheme:dark;
+  --army:203 214 168;--army-600:185 198 144;--onarmy:18 26 14;
+  --sage:52 67 43;--sage-50:27 36 22;--sage-100:33 43 27;--sage-200:43 56 34;--sage-700:169 194 122;
+  --cream-50:14 19 11;--cream-100:28 36 23;--cream-200:39 48 32;--cream-300:56 67 47;
+  --ink:236 239 227;--ink-soft:167 174 155;--ink-faint:122 129 112;--paper:21 28 17}
+body{background:rgb(var(--cream-50));color:rgb(var(--ink))}
 body{margin:0;overscroll-behavior:none;font-feature-settings:"cv11","ss01"}
 button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 input,textarea,select{font:inherit;color:inherit}
-:focus-visible{outline:2px solid #26331F;outline-offset:2px}
+:focus-visible{outline:2px solid rgb(var(--army));outline-offset:2px}
 @layer components{
   .snap-feed{scroll-snap-type:y mandatory}
   .snap-feed>*{scroll-snap-align:start;scroll-snap-stop:always}

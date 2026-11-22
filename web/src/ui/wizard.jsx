@@ -7,7 +7,7 @@ export function Stepper({ steps, st }) {
   return (<>
     <ol className="hidden h-14 items-center sm:flex">{steps.map((l, i) => { const n = i + 1, done = n < st, cur = n === st; return (
       <li key={l} className={cx('flex items-center gap-2.5 text-small font-semibold', i < steps.length - 1 && 'flex-1', cur || done ? 'text-ink' : 'text-ink-faint')}>
-        <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-caption font-bold', cur ? 'bg-army text-white' : done ? 'bg-sage text-army' : 'bg-cream-100 text-ink-faint')}>{done ? <Ic.Check width="14" height="14" /> : n}</span>{l}
+        <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full text-caption font-bold', cur ? 'bg-army text-onarmy' : done ? 'bg-sage text-army' : 'bg-cream-100 text-ink-faint')}>{done ? <Ic.Check width="14" height="14" /> : n}</span>{l}
         {i < steps.length - 1 && <span className={cx('mx-3 h-px flex-1', done ? 'bg-sage-700/40' : 'bg-cream-200')} />}
       </li>); })}</ol>
     <div className="flex h-12 items-center gap-3 sm:hidden"><span className="text-small font-semibold">{steps[st - 1]}</span><span className="text-caption text-ink-faint">Step {st} of {steps.length}</span><div className="ml-auto flex gap-1">{steps.map((_, i) => <span key={i} className={cx('h-1.5 w-5 rounded-full', i < st ? 'bg-army' : 'bg-cream-200')} />)}</div></div>

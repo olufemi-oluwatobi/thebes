@@ -13,7 +13,7 @@ export function Gallery({ p, onDemo }) {
       <div className="relative overflow-hidden rounded-card">
         {cur ? <div className="grid aspect-[4/3] w-full place-items-center bg-cream-100"><img src={cur} alt="" className="h-full w-full object-cover" /></div>
           : <ProductArt p={{ ...p, img: null }} k={artFor(p.category)} fit="70%" className="aspect-[4/3] w-full" />}
-        {p.videoUrl && <button onClick={onDemo} className="absolute bottom-4 left-4 inline-flex h-10 items-center gap-2 rounded-full bg-white pl-1.5 pr-4 text-small font-semibold text-army shadow-lift transition hover:scale-[1.02]"><span className="grid h-7 w-7 place-items-center rounded-full bg-army text-white"><Ic.Play width="12" height="12" /></span>Watch demo</button>}
+        {p.videoUrl && <button onClick={onDemo} className="absolute bottom-4 left-4 inline-flex h-10 items-center gap-2 rounded-full bg-white pl-1.5 pr-4 text-small font-semibold text-forest shadow-lift transition hover:scale-[1.02]"><span className="grid h-7 w-7 place-items-center rounded-full bg-forest text-white"><Ic.Play width="12" height="12" /></span>Watch demo</button>}
       </div>
       {items.length > 1 && (
         <div className="no-scrollbar -m-1 flex gap-3 overflow-x-auto p-1">

@@ -1,12 +1,18 @@
 export default {
+  darkMode: 'class',
   content: ['./index.html','./src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        army: { DEFAULT:'#26331F', 500:'#3A4A30', 600:'#34432B', 800:'#1B2517', 900:'#121A0E' },
-        sage: { DEFAULT:'#CBD6A8', 50:'#F4F7EA', 100:'#E9EED8', 200:'#DCE5BD', 700:'#5E7A2E' },
-        cream: { DEFAULT:'#F1F0E4', 50:'#F8F7F0', 100:'#F1F0E4', 200:'#E6E4D3', 300:'#D6D3BE' },
-        ink: { DEFAULT:'#1F2A19', soft:'#646B5A', faint:'#8D9384' },
+        // themed: these flip in dark mode (see index.css)
+        army: { DEFAULT:'rgb(var(--army) / <alpha-value>)', 500:'#3A4A30', 600:'rgb(var(--army-600) / <alpha-value>)', 800:'#1B2517', 900:'#121A0E' },
+        onarmy: 'rgb(var(--onarmy) / <alpha-value>)',
+        sage: { DEFAULT:'rgb(var(--sage) / <alpha-value>)', 50:'rgb(var(--sage-50) / <alpha-value>)', 100:'rgb(var(--sage-100) / <alpha-value>)', 200:'rgb(var(--sage-200) / <alpha-value>)', 700:'rgb(var(--sage-700) / <alpha-value>)' },
+        cream: { DEFAULT:'rgb(var(--cream-100) / <alpha-value>)', 50:'rgb(var(--cream-50) / <alpha-value>)', 100:'rgb(var(--cream-100) / <alpha-value>)', 200:'rgb(var(--cream-200) / <alpha-value>)', 300:'rgb(var(--cream-300) / <alpha-value>)' },
+        ink: { DEFAULT:'rgb(var(--ink) / <alpha-value>)', soft:'rgb(var(--ink-soft) / <alpha-value>)', faint:'rgb(var(--ink-faint) / <alpha-value>)' },
+        paper: 'rgb(var(--paper) / <alpha-value>)',
+        // fixed: always-dark surfaces (feed, floating nav) keep these in both themes
+        forest: '#26331F', moss: '#CBD6A8',
         ember: '#D9693B',
       },
       fontFamily: { sans:['Inter','system-ui','sans-serif'], serif:['"Libre Baskerville"','Georgia','serif'] },

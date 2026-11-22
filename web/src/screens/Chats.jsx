@@ -21,12 +21,12 @@ function List({ deals, active }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 px-4 pb-3 pt-[max(28px,env(safe-area-inset-top))] sm:pt-8"><h1 className="mb-4 px-1 font-serif text-[26px] leading-[34px] sm:text-title">Chats</h1>
-        <div className="relative"><Ic.Search width="18" height="18" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search chats" className="h-11 w-full rounded-xl bg-white pl-10 pr-4 text-[15px] outline-none placeholder:text-ink-faint focus:bg-white focus:ring-2 focus:ring-army" /></div>
+        <div className="relative"><Ic.Search width="18" height="18" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Search chats" className="h-11 w-full rounded-xl bg-paper pl-10 pr-4 text-[15px] outline-none placeholder:text-ink-faint focus:bg-paper focus:ring-2 focus:ring-army" /></div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-32 md:pb-4">
         {!deals ? <Spinner /> : shown.length === 0 && <Empty icon={<Ic.Chat />} title={q ? 'No matches' : 'No chats yet'} text={q ? 'Try another name.' : S.role === 'seller' ? 'When you accept an application, the chat opens here.' : 'When a seller accepts your application, the chat opens here.'} action={!q && <Button tone="secondary" onClick={() => go(S.role === 'seller' ? 'me' : 'feed')}>{S.role === 'seller' ? 'See applications' : 'Browse offers'}</Button>} />}
         {shown.map(d => { const { other } = ctx(S, d); return (
-          <button key={d.id} onClick={() => go('chats/' + d.id)} className={cx('flex w-full items-start gap-3 rounded-card px-3 py-3 text-left transition', active === d.id ? 'bg-white' : 'hover:bg-white/70')}>
+          <button key={d.id} onClick={() => go('chats/' + d.id)} className={cx('flex w-full items-start gap-3 rounded-card px-3 py-3 text-left transition', active === d.id ? 'bg-paper' : 'hover:bg-white/70')}>
             <Avatar name={other} size={44} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2"><span className={cx('truncate', d.unread ? 'font-bold' : 'font-semibold')}>{other}</span><span className="tnum shrink-0 text-caption text-ink-faint">{ago(d.lastAt)}</span></div>
@@ -59,8 +59,8 @@ function Conversation({ d, onInfo, onBack }) {
           <div className="mb-4 flex flex-col items-center gap-2 text-center"><ProductArt p={p} fit="80%" className="h-14 w-14 rounded-2xl" /><div className="text-small font-semibold">Deal started {d.since}</div><div className="max-w-xs text-caption text-ink-soft">Terms are frozen. Report deliveries and get them verified in the deal details.</div></div>
           {!msgs ? <Spinner /> : msgs.map((m, i) => { const me = m.sender_id === mineId, prev = msgs[i - 1], grouped = prev && prev.sender_id === m.sender_id; return (
             <div key={m.id} className={cx('flex', me ? 'justify-end' : 'justify-start', !grouped && i > 0 && 'mt-3')}>
-              <div className={cx('max-w-[78%] whitespace-pre-line break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-[22px]', me ? 'rounded-br-md bg-army text-white' : 'rounded-bl-md bg-white text-ink shadow-[0_1px_2px_rgb(31_42_25/.08)]', m.is_deleted && 'italic opacity-60')}>
-                {m.is_deleted ? 'Message deleted' : m.body}<span className={cx('tnum float-right ml-3 mt-1.5 text-[11px] leading-none', me ? 'text-white/60' : 'text-ink-faint')}>{clock(m.created_at)}</span>
+              <div className={cx('max-w-[78%] whitespace-pre-line break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-[22px]', me ? 'rounded-br-md bg-army text-onarmy' : 'rounded-bl-md bg-paper text-ink shadow-[0_1px_2px_rgb(31_42_25/.08)]', m.is_deleted && 'italic opacity-60')}>
+                {m.is_deleted ? 'Message deleted' : m.body}<span className={cx('tnum float-right ml-3 mt-1.5 text-[11px] leading-none', me ? 'text-onarmy/60' : 'text-ink-faint')}>{clock(m.created_at)}</span>
               </div>
             </div>); })}
           <div ref={end} />
@@ -69,8 +69,8 @@ function Conversation({ d, onInfo, onBack }) {
       {d.status === 'ended' ? <div className="shrink-0 border-t border-cream-200/70 bg-cream-50 px-5 py-4 text-center text-small text-ink-soft">This deal has ended.</div> : (
         <form onSubmit={submit} className="shrink-0 border-t border-cream-200/70 bg-cream-50 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-5">
           <div className="mx-auto flex max-w-[720px] items-center gap-2">
-            <input value={t} onChange={e => setT(e.target.value)} maxLength={4000} placeholder={'Message ' + (other || '').split(' ')[0]} className="h-12 min-w-0 flex-1 rounded-full bg-white px-5 text-[15px] outline-none transition placeholder:text-ink-faint focus:ring-2 focus:ring-army/30" />
-            <button type="submit" aria-label="Send" className={cx('grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-95', t.trim() ? 'bg-army text-white hover:bg-army-600' : 'bg-sage-100 text-army/60')}><Ic.Send width="20" height="20" /></button>
+            <input value={t} onChange={e => setT(e.target.value)} maxLength={4000} placeholder={'Message ' + (other || '').split(' ')[0]} className="h-12 min-w-0 flex-1 rounded-full bg-paper px-5 text-[15px] outline-none transition placeholder:text-ink-faint focus:ring-2 focus:ring-army/30" />
+            <button type="submit" aria-label="Send" className={cx('grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-95', t.trim() ? 'bg-army text-onarmy hover:bg-army-600' : 'bg-sage-100 text-army/60')}><Ic.Send width="20" height="20" /></button>
           </div>
         </form>)}
     </div>
@@ -92,8 +92,8 @@ function Panel({ d }) {
     <div className="flex flex-col gap-6">
       <button onClick={() => go('offer/' + o.id)} className="flex items-center gap-3 rounded-2xl text-left transition hover:opacity-80"><ProductArt p={p} fit="80%" className="h-14 w-14 shrink-0 rounded-2xl" /><div className="min-w-0 flex-1"><div className="line-clamp-2 font-semibold leading-5">{o.title}</div><div className="mt-1 text-caption text-ink-soft">{T.name} · {T.reward(d.terms, cur)}</div></div><Ic.Chev width="18" height="18" className="text-ink-faint" /></button>
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-card bg-white p-4"><div className="text-caption text-ink-soft">{seller ? 'Paid out' : 'Earned'}</div><div className="tnum mt-1 text-heading font-semibold">{money(earned, cur)}</div></div>
-        <div className="rounded-card bg-white p-4"><div className="text-caption text-ink-soft">Budget left</div><div className="tnum mt-1 text-heading font-semibold">{left == null ? <span className="text-subhead">Open</span> : money(left, cur)}</div></div>
+        <div className="rounded-card bg-paper p-4"><div className="text-caption text-ink-soft">{seller ? 'Paid out' : 'Earned'}</div><div className="tnum mt-1 text-heading font-semibold">{money(earned, cur)}</div></div>
+        <div className="rounded-card bg-paper p-4"><div className="text-caption text-ink-soft">Budget left</div><div className="tnum mt-1 text-heading font-semibold">{left == null ? <span className="text-subhead">Open</span> : money(left, cur)}</div></div>
       </div>
       <Tabs value={tab} onChange={setTab} items={[['overview', 'Overview'], ['dels', 'Deliveries', seller ? pend : 0], ['terms', 'Terms']]} />
       {tab === 'overview' && <Rows rows={[['Status', <Status s={d.status} />], ['Reward', T.reward(d.terms, cur) + ' ' + T.sub(d.terms, cur).split(' · ')[0]], ['Max you can earn', cap ? money(cap, cur) : 'No limit'], cap && ['Progress', <span className="inline-block w-24"><Bar pct={earned / cap * 100} /></span>], ['Started', d.since]]} />}
@@ -107,7 +107,7 @@ function Panel({ d }) {
         {!dels ? <Spinner /> : dels.length === 0 ? <Empty icon={<Ic.Box />} title="No deliveries yet" text={seller ? 'Deliveries the marketer reports show up here.' : 'Report your first post above.'} /> :
           <div className="flex flex-col">{dels.map((x, i) => (
             <div key={x.id} className={cx('flex min-h-[64px] items-center gap-3', i && 'border-t border-cream-100')}>
-              {x.media ? <button onClick={() => setVid(x)} className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-army text-white"><Ic.Play width="14" height="14" /></button> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cream-100 text-ink-soft"><Ic.Globe width="18" height="18" /></span>}
+              {x.media ? <button onClick={() => setVid(x)} className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-army text-onarmy"><Ic.Play width="14" height="14" /></button> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cream-100 text-ink-soft"><Ic.Globe width="18" height="18" /></span>}
               <div className="min-w-0 flex-1"><div className="text-small font-semibold">{x.kind}{x.amount ? <span className="tnum text-sage-700"> · {money(x.amount, cur)}</span> : ''}</div>{x.url ? <a href={x.url} target="_blank" rel="noopener" className="block truncate text-caption text-ink-soft hover:underline">{x.url.replace(/^https?:\/\//, '')}</a> : <div className="truncate text-caption text-ink-soft">{x.status === 'rejected' && x.note ? x.note : x.proof}</div>}</div>
               {seller && x.status === 'pending' ? <Button size="sm" onClick={() => { setVer(x); setAmt(''); setNote(''); }}>Review</Button> : <Status s={x.status} />}
             </div>))}</div>}
