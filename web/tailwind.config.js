@@ -24,7 +24,7 @@ export default {
         lift:'0 2px 4px rgb(31 42 25 / .06), 0 16px 36px -14px rgb(31 42 25 / .24)',
         pop:'0 24px 60px -16px rgb(18 26 14 / .45)',
       },
-      borderRadius: { xl:'14px','2xl':'18px','3xl':'24px' },
+      borderRadius: { xl:'14px','2xl':'18px','3xl':'24px', card:'14px' },
     },
   },
   plugins: [],

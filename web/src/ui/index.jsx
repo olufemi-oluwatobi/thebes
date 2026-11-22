@@ -61,7 +61,7 @@ export const Field = ({ label, help, children, aside }) => (
 
 /* ---------- surfaces ---------- */
 export const Card = ({ title, sub, action, children, className, pad = true, as: As = 'section' }) => (
-  <As className={cx('rounded-3xl bg-white shadow-card', pad && 'p-5 sm:p-6', className)}>
+  <As className={cx('rounded-card bg-white', pad && 'p-5 sm:p-6', className)}>
     {(title || action) && (
       <header className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0"><h3 className="text-subhead font-semibold text-ink">{title}</h3>{sub && <p className="mt-0.5 text-small text-ink-soft">{sub}</p>}</div>
@@ -79,7 +79,7 @@ export const Rows = ({ rows }) => (
   </dl>
 );
 export const StatGroup = ({ items, className }) => (
-  <div className={cx('grid divide-x divide-cream-100 rounded-3xl bg-white py-4 shadow-card', className)} style={{ gridTemplateColumns: `repeat(${items.length},minmax(0,1fr))` }}>
+  <div className={cx('grid divide-x divide-cream-100 rounded-card bg-white py-4', className)} style={{ gridTemplateColumns: `repeat(${items.length},minmax(0,1fr))` }}>
     {items.map(([v, l]) => <div key={l} className="min-w-0 px-4 sm:px-6"><div className="tnum truncate text-heading font-semibold text-ink">{v}</div><div className="mt-0.5 truncate text-caption text-ink-soft">{l}</div></div>)}
   </div>
 );

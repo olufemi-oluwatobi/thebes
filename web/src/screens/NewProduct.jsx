@@ -70,7 +70,7 @@ export default function NewProduct() {
       {st === 1 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {KINDS.map(([key, name, ex, art, cat]) => (
-            <button key={key} onClick={() => set({ kind: key, step: 2 })} className={cx('group flex flex-col overflow-hidden rounded-3xl bg-white text-left shadow-card transition hover:shadow-lift', P.kind === key && 'ring-2 ring-army')}>
+            <button key={key} onClick={() => set({ kind: key, step: 2 })} className={cx('group flex flex-col overflow-hidden rounded-card bg-white text-left transition hover:shadow-lift', P.kind === key && 'ring-2 ring-army')}>
               <span className="grid aspect-[4/3] w-full place-items-center" style={{ background: bgFor({ category: cat }) }}><Art k={art} className="h-[62%] w-[62%] transition group-hover:scale-105 [&>svg]:h-full [&>svg]:w-full" /></span>
               <span className="p-4"><span className="block font-semibold leading-5">{name}</span><span className="mt-1 block text-caption text-ink-soft">{ex}</span></span>
             </button>))}
@@ -92,7 +92,7 @@ export default function NewProduct() {
         <div className="flex max-w-2xl flex-col gap-6">
           <Card title="Cover image" sub="PNG, JPEG or WebP up to 5 MB. You'll frame it to fit the feed.">
             <label className={cx('relative grid aspect-[4/3] cursor-pointer place-items-center overflow-hidden rounded-2xl transition', P.img || P.sample ? '' : 'border-2 border-dashed border-cream-300 bg-cream-50 hover:border-army/40')}>
-              {P.img ? <img src={P.img} alt="" className="h-full w-full object-cover" /> : P.sample ? <ProductArt p={{ category: k[4], art: k[3] }} fit="62%" className="h-full w-full" /> : <span className="flex flex-col items-center gap-2 text-small text-ink-soft"><span className="grid h-12 w-12 place-items-center rounded-full bg-white text-army shadow-card"><Ic.Image /></span><b className="text-ink">Upload a cover</b><span>or drag it here</span></span>}
+              {P.img ? <img src={P.img} alt="" className="h-full w-full object-cover" /> : P.sample ? <ProductArt p={{ category: k[4], art: k[3] }} fit="62%" className="h-full w-full" /> : <span className="flex flex-col items-center gap-2 text-small text-ink-soft"><span className="grid h-12 w-12 place-items-center rounded-full bg-white text-army"><Ic.Image /></span><b className="text-ink">Upload a cover</b><span>or drag it here</span></span>}
               <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => file(e, 'cover')} />
             </label>
             {P.img ? <div className="mt-3 flex gap-4">{P.orig && <button type="button" className="inline-flex items-center gap-1.5 text-small font-semibold text-sage-700 hover:underline" onClick={() => setCrop([{ file: P.orig, to: 'cover' }])}><Ic.Crop width="16" height="16" />Adjust framing</button>}<label className="inline-flex cursor-pointer items-center gap-1.5 text-small font-semibold text-sage-700 hover:underline"><Ic.Up width="16" height="16" />Replace<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="sr-only" onChange={e => file(e, 'cover')} /></label></div>
@@ -120,7 +120,7 @@ export function ProductPreview({ p, company, video }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="relative overflow-hidden rounded-3xl shadow-card">{p.img ? <img src={p.img} alt="" className="aspect-[4/3] w-full object-cover" /> : <ProductArt p={{ category: p.category, art: kindOf(p.kind)[3] }} fit="62%" className="aspect-[4/3] w-full" />}
+        <div className="relative overflow-hidden rounded-card">{p.img ? <img src={p.img} alt="" className="aspect-[4/3] w-full object-cover" /> : <ProductArt p={{ category: p.category, art: kindOf(p.kind)[3] }} fit="62%" className="aspect-[4/3] w-full" />}
           {video && <span className="absolute bottom-4 left-4 inline-flex h-10 items-center gap-2 rounded-full bg-white pl-1.5 pr-4 text-small font-semibold text-army shadow-lift"><span className="grid h-7 w-7 place-items-center rounded-full bg-army text-white"><Ic.Play width="12" height="12" /></span>Watch demo</span>}</div>
         {p.images.length > 1 && <div className="flex gap-3 overflow-x-auto">{p.images.map((u, i) => <img key={i} src={u} alt="" className="h-[72px] w-[96px] shrink-0 rounded-2xl object-cover" />)}</div>}
         <div><Chip>{kindOf(p.kind)[1]}</Chip><h2 className="mt-3 font-serif text-[26px] leading-[34px]">{p.name}</h2>{p.desc && <p className="mt-2 whitespace-pre-line text-body text-ink-soft">{p.desc}</p>}</div>
