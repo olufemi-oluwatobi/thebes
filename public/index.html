@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gorilla Squad · Find people who will share your work</title>
-<meta name="description" content="Post your product. Local people share it to their network. You pay only for results that are checked.">
+<title>Gorilla Squad · Get your assets in front of the right people</title>
+<meta name="description" content="Gorilla Squad is a community of builders, creators and sellers who help each other distribute digital and physical products. Without ads. Without waiting.">
 <meta name="theme-color" content="#26331F">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/libre-baskerville-latin-700-normal.woff2" crossorigin>
 <style>
@@ -50,6 +50,11 @@ h2{font-size:clamp(29px,4.4vw,54px);max-width:16ch}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:30px}
 .center{display:flex;flex-direction:column;align-items:center;text-align:center}
 .center .lead{margin-inline:auto}
+.hero h1{max-width:19ch}
+.hero h1 .sub{display:block;margin-top:.18em;color:var(--sage)}
+.hero .lead{max-width:54ch}
+.eyebrow{font:700 clamp(12px,1.1vw,14px)/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.on-army .eyebrow{color:var(--sage)}
 
 /* ── product categories ─────────────────────────────────────────────── */
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,16px);width:100%;max-width:900px;margin-top:clamp(30px,4vw,46px)}
@@ -186,11 +191,11 @@ footer a:hover{color:#fff}
       <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
       <a class="in" href="/app/#signin">Sign in</a>
     </nav>
-    <h1>Find people who will share your work to their local network</h1>
-    <p class="lead">Post your product. Local people share it. You pay only for results that are checked.</p>
+    <h1>Get your assets in front of the right people. <span class="sub">Without ads. Without waiting.</span></h1>
+    <p class="lead">Gorilla Squad is a community of builders, creators, and sellers who help each other distribute digital and physical products. Real recommendations. Real channels. Real results.</p>
     <div class="cta">
-      <a class="btn solid" href="/app/#sell">Get started</a>
-      <a class="btn line" href="/app/#board">Browse campaigns</a>
+      <a class="btn solid" href="/app/#signin">Join the Squad</a>
+      <a class="btn line" href="#how">See how it works</a>
     </div>
 
     <div class="phone" role="img" aria-label="The Gorilla Squad board cycling through campaigns for a tech product, a candle brand and a playlist">
@@ -263,9 +268,10 @@ footer a:hover{color:#fff}
   </div>
 </section>
 
-<section class="on-cream">
+<section class="on-cream" id="how">
   <div class="wrap center">
-    <h2>Put your product directly in your customers' hands</h2>
+    <p class="eyebrow">Escape the loop</p>
+    <h2>You build it. They don't come.</h2>
     <p class="lead">Skip the ads. People hear about it from someone they already trust.</p>
   </div>
 </section>
