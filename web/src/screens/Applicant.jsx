@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react';
 import { useStore, offerOf } from '../lib/store.jsx';
 import { go } from '../lib/router.js';
 import { api } from '../lib/api.js';
-import { GOALS, money } from '../lib/data.js';
+import { GOALS, money, FEE } from '../lib/data.js';
 import { Page, Card, Button, Ic, Chip, Empty, cx } from '../ui/index.jsx';
 import { CreatorView, useCreator, platName, countryName, k } from '../ui/creator.jsx';
 
-// is there money behind this listing to pay a creator? (wallets come next; for now it is the listing's budget)
-export const hasFunds = (o) => { const F = o?.fin; return !!(F && F.budget && F.funded && F.budget - F.spent > 0); };
+// what taking one creator on costs: the budget per creator plus our fee, held from the seller's wallet
+export const holdFor = (o) => o?.job ? o.job + Math.round(o.job * FEE / 10000) : 0;
+// can the seller take someone on? Listings with a budget per creator need it in the wallet; older listings need a funded budget
+export const hasFunds = (o, wallet) => o?.job ? (wallet?.balance?.[o.fin?.cur || 'USD'] || 0) >= holdFor(o) : !!(o?.fin?.budget && o.fin.funded && o.fin.budget - o.fin.spent > 0);
 export const walletFor = { set: (v) => { try { sessionStorage.setItem('gs_wallet_for', JSON.stringify(v)); } catch {} }, take: () => { try { const v = JSON.parse(sessionStorage.getItem('gs_wallet_for') || 'null'); sessionStorage.removeItem('gs_wallet_for'); return v; } catch { return null; } } };
 
 /* #applicant/<interest id>: who applied, what they bring, and Interested / Not interested */
 export default function Applicant({ id }) {
   const { S, a } = useStore();
   const [i, setI] = useState(null), [err, setErr] = useState(false), [busy, setBusy] = useState(false);
-  useEffect(() => { api('/squad/interests/' + id).then((r) => { setI(r.interest); a.loadOffer(r.interest.offer_id); }).catch(() => setErr(true)); }, [id]);
+  useEffect(() => { api('/squad/interests/' + id).then((r) => { setI(r.interest); a.loadOffer(r.interest.offer_id); }).catch(() => setErr(true)); a.loadWallet(); }, [id]);
   const { d } = useCreator(i?.marketer_id);
   const o = i ? offerOf(S, i.offer_id) : null;
   const name = d ? (d.user?.display_name || (d.socials?.[0] ? '@' + d.socials[0].handle : 'this creator')) : 'this creator';
@@ -33,8 +35,9 @@ export default function Applicant({ id }) {
   const pending = i.status === 'pending';
 
   const interested = async () => {
-    if (!hasFunds(o)) { walletFor.set({ offer: i.offer_id, title: i.offer.title, who: name, back: 'applicant/' + id }); a.toast('Add funds before you take on creators'); return go('wallet'); }
-    setBusy(true); const rel = await a.accept({ id: i.id }); setBusy(false); if (rel) go('chats/' + rel);
+    const w = await a.loadWallet();
+    if (!hasFunds(o, w)) { walletFor.set({ offer: i.offer_id, title: i.offer.title, who: name, back: 'applicant/' + id, need: holdFor(o) }); a.toast('Top up to take on ' + name); return go(o?.job ? 'topup' : 'wallet'); }
+    setBusy(true); const rel = await a.accept({ id: i.id }); setBusy(false); if (rel) { walletFor.take(); a.loadWallet(); go('chats/' + rel); }
   };
   const notInterested = async () => { setBusy(true); await a.deny({ id: i.id }); setBusy(false); setI({ ...i, status: 'denied' }); };
 
@@ -51,7 +54,8 @@ export default function Applicant({ id }) {
             <span className={cx('grid h-7 w-7 shrink-0 place-items-center rounded-full', x.ok ? 'bg-sage-50 text-sage-700' : 'bg-[#FBEAE4] text-[#A23B17]')}>{x.ok ? <Ic.Check width="14" height="14" /> : <Ic.X_ width="14" height="14" />}</span>
             <span className="flex-1 text-small font-semibold">{x.t}</span><span className="text-small text-ink-soft">{x.v}</span></li>)}</ul>
         </Card>}
-        {pending && o && !hasFunds(o) && <p className="flex gap-2 rounded-card bg-[#FBF3E4] p-4 text-small text-[#8A6414]"><Ic.Wallet width="18" height="18" className="shrink-0" />This listing has no funds yet. You'll add them before taking anyone on.</p>}
+        {pending && o?.job > 0 && <p className={cx('flex gap-2 rounded-card p-4 text-small', hasFunds(o, S.wallet) ? 'bg-sage-50 text-sage-700' : 'bg-[#FBF3E4] text-[#8A6414]')}><Ic.Wallet width="18" height="18" className="shrink-0" />{hasFunds(o, S.wallet) ? money(holdFor(o), o.fin.cur) + ' will be held from your wallet for this job (budget ' + money(o.job, o.fin.cur) + ' + fee).' : 'Taking ' + name + ' on holds ' + money(holdFor(o), o.fin.cur) + '. Your wallet has ' + money(S.wallet?.balance?.[o.fin.cur] || 0, o.fin.cur) + '.'}</p>}
+        {pending && o && !o.job && !hasFunds(o) && <p className="flex gap-2 rounded-card bg-[#FBF3E4] p-4 text-small text-[#8A6414]"><Ic.Wallet width="18" height="18" className="shrink-0" />This listing has no funds yet. You'll add them before taking anyone on.</p>}
       </div>
     </Page>
   );

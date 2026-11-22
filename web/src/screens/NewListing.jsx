@@ -8,16 +8,16 @@ import { Stepper, useGate, takeDraft, fileToData, dataToFile } from '../ui/wizar
 
 // each goal: its reward fields (entered in currency units), suggested amounts and who it suits by default
 const DEF = {
-  traffic: { terms: { rate: '0.10', daily_cap: '' }, platforms: [], minf: 0, delivery: null },
-  sales: { terms: { mode: 'percent', percent: '15', amount: '' }, platforms: [], minf: 0, delivery: null },
-  newsletter: { terms: { rate: '0.50' }, platforms: [], minf: 0, delivery: null },
-  story: { terms: { fee: '10' }, platforms: ['instagram', 'whatsapp', 'tiktok', 'facebook'], minf: 0, delivery: 'social_post' },
-  review: { terms: { fee: '50' }, platforms: ['youtube', 'tiktok', 'instagram'], minf: 1000, delivery: 'video' },
+  traffic: { terms: { rate: '0.10', daily_cap: '' }, job: '20', platforms: [], minf: 0, delivery: null },
+  sales: { terms: { mode: 'percent', percent: '15', amount: '' }, job: '50', platforms: [], minf: 0, delivery: null },
+  newsletter: { terms: { rate: '0.50' }, job: '25', platforms: [], minf: 0, delivery: null },
+  story: { terms: { fee: '10' }, job: '10', platforms: ['instagram', 'whatsapp', 'tiktok', 'facebook'], minf: 0, delivery: 'social_post' },
+  review: { terms: { fee: '50' }, job: '50', platforms: ['youtube', 'tiktok', 'instagram'], minf: 1000, delivery: 'video' },
 };
 const TITLE = { traffic: (p) => 'Send people to ' + p, sales: (p) => 'Sell ' + p + ' and earn on every order', newsletter: (p) => 'Grow the ' + p + ' newsletter', story: (p) => 'Put ' + p + ' in your story', review: (p) => 'Review ' + p + ' on video' };
 const UNIT = { traffic: 'click', sales: 'sale', newsletter: 'subscriber', story: 'story', review: 'video' };
 const PROOF = { traffic: 'Counted automatically through their link.', sales: 'Counted through their link. Paid once the order clears.', newsletter: 'Counted through their sign-up link.', story: 'They send a screenshot and link. You approve it.', review: 'They send the video link. You approve it.' };
-const empty = (pid) => ({ step: pid ? 2 : 1, pid: pid || null, type: null, terms: {}, budgetOn: false, cur: 'USD', budget: '', cap: '', platforms: [], minf: 0, countries: [], verified: false, verifiedSocials: false, max: 0, delivery: null, title: '', files: [] });
+const empty = (pid) => ({ step: pid ? 2 : 1, pid: pid || null, type: null, terms: {}, budgetOn: false, cur: 'USD', budget: '', cap: '', platforms: [], minf: 0, countries: [], verified: false, verifiedSocials: false, max: 0, delivery: null, title: '', files: [], job: '' });
 const cents = (v) => Math.round((+v || 0) * 100);
 // the terms the API stores (money in cents)
 const termsOf = (L) => { const t = { ...DEF[L.type]?.terms, ...L.terms };
@@ -39,11 +39,13 @@ export default function NewListing({ pid }) {
   const p = L.pid ? prodOf(S, L.pid) : null, products = (S.myProductIds || []).map(id => prodOf(S, id)).filter(Boolean);
   const steps = pid ? ['Goal', 'Reward', 'Creators', 'Brief', 'Review'] : ['Product', 'Goal', 'Reward', 'Creators', 'Brief', 'Review'];
   const st = L.step, idx = pid ? st - 1 : st, T = L.type ? TYPES[L.type] : null, t = L.type ? termsOf(L) : null;
-  const budget = L.budgetOn ? cents(L.budget) : null, cap = L.budgetOn && L.cap ? cents(L.cap) : null, fee = budget ? Math.round(budget * FEE / 10000) : 0;
+  const budget = null, cap = null;
+  const job = cents(L.job || DEF[L.type]?.job), jobFee = Math.round(job * FEE / 10000), wal = S.wallet?.balance?.USD ?? null;
+  useEffect(() => { if (S.auth === 'in') a.loadWallet(); }, [S.auth]);
   const tv = (k) => (L.terms[k] ?? DEF[L.type]?.terms?.[k] ?? '');
   const setT = (k, v) => set({ terms: { ...L.terms, [k]: v } });
   const thumb = p?.img;
-  const pickGoal = (k) => set({ type: k, terms: {}, platforms: DEF[k].platforms, minf: DEF[k].minf, delivery: DEF[k].delivery, step: 3 });
+  const pickGoal = (k) => set({ type: k, terms: {}, job: '', platforms: DEF[k].platforms, minf: DEF[k].minf, delivery: DEF[k].delivery, step: 3 });
   const addFiles = (e) => { const fs = [...e.target.files]; e.target.value = '';
     const ok = fs.filter(f => /^(image|video)\//.test(f.type) && f.size <= (f.type.startsWith('video/') ? 50 : 5) * 1048576);
     if (ok.length < fs.length) a.toast('Images up to 5 MB, videos up to 50 MB');
@@ -57,13 +59,12 @@ export default function NewListing({ pid }) {
       if (L.type === 'sales' && tv('mode') === 'fixed' && !(+tv('amount') >= 0.01)) return 'Enter what each sale pays';
       if (['traffic', 'newsletter'].includes(L.type) && !(+tv('rate') >= 0.01)) return 'The rate must be at least ' + SYM[L.cur].trim() + '0.01';
       if (['story', 'review'].includes(L.type) && !(+tv('fee') >= 1)) return 'The fee must be at least ' + SYM[L.cur].trim() + '1';
-      if (L.budgetOn && !(+L.budget >= 1)) return 'Enter a budget, or turn it off';
-      if (cap && cap > budget) return 'The cap per creator cannot be more than the budget';
+      if (!(job >= 100)) return 'The budget per creator is at least ' + SYM[L.cur].trim() + '1';
     }
     if (st === 5 && L.title.trim() && L.title.trim().length < 3) return 'The name needs at least 3 characters';
     return null;
   };
-  const publish = async () => { setBusy(true); const id = await a.addOffer({ ...L, title: L.title.trim() || TITLE[L.type](p.name), terms: t, budget, cap }, p); setBusy(false); if (id) go('offer/' + id); };
+  const publish = async () => { setBusy(true); const id = await a.addOffer({ ...L, title: L.title.trim() || TITLE[L.type](p.name), terms: t, budget: null, cap: null, job }, p); setBusy(false); if (id) go('offer/' + id); };
   const next = () => {
     const err = valid(); if (err) return a.toast(err);
     if (st < 6) return set({ step: st + 1 });
@@ -71,8 +72,8 @@ export default function NewListing({ pid }) {
     if (gate('seller', publish, async () => ({ L: { ...L, files: [], fileData: (await Promise.all(L.files.filter(f => f.file.size < 2 * 1048576).map(f => fileToData(f.file)))).filter(Boolean) } }))) publish();
   };
   const back = () => st > (pid ? 2 : 1) ? set({ step: st - 1 }) : go('plus');
-  const titles = { 1: ['Which product is this listing for?', 'A listing is one ask for one product. You can make several per product.'], 2: ['What do you want the community to do for you?', 'One goal per listing. Make another listing for a different goal.'], 3: ['How do you want to reward them?', 'You only pay for results. Set the amount and an optional budget.'], 4: ['What kind of creator?', 'Leave it open to get more applicants. You still accept each one.'], 5: ['Name your listing', 'Links and details come from your product. Attach anything that helps.'], 6: ['Review and publish', budget ? "We'll email you how to pay the budget. The listing goes live once it lands." : 'No payment needed. Your listing goes live right away.'] }[st];
-  const label = st === 6 ? (busy ? 'Publishing…' : budget ? 'Submit · pay ' + money(budget + fee, L.cur) : 'Publish listing') : 'Continue';
+  const titles = { 1: ['Which product is this listing for?', 'A listing is one ask for one product. You can make several per product.'], 2: ['What do you want the community to do for you?', 'One goal per listing. Make another listing for a different goal.'], 3: ['How do you want to reward them?', 'What a result earns, and the budget each creator gets.'], 4: ['What kind of creator?', 'Leave it open to get more applicants. You still accept each one.'], 5: ['Name your listing', 'Links and details come from your product. Attach anything that helps.'], 6: ['Review and publish', 'It goes live right away. Money is only held when you take someone on.'] }[st];
+  const label = st === 6 ? (busy ? 'Publishing…' : 'Publish listing') : 'Continue';
 
   return (
     <Page crumb="Create" onBack={back} sub={<Stepper steps={steps} st={idx} />} barDesktop
@@ -101,12 +102,13 @@ export default function NewListing({ pid }) {
               {L.type === 'newsletter' && <Field label="Per subscriber"><Input type="number" min="0.01" step="0.01" pre={SYM[L.cur].trim()} value={tv('rate')} onChange={e => setT('rate', e.target.value)} /></Field>}
               {(L.type === 'story' || L.type === 'review') && <Field label={L.type === 'story' ? 'Per story' : 'Per video'}><Input type="number" min="1" step="1" pre={SYM[L.cur].trim()} value={tv('fee')} onChange={e => setT('fee', e.target.value)} /></Field>}
             </Card>
-            <Card><div className="flex flex-col gap-5">
-              <Switch on={L.budgetOn} onChange={v => set({ budgetOn: v })} label="Put in a budget" sub="Creators trust funded listings more. Off means you pay each creator directly." />
-              {L.budgetOn && <><div className="h-px bg-cream-100" /><div className="grid gap-5 sm:grid-cols-2"><Field label="Currency"><Select value={L.cur} onChange={v => set({ cur: v })} options={Object.keys(SYM).map(c => [c, c])} /></Field><Field label="Total budget"><Input type="number" min="1" pre={SYM[L.cur].trim()} placeholder="1,000" value={L.budget} onChange={e => set({ budget: e.target.value })} /></Field></div>
-                <div className="grid gap-5 sm:grid-cols-2"><Field label="Max per creator" aside={<span className="text-caption text-ink-faint">Optional</span>} help="Stops one creator using it all."><Input type="number" min="1" pre={SYM[L.cur].trim()} placeholder="No limit" value={L.cap} onChange={e => set({ cap: e.target.value })} /></Field></div>
-                {budget > 0 && <div className="rounded-2xl bg-cream-50 p-4"><Rows rows={[['Budget', money(budget, L.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, L.cur)], ['Total to pay', <span className="text-heading">{money(budget + fee, L.cur)}</span>]]} /><p className="mt-3 text-small text-sage-700">{t.percent ? 'Covers about ' + money(Math.round(budget / (t.percent / 100)), L.cur) + ' in sales.' : 'Pays for about ' + Math.floor(budget / Math.max(1, unitCents(t))).toLocaleString() + ' ' + (UNIT[L.type] === 'story' ? 'stories' : UNIT[L.type] + 's') + '.'}</p></div>}</>}
-            </div></Card>
+            <Card title="Budget per creator" sub="Held from your wallet when you take someone on. Paid to them when the job is done, or returned if it's cancelled.">
+              <Field label="Each creator gets up to"><Input type="number" min="1" step="1" pre={SYM[L.cur].trim()} value={L.job || DEF[L.type].job} onChange={e => set({ job: e.target.value })} /></Field>
+              {job > 0 && <div className="mt-4 rounded-2xl bg-cream-50 p-4"><Rows rows={[['Budget per creator', money(job, L.cur)], ['Fee (' + FEE / 100 + '%)', money(jobFee, L.cur)], ['Held per creator', <b>{money(job + jobFee, L.cur)}</b>]]} />
+                {unitCents(t) > 0 && !t.percent && <p className="mt-3 text-small text-sage-700">That's about {Math.max(1, Math.floor(job / unitCents(t))).toLocaleString()} {UNIT[L.type] === 'story' ? (Math.floor(job / unitCents(t)) === 1 ? 'story' : 'stories') : UNIT[L.type] + (Math.floor(job / unitCents(t)) === 1 ? '' : 's')} per creator.</p>}
+                {wal != null && <p className={cx('mt-2 text-small', wal >= job + jobFee ? 'text-ink-soft' : 'text-[#8A6414]')}>Your wallet: {money(wal, L.cur)}{wal >= job + jobFee ? ' · enough for ' + Math.floor(wal / (job + jobFee)) + ' creator' + (Math.floor(wal / (job + jobFee)) === 1 ? '' : 's') : ' · top up before you accept anyone'}</p>}
+              </div>}
+            </Card>
           </>)}
           {st === 4 && (
             <Card><div className="flex flex-col gap-6">
@@ -135,7 +137,7 @@ export default function NewListing({ pid }) {
             <div className="lg:hidden"><FeedPreview L={L} p={p} thumb={thumb} /></div>
             <Card title="What you're asking" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 2 })}>Edit</button>}><Rows rows={[['Product', p.name], ['Goal', GOALS.find(g => g[0] === L.type)[1]], ['Reward', T.reward(t, L.cur) + ' ' + T.sub(t, L.cur)], ['Name', L.title.trim() || TITLE[L.type](p.name)], L.files.length > 0 && ['Attachments', L.files.length + ' file' + (L.files.length > 1 ? 's' : '')]]} /></Card>
             <Card title="Who can apply" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 4 })}>Edit</button>}><Rows rows={[['Platforms', L.platforms.length ? L.platforms.map(x => PLATFORMS.find(q => q[0] === x)[1]).join(', ') : 'Any'], ['Audience', L.minf ? L.minf.toLocaleString() + '+ followers' : 'Any size'], ['Based in', L.countries.length ? L.countries.join(', ') : 'Anywhere'], ['How many', L.max ? 'Up to ' + L.max : 'No limit'], ['Verified', [L.verifiedSocials && 'Accounts', L.verified && 'Creators'].filter(Boolean).join(' and ') || 'Not required']]} /></Card>
-            <Card title="Payment" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}>{budget ? <Rows rows={[['Budget', money(budget, L.cur)], cap && ['Max per creator', money(cap, L.cur)], ['Listing fee (' + FEE / 100 + '%)', money(fee, L.cur)], ['Total to pay', <span className="text-heading">{money(budget + fee, L.cur)}</span>]]} /> : <Rows rows={[['Budget', 'None, you pay creators directly']]} />}</Card>
+            <Card title="Payment" action={<button className="text-small font-semibold text-sage-700 hover:underline" onClick={() => set({ step: 3 })}>Edit</button>}><Rows rows={[['Budget per creator', money(job, L.cur)], ['Fee (' + FEE / 100 + '%)', money(jobFee, L.cur)], ['Held when you accept someone', <b>{money(job + jobFee, L.cur)}</b>], wal != null && ['Your wallet', money(wal, L.cur)]]} />{wal != null && wal < job + jobFee && <button onClick={() => go('topup')} className="mt-3 text-small font-semibold text-sage-700 hover:underline">Top up your wallet</button>}</Card>
           </>)}
         </div>
         <aside className="hidden lg:block"><div className="sticky top-0">{p && st > 1 ? <FeedPreview L={L} p={p} thumb={thumb} /> : null}</div></aside>

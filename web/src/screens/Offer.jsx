@@ -100,9 +100,11 @@ export default function Offer({ id }) {
             <div className="mt-2 text-small text-ink-soft">{T.sub(o.terms, F.cur)}</div>
             <p className="mt-3 text-small text-ink/80">{earnLine(o.type, o.terms, F.cur)}</p>
             <div className="my-5 h-px bg-cream-100" />
+            {o.job ? <div className="flex items-baseline justify-between text-body"><span className="text-ink-soft">{mine ? 'Budget per creator' : 'Your budget for this job'}</span><b className="tnum">{money(o.job, F.cur)}</b></div> : <>
             <div className="mb-2 flex items-baseline justify-between text-body"><span className="text-ink-soft">Budget left</span><b className="tnum">{left == null ? 'Open' : money(left, F.cur)}</b></div>
             {F.budget ? <Bar pct={left / F.budget * 100} /> : null}
-            <div className="mt-3"><Rows rows={[['Max per marketer', F.cap ? money(F.cap, F.cur) : 'No limit']]} /></div>
+            <div className="mt-3"><Rows rows={[['Max per marketer', F.cap ? money(F.cap, F.cur) : 'No limit']]} /></div></>}
+            {o.job && !mine ? <p className="mt-2 text-caption text-ink-soft">Held by Gorilla Squad when you're accepted, and paid to you when the job is done.</p> : null}
             <div className="mt-5 hidden flex-col gap-2.5 lg:flex">{primary}{p.url && <Button tone="secondary" size="lg" block onClick={visitFn}><Ic.Visit width="18" height="18" />Visit website</Button>}</div>
             <p className="mt-4 flex gap-2 text-caption text-ink-soft"><Ic.Shield width="16" height="16" className="shrink-0" />{mine ? 'You can pause or reopen this any time.' : 'The seller reviews every application. Terms are frozen once accepted.'}</p>
           </Card>

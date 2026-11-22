@@ -107,7 +107,7 @@ export function squadRoutes(app, h) {
     terms: json(r.terms, {}), requirements: json(r.requirements, {}), max_relationships: r.max_relationships, status: r.status,
     financials: financials(r), video_media_id: r.video_media_id || null, video: r.video_media_id ? mediaUrl(r.video_media_id) : null,
     cover_media_id: r.cover_media_id || null, cover: r.cover_media_id ? mediaUrl(r.cover_media_id) : null,
-    attachments: json(r.attachments, []).map((x) => ({ ...x, url: mediaUrl(x.id) })),
+    attachments: json(r.attachments, []).map((x) => ({ ...x, url: mediaUrl(x.id) })), job_budget_cents: r.job_budget_cents ?? null,
     ...flags(r), created_at: r.created_at, updated_at: r.updated_at, ...extra,
   });
   const interestOut = (r) => r && ({ id: r.id, offer_id: r.offer_id, marketer_id: r.marketer_id, social_id: r.social_id, message: r.message, status: r.status, decided_at: r.decided_at, decision_note: r.decision_note, created_at: r.created_at });
@@ -795,10 +795,11 @@ export function squadRoutes(app, h) {
     const status = b.status === 'open' ? 'open' : 'draft';
     if (status === 'open' && p.is_flagged) no(409, 'this product is flagged and cannot be offered until it is reviewed', 'flagged');
     const fin = money(b), video = await videoOf(c, u, b.video_media_id), cover = await coverOf(c, u, b.cover_media_id), files = await attachmentsOf(c, u, b.attachments);
+    const job = intIn(b.job_budget_cents, 'budget per interest', 100, 1e10);
     if (status === 'open' && fin.budget_cents) no(409, 'a budgeted offer opens once its budget is funded: save it as a draft first', 'unfunded');
     const id = uid('of');
-    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents, cover_media_id, attachments)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null, cover, JSON.stringify(files)).run();
+    await DB(c).prepare(`INSERT INTO offers (id, product_id, offer_type_id, title, description, terms, requirements, max_relationships, status, created_by, created_at, updated_at, video_media_id, currency, budget_cents, payout_cap_cents, cover_media_id, attachments, job_budget_cents)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, type.id, title, description, JSON.stringify(terms), JSON.stringify(requirements), max, status, u.id, t, t, video, fin.currency || 'USD', fin.budget_cents ?? null, fin.payout_cap_cents ?? null, cover, JSON.stringify(files), job ?? null).run();
     return c.json({ offer: offerOut(await DB(c).prepare('SELECT * FROM offers WHERE id = ?').bind(id).first()) }, 201);
   });
 
@@ -900,6 +901,7 @@ export function squadRoutes(app, h) {
     if ('video_media_id' in b) set.video_media_id = await videoOf(c, u, b.video_media_id);
     if ('cover_media_id' in b) set.cover_media_id = await coverOf(c, u, b.cover_media_id);
     if ('attachments' in b) set.attachments = JSON.stringify(await attachmentsOf(c, u, b.attachments));
+    if ('job_budget_cents' in b) set.job_budget_cents = b.job_budget_cents == null ? null : intIn(b.job_budget_cents, 'budget per interest', 100, 1e10, true);
     if (['currency', 'budget_cents', 'payout_cap_cents'].some((k) => k in b)) {
       if (o.funded_cents > 0) no(409, 'the budget is locked once it is funded: close this offer and start a new one to change it', 'locked');
       Object.assign(set, money(b, o));
@@ -1033,15 +1035,34 @@ export function squadRoutes(app, h) {
     const rid = uid('rl');
     const snapshot = JSON.stringify({ offer_type: i.type_slug, title: i.offer_title, terms: json(i.terms, {}), requirements: json(i.requirements, {}), accepted_at: t });
     const note = text(b.note, 'note', { max: 1000 });
+    const offer = await DB(c).prepare('SELECT job_budget_cents, currency, platform_fee_bps FROM offers WHERE id = ?').bind(i.offer_id).first();
+    const job = offer.job_budget_cents, cur = offer.currency || 'USD', fee = job ? Math.round(job * (offer.platform_fee_bps ?? 500) / 10000) : 0;
+    const hid = uid('hd'), eid = uid('we');
+    const q = [];
+    if (job) {
+      // the hold only happens if the wallet covers budget + fee; everything below only happens if the hold did
+      q.push(DB(c).prepare(`INSERT INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at)
+        SELECT ?, ?, ?, ?, 'hold', ?, ?, ?, ? WHERE (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_entries WHERE user_id = ? AND currency = ?) >= ?`)
+        .bind(eid, u.id, cur, -job, hid, 'Held for ' + i.offer_title, u.id, t, u.id, cur, job + fee));
+    }
+    const ifHeld = job ? ' AND EXISTS (SELECT 1 FROM wallet_entries WHERE id = ?)' : '';
+    const held = job ? [eid] : [];
+    q.push(DB(c).prepare(`UPDATE interests SET status = 'accepted', decided_by = ?, decided_at = ?, decision_note = ?, updated_at = ? WHERE id = ? AND status = 'pending'${ifHeld}`).bind(u.id, t, note, t, id, ...held));
+    q.push(DB(c).prepare(`INSERT INTO relationships (id, offer_id, marketer_id, interest_id, terms_snapshot, created_at, updated_at) SELECT ?, ?, ?, ?, ?, ?, ? WHERE 1${ifHeld}`).bind(rid, i.offer_id, i.marketer_id, id, snapshot, t, t, ...held));
+    if (job) {
+      if (fee) q.push(DB(c).prepare(`INSERT INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) SELECT ?, ?, ?, ?, 'fee', ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM wallet_entries WHERE id = ?)`)
+        .bind(uid('we'), u.id, cur, -fee, hid, 'Fee for ' + i.offer_title, u.id, t, eid));
+      q.push(DB(c).prepare(`INSERT INTO holds (id, relationship_id, seller_user_id, marketer_user_id, currency, amount_cents, fee_cents, created_at) SELECT ?, ?, ?, (SELECT user_id FROM marketers WHERE id = ?), ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM wallet_entries WHERE id = ?)`)
+        .bind(hid, rid, u.id, i.marketer_id, cur, job, fee, t, eid));
+    }
     try {
-      await DB(c).batch([
-        DB(c).prepare(`UPDATE interests SET status = 'accepted', decided_by = ?, decided_at = ?, decision_note = ?, updated_at = ? WHERE id = ? AND status = 'pending'`).bind(u.id, t, note, t, id),
-        DB(c).prepare('INSERT INTO relationships (id, offer_id, marketer_id, interest_id, terms_snapshot, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(rid, i.offer_id, i.marketer_id, id, snapshot, t, t),
-      ]);
+      await DB(c).batch(q);
     } catch (err) {
       if (String(err).includes('UNIQUE')) no(409, 'this marketer already works on this offer', 'duplicate');
       throw err;
     }
+    if (job && !(await DB(c).prepare('SELECT 1 FROM wallet_entries WHERE id = ?').bind(eid).first()))
+      no(402, `your wallet needs ${(job + fee) / 100} ${cur} to take on this creator`, 'insufficient_funds');
     return c.json({ interest: interestOut(await DB(c).prepare('SELECT * FROM interests WHERE id = ?').bind(id).first()), relationship: relOut(await DB(c).prepare('SELECT * FROM relationships WHERE id = ?').bind(rid).first()) }, 201);
   });
 
@@ -1285,6 +1306,114 @@ export function squadRoutes(app, h) {
     media: { table: 'media', actions: ['verify', 'unverify', 'block', 'unblock', 'delete', 'restore'] },
   };
 
+  // ======================================================================================================
+  // wallets: a balance is the sum of its entries
+  // ======================================================================================================
+  const balanceOf = async (c, userId) => (await DB(c).prepare('SELECT currency, SUM(amount_cents) n FROM wallet_entries WHERE user_id = ? GROUP BY currency').bind(userId).all()).results
+    .reduce((o, r) => ({ ...o, [r.currency]: r.n }), {});
+  const entryOut = (r) => ({ id: r.id, currency: r.currency, amount_cents: r.amount_cents, kind: r.kind, ref_id: r.ref_id, note: r.note, created_at: r.created_at });
+  const holdOut = (r) => r && ({ id: r.id, relationship_id: r.relationship_id, currency: r.currency, amount_cents: r.amount_cents, fee_cents: r.fee_cents, status: r.status, decided_at: r.decided_at, note: r.note, created_at: r.created_at, offer_title: r.offer_title, other: r.other_name });
+  const entry = (c, userId, cur, amount, kind, ref, note, by, t) => DB(c).prepare('INSERT INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(uid('we'), userId, cur, amount, kind, ref, note, by, t);
+  const walletCur = (v) => { const cc = String(v || 'USD').toUpperCase(); if (!CURRENCIES.includes(cc)) no(400, `currency is one of: ${CURRENCIES.join(', ')}`, 'invalid'); return cc; };
+
+  app.get('/api/squad/wallet', async (c) => {
+    const u = needUser(c);
+    const all = (sql) => DB(c).prepare(sql).bind(u.id).all().then((r) => r.results);
+    const [bal, entries, held, incoming, topups, payouts] = await Promise.all([balanceOf(c, u.id),
+      all('SELECT * FROM wallet_entries WHERE user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 50'),
+      all(`SELECT h.*, o.title offer_title, COALESCE(us.display_name, us.email) other_name FROM holds h JOIN relationships r ON r.id = h.relationship_id JOIN offers o ON o.id = r.offer_id JOIN users us ON us.id = h.marketer_user_id WHERE h.seller_user_id = ? AND h.status = 'held' ORDER BY h.created_at DESC`),
+      all(`SELECT h.*, o.title offer_title, COALESCE(co.name, p.name) other_name FROM holds h JOIN relationships r ON r.id = h.relationship_id JOIN offers o ON o.id = r.offer_id JOIN products p ON p.id = o.product_id LEFT JOIN companies co ON co.id = p.company_id WHERE h.marketer_user_id = ? AND h.status = 'held' ORDER BY h.created_at DESC`),
+      all(`SELECT * FROM topups WHERE user_id = ? AND status = 'pending' ORDER BY created_at DESC`),
+      all(`SELECT * FROM payouts WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`)]);
+    const sum = (rows) => rows.reduce((o, r) => ({ ...o, [r.currency]: (o[r.currency] || 0) + r.amount_cents }), {});
+    return c.json({ balance: bal, held: sum(held), incoming: sum(incoming), entries: entries.map(entryOut), holds: held.map(holdOut), incoming_holds: incoming.map(holdOut),
+      topups: topups.map((r) => ({ id: r.id, currency: r.currency, amount_cents: r.amount_cents, reference: r.reference, status: r.status, created_at: r.created_at })),
+      payouts: payouts.map((r) => ({ id: r.id, currency: r.currency, amount_cents: r.amount_cents, method: r.method, status: r.status, created_at: r.created_at })) });
+  });
+
+  // put money in: until a payment provider is connected, this records the request and an admin credits it when the money lands
+  app.post('/api/squad/wallet/topups', async (c) => {
+    const u = needUser(c), b = await body(c), t = now();
+    const amount = intIn(b.amount_cents, 'amount', 100, 1e10, true), cur = walletCur(b.currency);
+    const pending = (await DB(c).prepare(`SELECT COUNT(*) n FROM topups WHERE user_id = ? AND status = 'pending'`).bind(u.id).first()).n;
+    if (pending >= 5) no(409, 'you have 5 top-ups waiting already', 'limit');
+    const id = uid('tp'), ref = 'GS-' + String(crypto.getRandomValues(new Uint32Array(1))[0] % 90000000 + 10000000);
+    await DB(c).prepare('INSERT INTO topups (id, user_id, currency, amount_cents, reference, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, u.id, cur, amount, ref, t).run();
+    return c.json({ topup: { id, currency: cur, amount_cents: amount, reference: ref, status: 'pending', created_at: t } }, 201);
+  });
+  app.post('/api/squad/wallet/topups/:id/cancel', async (c) => {
+    const u = needUser(c);
+    const r = await DB(c).prepare(`UPDATE topups SET status = 'cancelled', decided_by = ?, decided_at = ? WHERE id = ? AND user_id = ? AND status = 'pending'`).bind(u.id, now(), c.req.param('id'), u.id).run();
+    if (!r.meta?.changes) no(404, 'no such pending top-up', 'not_found');
+    return c.json({ ok: true });
+  });
+
+  // take money out: the amount leaves the wallet now, and comes back if the payout is cancelled
+  app.post('/api/squad/wallet/payouts', async (c) => {
+    const u = needUser(c), b = await body(c), t = now();
+    const amount = intIn(b.amount_cents, 'amount', 100, 1e10, true), cur = walletCur(b.currency);
+    const method = ['bank', 'mobile_money', 'crypto'].includes(b.method) ? b.method : no(400, 'method is bank, mobile_money or crypto', 'invalid');
+    const details = text(b.details, 'details', { min: 5, max: 500, required: true });
+    const id = uid('po'), eid = uid('we');
+    await DB(c).batch([
+      DB(c).prepare(`INSERT INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at)
+        SELECT ?, ?, ?, ?, 'payout', ?, 'Withdrawal', ?, ? WHERE (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_entries WHERE user_id = ? AND currency = ?) >= ?`).bind(eid, u.id, cur, -amount, id, u.id, t, u.id, cur, amount),
+      DB(c).prepare(`INSERT INTO payouts (id, user_id, currency, amount_cents, method, details, created_at) SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM wallet_entries WHERE id = ?)`).bind(id, u.id, cur, amount, method, details, t, eid),
+    ]);
+    if (!(await DB(c).prepare('SELECT 1 FROM payouts WHERE id = ?').bind(id).first())) no(402, 'your wallet does not have that much', 'insufficient_funds');
+    return c.json({ payout: { id, currency: cur, amount_cents: amount, method, status: 'requested', created_at: t } }, 201);
+  });
+
+  // ---------- admin: credit top-ups, finish or cancel jobs, pay out ----------
+  app.get('/api/admin/squad/money', async (c) => {
+    needAdmin(c);
+    const all = (sql) => DB(c).prepare(sql).all().then((r) => r.results);
+    const [topups, holds, payouts] = await Promise.all([
+      all(`SELECT t.*, COALESCE(u.display_name, u.email) who FROM topups t JOIN users u ON u.id = t.user_id WHERE t.status = 'pending' ORDER BY t.created_at`),
+      all(`SELECT h.*, o.title offer_title, COALESCE(m.display_name, m.email) other_name, COALESCE(s.display_name, s.email) seller_name FROM holds h JOIN relationships r ON r.id = h.relationship_id JOIN offers o ON o.id = r.offer_id
+        JOIN users m ON m.id = h.marketer_user_id JOIN users s ON s.id = h.seller_user_id WHERE h.status = 'held' ORDER BY h.created_at`),
+      all(`SELECT p.*, COALESCE(u.display_name, u.email) who FROM payouts p JOIN users u ON u.id = p.user_id WHERE p.status = 'requested' ORDER BY p.created_at`)]);
+    const checks = await all(`SELECT so.id, so.platform, so.handle, so.url, so.followers, so.verify_code, so.verify_requested_at, COALESCE(u.display_name, u.email) who FROM socials so JOIN marketers m ON m.id = so.marketer_id JOIN users u ON u.id = m.user_id
+      WHERE so.verify_requested_at IS NOT NULL AND so.is_verified = 0 AND so.is_deleted = 0 ORDER BY so.verify_requested_at`);
+    return c.json({ checks, topups: topups.map((r) => ({ id: r.id, who: r.who, currency: r.currency, amount_cents: r.amount_cents, reference: r.reference, created_at: r.created_at })),
+      holds: holds.map((r) => ({ ...holdOut(r), seller: r.seller_name })),
+      payouts: payouts.map((r) => ({ id: r.id, who: r.who, currency: r.currency, amount_cents: r.amount_cents, method: r.method, details: r.details, created_at: r.created_at })) });
+  });
+  app.post('/api/admin/squad/topups/:id/:action', async (c) => {
+    const a = needAdmin(c), t = now(), act = c.req.param('action');
+    if (!['credit', 'cancel'].includes(act)) no(404, 'not found', 'not_found');
+    const tp = await DB(c).prepare(`SELECT * FROM topups WHERE id = ? AND status = 'pending'`).bind(c.req.param('id')).first();
+    if (!tp) no(404, 'no such pending top-up', 'not_found');
+    const q = [DB(c).prepare(`UPDATE topups SET status = ?, decided_by = ?, decided_at = ? WHERE id = ? AND status = 'pending'`).bind(act === 'credit' ? 'credited' : 'cancelled', a.id, t, tp.id)];
+    if (act === 'credit') q.push(entry(c, tp.user_id, tp.currency, tp.amount_cents, 'topup', tp.id, 'Top-up ' + tp.reference, a.id, t));
+    await DB(c).batch(q);
+    return c.json({ ok: true });
+  });
+  // job done: the held budget goes to the marketer. Cancelled: budget and fee go back to the seller.
+  app.post('/api/admin/squad/holds/:id/:action', async (c) => {
+    const a = needAdmin(c), b = await body(c), t = now(), act = c.req.param('action');
+    if (!['release', 'refund'].includes(act)) no(404, 'not found', 'not_found');
+    const h = await DB(c).prepare(`SELECT * FROM holds WHERE id = ? AND status = 'held'`).bind(c.req.param('id')).first();
+    if (!h) no(404, 'no such held job', 'not_found');
+    const note = text(b.note, 'note', { max: 500 });
+    const q = [DB(c).prepare(`UPDATE holds SET status = ?, decided_by = ?, decided_at = ?, note = ? WHERE id = ? AND status = 'held'`).bind(act === 'release' ? 'released' : 'refunded', a.id, t, note ?? null, h.id)];
+    if (act === 'release') q.push(entry(c, h.marketer_user_id, h.currency, h.amount_cents, 'earning', h.id, 'Job done', a.id, t));
+    else q.push(entry(c, h.seller_user_id, h.currency, h.amount_cents + h.fee_cents, 'refund', h.id, 'Job cancelled', a.id, t));
+    await DB(c).batch(q);
+    return c.json({ hold: holdOut(await DB(c).prepare('SELECT * FROM holds WHERE id = ?').bind(h.id).first()) });
+  });
+  app.post('/api/admin/squad/payouts/:id/:action', async (c) => {
+    const a = needAdmin(c), b = await body(c), t = now(), act = c.req.param('action');
+    if (!['paid', 'cancel'].includes(act)) no(404, 'not found', 'not_found');
+    const po = await DB(c).prepare(`SELECT * FROM payouts WHERE id = ? AND status = 'requested'`).bind(c.req.param('id')).first();
+    if (!po) no(404, 'no such payout request', 'not_found');
+    const q = [DB(c).prepare(`UPDATE payouts SET status = ?, decided_by = ?, decided_at = ?, note = ? WHERE id = ? AND status = 'requested'`).bind(act === 'paid' ? 'paid' : 'cancelled', a.id, t, text(b.note, 'note', { max: 500 }) ?? null, po.id)];
+    if (act === 'cancel') q.push(entry(c, po.user_id, po.currency, po.amount_cents, 'payout_return', po.id, 'Withdrawal cancelled', a.id, t));
+    await DB(c).batch(q);
+    return c.json({ ok: true });
+  });
+
   app.post('/api/admin/squad/:kind/:id', async (c) => {
     const a = needAdmin(c), b = await body(c), t = now();
     const spec = ADMIN[c.req.param('kind')];
@@ -1299,7 +1428,7 @@ export function squadRoutes(app, h) {
     const sets = {
       verify: spec.table === 'deliveries' ? { status: 'verified', is_verified: 1, verified_by: a.id, verified_at: t, verification_note: note }
         : { is_verified: 1, ...(hasVerifiedBy ? { verified_by: a.id, verified_at: t } : {}), ...(spec.table === 'users' ? { verified_at: t } : {}), ...(spec.table === 'socials' ? { verification_note: note, verified_followers: row.followers, verify_requested_at: null } : {}) },
-      unverify: { is_verified: 0, ...(spec.table === 'socials' ? { verified_followers: null } : {}) },
+      unverify: { is_verified: 0, ...(spec.table === 'socials' ? { verified_followers: null, verify_requested_at: null } : {}) },
       reject: { status: 'rejected', is_verified: 0, verified_by: a.id, verified_at: t, verification_note: note },
       block: { is_blocked: 1 }, unblock: { is_blocked: 0 },
       delete: { is_deleted: 1, ...(['users', 'companies'].includes(spec.table) ? { deleted_at: t } : {}) },

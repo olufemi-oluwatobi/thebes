@@ -21,7 +21,7 @@ export function productA(p, media = []) {
 export function offerA(o) {
   const f = o.financials || {}, r = o.requirements || {};
   return {
-    id: o.id, pid: o.product_id, cover: o.cover || null, files: o.attachments || [], max: o.max_relationships || null, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
+    id: o.id, pid: o.product_id, cover: o.cover || null, files: o.attachments || [], job: o.job_budget_cents ?? null, max: o.max_relationships || null, title: o.title, desc: o.description || '', type: o.type?.slug || 'commission', terms: o.terms || {}, status: o.status,
     co: o.company?.name || o.product?.name || 'Seller', coV: !!(o.company?.is_verified || o.seller_verified),
     req: { min_followers: r.min_followers || 0, countries: r.countries || [], platforms: r.platforms || [], verified_only: !!r.verified_only, verified_socials: !!r.verified_socials, delivery_types: r.delivery_types || [] },
     fin: { cur: f.currency || 'USD', budget: f.budget_cents ?? null, cap: f.payout_cap_cents ?? null, funded: f.funding_status === 'funded', spent: f.spent_cents || 0, fee: f.listing_fee_cents || 0, due: f.payment_due_cents || 0 },
@@ -97,7 +97,8 @@ export function StoreProvider({ children }) {
       me: me ? { id: me.user.id, name: me.user.display_name || me.user.email.split('@')[0], email: me.user.email, handle: me.user.email.split('@')[0], verified: !!(seller ? me.seller?.is_verified : me.marketer?.is_verified),
         company: me.companies?.[0]?.name || null, co: me.companies?.[0] || null, sellerBio: me.seller?.bio || '', country: me.marketer?.country || null, city: me.marketer?.city || null,
         followers: (me.socials || []).reduce((n, x) => n + (x.followers || 0), 0), socials: me.socials || [], marketer: me.marketer || null } : null,
-      reloadMe: loadMe,
+      reloadMe: loadMe, isAdmin: me?.user?.role === 'admin',
+      async loadWallet() { const r = await run(() => api('/squad/wallet'), { quiet: true }); if (r) patch((s) => { s.wallet = r; }); return r; },
       userName,
       hasSeller: !!me?.seller, hasMarketer: !!me?.marketer,
       setRole: (r) => patch((s) => { s.role = r || (s.role === 'seller' ? 'marketer' : 'seller'); s.roleSet = true; s.deals = null; }),
@@ -240,7 +241,7 @@ export function StoreProvider({ children }) {
         const budget = L.budget, body = { product_id: p.id, offer_type: L.type, title: L.title || 'Promote ' + p.name, terms: L.terms, attachments: files,
           requirements: { min_followers: +L.minf || undefined, countries: L.countries.length ? L.countries : undefined, platforms: L.platforms.length ? L.platforms : undefined,
             verified_only: L.verified || undefined, verified_socials: L.verifiedSocials || undefined, delivery_types: L.delivery ? [L.delivery] : undefined },
-          ...(L.max ? { max_relationships: L.max } : {}),
+          ...(L.max ? { max_relationships: L.max } : {}), ...(L.job ? { job_budget_cents: L.job } : {}),
           status: budget ? 'draft' : 'open', currency: L.cur, ...(budget ? { budget_cents: budget } : {}), ...(L.cap ? { payout_cap_cents: L.cap } : {}) };
         const r = await run(() => api('/squad/offers', { method: 'POST', body }));
         if (!r) return null;
