@@ -9,6 +9,9 @@ import Chats from './screens/Chats.jsx';
 import Create from './screens/Create.jsx';
 import Profile from './screens/Profile.jsx';
 import Product from './screens/Product.jsx';
+import Applicant from './screens/Applicant.jsx';
+import CreatorPage from './screens/CreatorPage.jsx';
+import Wallet from './screens/Wallet.jsx';
 
 const TABS = [['feed', 'Feed', Ic.Feed], ['plus', 'Create', Ic.Create], ['chats', 'Chats', Ic.Chat], ['me', 'Profile', Ic.Me]];
 const tabOf = (n) => ({ offer: 'feed', deal: 'chats', product: 'me', signin: 'feed', '': 'feed' }[n] ?? n);
@@ -29,6 +32,9 @@ export default function App() {
   else if (r.n === 'plus') view = <Create key={r.a} pid={r.a} />;
   else if (r.n === 'chats') view = <Chats id={r.a} />;
   else if (r.n === 'me') view = <Profile />;
+  else if (r.n === 'applicant') view = <Applicant key={r.a} id={r.a} />;
+  else if (r.n === 'creator') view = <CreatorPage key={r.a} id={r.a} />;
+  else if (r.n === 'wallet') view = <Wallet />;
   else view = <Feed />;
   const showNav = (['feed', 'me'].includes(r.n) || ((r.n === 'chats' || r.n === 'plus') && !r.a)) && !S.signin && !S.setup && !S.applyTo;
   const u = a.me, both = a.hasSeller && a.hasMarketer;

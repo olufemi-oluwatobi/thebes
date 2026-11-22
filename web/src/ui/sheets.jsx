@@ -52,10 +52,9 @@ export function ApplySheet() {
   if (!o) return null;
   return (
     <Sheet open onClose={a.closeApply} title="Apply to promote" sub={o.title}
-      footer={<Button size="lg" block disabled={busy} onClick={async () => { setBusy(true); await a.sendApply(o, msg.trim(), soc); setBusy(false); }}>{busy ? 'Sending…' : 'Send application'}</Button>}>
+      footer={<Button size="lg" block disabled={busy} onClick={async () => { setBusy(true); await a.sendApply(o, '', soc); setBusy(false); }}>{busy ? 'Sending…' : 'Send application'}</Button>}>
       <div className="flex items-baseline gap-2 rounded-2xl bg-cream-50 p-4"><span className="font-serif text-[28px] leading-none">{TYPES[o.type]?.reward(o.terms, o.fin.cur)}</span><span className="text-small text-ink-soft">{TYPES[o.type]?.sub(o.terms, o.fin.cur)}</span></div>
       {socials.length > 0 && <Field label="Which account will you use?"><Select value={soc} onChange={setSoc} options={socials.map((x) => [x.id, (PLATFORMS.find((p) => p[0] === x.platform)?.[1] || x.platform) + ' · @' + x.handle + ' · ' + (x.followers || 0).toLocaleString()])} /></Field>}
-      <Field label="Note to the seller" help="Who your audience is and how you'd promote it."><Textarea maxLength={2000} value={msg} onChange={e => setMsg(e.target.value)} placeholder="e.g. I run a food page in Lagos with 4k followers. I'd share it in stories and my weekly roundup." /></Field>
     </Sheet>
   );
 }

@@ -31,7 +31,7 @@ export function offerA(o) {
 }
 const dealA = (r) => ({
   id: r.id, offer: r.offer_id, offerTitle: r.offer?.title, productId: r.product?.id, productName: r.product?.name, type: r.type?.slug, status: r.status, side: r.side,
-  terms: r.terms_snapshot?.terms || {}, since: day(r.created_at), created: r.created_at, sellerName: r.seller?.company || nameOf(r.seller?.user), marketerName: nameOf(r.marketer?.user),
+  terms: r.terms_snapshot?.terms || {}, since: day(r.created_at), created: r.created_at, sellerName: r.seller?.company || nameOf(r.seller?.user), marketerName: nameOf(r.marketer?.user), marketerId: r.marketer?.id || r.marketer_id || null,
   marketerVerified: !!r.marketer?.is_verified, unread: r.counts?.unread || 0, deliveries: r.counts?.deliveries || 0, lastAt: r.last_message_at || r.updated_at,
   earned: r.earned_cents ?? null, currency: r.currency || null, cap: r.payout_cap_cents ?? null,
 });
@@ -96,7 +96,8 @@ export function StoreProvider({ children }) {
       toast, run,
       me: me ? { id: me.user.id, name: me.user.display_name || me.user.email.split('@')[0], email: me.user.email, handle: me.user.email.split('@')[0], verified: !!(seller ? me.seller?.is_verified : me.marketer?.is_verified),
         company: me.companies?.[0]?.name || null, co: me.companies?.[0] || null, sellerBio: me.seller?.bio || '', country: me.marketer?.country || null, city: me.marketer?.city || null,
-        followers: (me.socials || []).reduce((n, x) => n + (x.followers || 0), 0), socials: me.socials || [] } : null,
+        followers: (me.socials || []).reduce((n, x) => n + (x.followers || 0), 0), socials: me.socials || [], marketer: me.marketer || null } : null,
+      reloadMe: loadMe,
       userName,
       hasSeller: !!me?.seller, hasMarketer: !!me?.marketer,
       setRole: (r) => patch((s) => { s.role = r || (s.role === 'seller' ? 'marketer' : 'seller'); s.roleSet = true; s.deals = null; }),

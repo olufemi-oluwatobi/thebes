@@ -38,7 +38,7 @@ const plat = (k) => PLATFORMS.find((p) => p[0] === k)?.[1] || k;
 
 export default function Offer({ id }) {
   const { S, a } = useStore();
-  const [demo, setDemo] = useState(false), [pick, setPick] = useState(null), [busy, setBusy] = useState(false);
+  const [demo, setDemo] = useState(false), [busy, setBusy] = useState(false);
   useEffect(() => { a.loadOffer(id); }, [id, S.auth]);
   const o = offerOf(S, id), mine = a.isMine(o);
   useEffect(() => { if (mine && !S.recv) a.loadSeller(); }, [mine]);
@@ -76,7 +76,7 @@ export default function Offer({ id }) {
           {mine ? (
             <Card title="Applications" sub={ints.length ? 'Review each one to accept or deny.' : undefined} action={ints.length ? <span className="text-small font-semibold text-ink-soft">{ints.filter(i => i.status === 'pending').length} pending</span> : null}>
               {ints.length ? <div className="-mx-3 flex flex-col">{ints.map(i => (
-                <button key={i.id} onClick={() => setPick(i)} className="flex min-h-[68px] items-center gap-3 rounded-2xl px-3 text-left transition hover:bg-cream-50"><Avatar name={i.who?.name} size={44} /><div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 font-semibold">{i.who?.name}{i.who?.verified && <Verified />}</div><div className="truncate text-small text-ink-soft">{i.who?.social ? plat(i.who.social.platform) + ' · ' + (i.who.social.followers || 0).toLocaleString() + ' followers' : 'No account picked'}{i.who?.country ? ' · ' + i.who.country : ''}</div></div><Status s={i.status} /><Ic.Chev width="18" height="18" className="text-ink-faint" /></button>))}</div>
+                <button key={i.id} onClick={() => go('applicant/' + i.id)} className="flex min-h-[68px] items-center gap-3 rounded-2xl px-3 text-left transition hover:bg-cream-50"><Avatar name={i.who?.name} size={44} /><div className="min-w-0 flex-1"><div className="flex items-center gap-1.5 font-semibold">{i.who?.name}{i.who?.verified && <Verified />}</div><div className="truncate text-small text-ink-soft">{i.who?.social ? plat(i.who.social.platform) + ' · ' + (i.who.social.followers || 0).toLocaleString() + ' followers' : 'No account picked'}{i.who?.country ? ' · ' + i.who.country : ''}</div></div><Status s={i.status} /><Ic.Chev width="18" height="18" className="text-ink-faint" /></button>))}</div>
                 : <Empty icon={<Ic.Me />} title="No applications yet" text={o.status === 'open' ? 'Marketers who apply show up here for you to review.' : 'Applications open once the offer is live.'} />}
             </Card>
           ) : <Steps title="How it works" sub="Terms are frozen the moment the seller accepts you." steps={HOW[o.type] || HOW.commission} />}
@@ -117,14 +117,6 @@ export default function Offer({ id }) {
         </aside>
       </div>
       <Sheet open={demo} onClose={() => setDemo(false)} title={p.name + ' demo'}><Player src={p.videoUrl} /></Sheet>
-      <Sheet open={!!pick} onClose={() => setPick(null)} title={pick?.who?.name} sub={pick && 'Applied to ' + o.title}
-        footer={pick?.status === 'pending' && <><Button size="lg" block disabled={busy} onClick={async () => { setBusy(true); const d = await a.accept(pick); setBusy(false); setPick(null); if (d) go('chats/' + d); }}>Accept and open chat</Button><Button tone="secondary" size="lg" block disabled={busy} onClick={async () => { await a.deny(pick); setPick(null); }}>Deny</Button></>}>
-        {pick && (<>
-          <div className="grid grid-cols-3 divide-x divide-cream-100 rounded-2xl bg-cream-50 py-3 text-center">{[[(pick.who?.social?.followers || 0).toLocaleString(), 'Followers'], [pick.who?.country || '—', 'Country'], [pick.who?.verified ? 'Yes' : 'No', 'Verified']].map(([v, l]) => <div key={l}><div className="tnum font-semibold">{v}</div><div className="text-caption text-ink-soft">{l}</div></div>)}</div>
-          <div><div className="mb-1.5 text-small font-semibold">Their note</div><p className="rounded-2xl bg-cream-50 p-4 text-body">{pick.msg || 'No note.'}</p></div>
-          {pick.who?.social && <div><div className="mb-1.5 text-small font-semibold">Account</div><p className="text-small text-ink-soft">{plat(pick.who.social.platform)} · @{pick.who.social.handle}{pick.who.social.is_verified ? ' · verified' : ''}</p></div>}
-          {pick.status === 'pending' ? <p className="text-caption text-ink-soft">Accepting freezes today's terms and opens a chat.</p> : <Status s={pick.status} />}</>)}
-      </Sheet>
     </Page>
   );
 }

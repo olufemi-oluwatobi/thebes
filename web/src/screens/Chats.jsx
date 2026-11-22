@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Stars } from '../ui/creator.jsx';
+import { api } from '../lib/api.js';
 import { useStore, offerOf, prodOf } from '../lib/store.jsx';
 import { go } from '../lib/router.js';
 import { TYPES, SYM, money, ago, clock } from '../lib/data.js';
@@ -97,6 +99,7 @@ function Panel({ d }) {
       </div>
       <Tabs value={tab} onChange={setTab} items={[['overview', 'Overview'], ['dels', 'Deliveries', seller ? pend : 0], ['terms', 'Terms']]} />
       {tab === 'overview' && <Rows rows={[['Status', <Status s={d.status} />], ['Reward', T.reward(d.terms, cur) + ' ' + T.sub(d.terms, cur).split(' · ')[0]], ['Max you can earn', cap ? money(cap, cur) : 'No limit'], cap && ['Progress', <span className="inline-block w-24"><Bar pct={earned / cap * 100} /></span>], ['Started', d.since]]} />}
+      {tab === 'overview' && seller && <RateCard d={d} />}
       {tab === 'dels' && (<div className="flex flex-col gap-4">
         {!seller && d.status === 'active' && (
           <div className="flex flex-col gap-3 rounded-2xl bg-cream-50 p-4">
@@ -148,6 +151,23 @@ export default function Chats({ id }) {
         <aside className="hidden min-h-0 overflow-y-auto border-l border-cream-200/70 bg-cream-50 p-6 xl:block"><Panel d={sel} /></aside>
         <Sheet open={info} onClose={() => setInfo(false)} title="Deal details"><Panel d={sel} /></Sheet>
       </>) : <div className={cx('place-items-center', id ? 'grid' : 'hidden md:grid')}>{id ? <Spinner /> : <Empty icon={<Ic.Chat />} title="Pick a chat" text="Your conversations with sellers and marketers live here." />}</div>}
+    </div>
+  );
+}
+
+/* the seller rates the creator on this deal (one rating per deal, can be changed) */
+function RateCard({ d }) {
+  const { a } = useStore();
+  const [r, setR] = useState(undefined), [note, setNote] = useState(''), [busy, setBusy] = useState(false);
+  useEffect(() => { api(`/squad/relationships/${d.id}/rating`).then((x) => { setR(x.rating); setNote(x.rating?.note || ''); }).catch(() => setR(null)); }, [d.id]);
+  const save = async (stars, n = note) => { setBusy(true); const x = await a.run(() => api(`/squad/relationships/${d.id}/rating`, { method: 'PUT', body: { stars, note: n.trim() || undefined } })); setBusy(false); if (x) { setR(x.rating); a.toast('Rating saved'); } };
+  if (r === undefined) return null;
+  return (
+    <div className="rounded-card bg-paper p-4">
+      <div className="flex items-center justify-between gap-3"><div><div className="font-semibold">Rate {d.marketerName?.split(' ')[0] || 'this creator'}</div><div className="text-caption text-ink-soft">Shown on their profile.</div></div>
+        {d.marketerId && <button onClick={() => go('creator/' + d.marketerId)} className="text-small font-semibold text-sage-700 hover:underline">Profile</button>}</div>
+      <Stars value={r?.stars || 0} size={30} onChange={(n) => !busy && save(n)} className="mt-2 -ml-1" />
+      {r && <div className="mt-2 flex gap-2"><input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Add a short note (optional)" className="h-10 flex-1 rounded-xl bg-cream-50 px-3 text-small outline-none ring-1 ring-inset ring-cream-200 focus:ring-army" />{note !== (r.note || '') && <Button size="sm" disabled={busy} onClick={() => save(r.stars)}>Save</Button>}</div>}
     </div>
   );
 }

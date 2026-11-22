@@ -88,8 +88,8 @@ export function squadRoutes(app, h) {
   const publicUser = (u) => u && ({ id: u.id, display_name: u.display_name || [u.first_name, u.last_name].filter(Boolean).join(' ') || null, first_name: u.first_name, last_name: u.last_name, is_verified: !!u.is_verified });
   const companyOut = (r) => r && ({ id: r.id, slug: r.slug, name: r.name, website: r.website, industry: r.industry, description: r.description, city: r.city, country: r.country, ...flags(r), created_at: r.created_at });
   const sellerOut = (r) => r && ({ id: r.id, user_id: r.user_id, company_id: r.company_id, bio: r.bio, ...flags(r), created_at: r.created_at });
-  const marketerOut = (r) => r && ({ id: r.id, user_id: r.user_id, country: r.country, city: r.city, bio: r.bio, ...flags(r), verified_at: r.verified_at, created_at: r.created_at });
-  const socialOut = (r) => r && ({ id: r.id, marketer_id: r.marketer_id, platform: r.platform, handle: r.handle, url: r.url, followers: r.followers, audience_countries: json(r.audience_countries, []), ...flags(r), verified_at: r.verified_at, verification_note: r.verification_note, created_at: r.created_at });
+  const marketerOut = (r) => r && ({ id: r.id, user_id: r.user_id, country: r.country, city: r.city, bio: r.bio, niches: json(r.niches, []), languages: json(r.languages, []), ...flags(r), verified_at: r.verified_at, created_at: r.created_at });
+  const socialOut = (r) => r && ({ id: r.id, marketer_id: r.marketer_id, platform: r.platform, handle: r.handle, url: r.url, followers: r.followers, audience_countries: json(r.audience_countries, []), ...flags(r), verified_at: r.verified_at, verify_requested_at: r.verify_requested_at || null, verified_followers: r.verified_followers ?? null, verification_note: r.verification_note, created_at: r.created_at });
   const mediaUrl = (id) => '/api/squad/media/' + id + '/file';
   const mediaOut = (r) => r && ({ id: r.id, kind: r.kind, mime: r.mime, bytes: r.bytes, width: r.width, height: r.height, duration_ms: r.duration_ms, caption: r.caption,
     url: mediaUrl(r.id), poster: r.poster_media_id ? mediaUrl(r.poster_media_id) : null, poster_media_id: r.poster_media_id, ...flags(r), created_at: r.created_at });
@@ -353,25 +353,46 @@ export function squadRoutes(app, h) {
     if (have && have.is_blocked) no(403, 'your marketer profile is blocked', 'blocked');
     const ctry = country(b.country, 'country', !have);
     const city = text(b.city, 'city', { max: 60 }), bio = text(b.bio, 'bio', { max: 1000 });
+    const tags = (v, name, max) => { if (v == null) return null; if (!Array.isArray(v)) no(400, `${name} must be a list`, 'invalid');
+      const out = [...new Set(v.map((x) => String(x).trim()).filter(Boolean))]; if (out.length > max || out.some((x) => x.length > 30)) no(400, `up to ${max} ${name}, 30 characters each`, 'invalid'); return JSON.stringify(out); };
+    const niches = tags(b.niches, 'niches', 8), langs = tags(b.languages, 'languages', 6);
     if (have) {
       // a change of country is a new claim: it needs checking again
       const moved = ctry && ctry !== have.country;
       await DB(c).prepare(`UPDATE marketers SET is_deleted = 0, country = COALESCE(?, country), city = COALESCE(?, city), bio = COALESCE(?, bio),
-        is_verified = CASE WHEN ? THEN 0 ELSE is_verified END, updated_at = ? WHERE id = ?`).bind(ctry, city, bio, bool(moved), t, have.id).run();
+        niches = COALESCE(?, niches), languages = COALESCE(?, languages),
+        is_verified = CASE WHEN ? THEN 0 ELSE is_verified END, updated_at = ? WHERE id = ?`).bind(ctry, city, bio, niches, langs, bool(moved), t, have.id).run();
       return c.json({ marketer: marketerOut(await marketerOf(c, u.id)) });
     }
-    await DB(c).prepare('INSERT INTO marketers (id, user_id, country, city, bio, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(uid('mk'), u.id, ctry, city, bio, t, t).run();
+    await DB(c).prepare('INSERT INTO marketers (id, user_id, country, city, bio, niches, languages, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(uid('mk'), u.id, ctry, city, bio, niches || '[]', langs || '[]', t, t).run();
     return c.json({ marketer: marketerOut(await marketerOf(c, u.id)) }, 201);
   });
 
-  // public marketer profile: verified status and accounts
+  // public creator profile: who they are, their accounts, their work on Gorilla Squad and how sellers rated it
+  const creatorStats = async (c, mid) => {
+    const one = (sql, ...a) => DB(c).prepare(sql).bind(...a).first();
+    const deals = await one(`SELECT COUNT(*) n, SUM(status = 'active') active, SUM(status = 'ended') ended FROM relationships WHERE marketer_id = ?`, mid);
+    const res = await one(`SELECT SUM(d.status = 'verified') ok, SUM(d.status = 'rejected') bad FROM deliveries d JOIN relationships r ON r.id = d.relationship_id WHERE r.marketer_id = ? AND d.is_deleted = 0`, mid);
+    const kinds = (await DB(c).prepare(`SELECT t.slug, t.name, COUNT(*) n FROM deliveries d JOIN relationships r ON r.id = d.relationship_id JOIN delivery_types t ON t.id = d.delivery_type_id
+      WHERE r.marketer_id = ? AND d.status = 'verified' AND d.is_deleted = 0 GROUP BY t.slug ORDER BY n DESC`).bind(mid).all()).results;
+    const goals = (await DB(c).prepare(`SELECT ot.slug, ot.name, COUNT(*) n FROM relationships r JOIN offers o ON o.id = r.offer_id JOIN offer_types ot ON ot.id = o.offer_type_id
+      WHERE r.marketer_id = ? GROUP BY ot.slug ORDER BY n DESC`).bind(mid).all()).results;
+    const rate = await one('SELECT COUNT(*) n, AVG(stars) avg FROM ratings WHERE marketer_id = ?', mid);
+    const ok = res?.ok || 0, bad = res?.bad || 0;
+    return { deals: deals?.n || 0, active_deals: deals?.active || 0, ended_deals: deals?.ended || 0, approved_results: ok, rejected_results: bad,
+      approval_rate: ok + bad ? Math.round(ok / (ok + bad) * 100) : null, by_delivery: kinds, by_goal: goals,
+      rating: rate?.n ? { average: Math.round(rate.avg * 10) / 10, count: rate.n } : null };
+  };
   app.get('/api/squad/marketers/:id', async (c) => {
     const m = await DB(c).prepare('SELECT * FROM marketers WHERE id = ?').bind(c.req.param('id')).first();
     if (!m || m.is_deleted || (m.is_blocked && !isAdmin(c))) return fail(c, 404, 'no such marketer', 'not_found');
     const u = await DB(c).prepare('SELECT * FROM users WHERE id = ?').bind(m.user_id).first();
-    const socials = (await DB(c).prepare('SELECT * FROM socials WHERE marketer_id = ? AND is_deleted = 0 AND is_blocked = 0 ORDER BY followers DESC').bind(m.id).all()).results;
-    const done = (await DB(c).prepare(`SELECT COUNT(*) n FROM deliveries d JOIN relationships r ON r.id = d.relationship_id WHERE r.marketer_id = ? AND d.status = 'verified' AND d.is_deleted = 0`).bind(m.id).first()).n;
-    return c.json({ marketer: marketerOut(m), user: publicUser(u), socials: socials.map(socialOut), verified_deliveries: done });
+    const socials = (await DB(c).prepare('SELECT * FROM socials WHERE marketer_id = ? AND is_deleted = 0 AND is_blocked = 0 ORDER BY is_verified DESC, followers DESC').bind(m.id).all()).results;
+    const stats = await creatorStats(c, m.id);
+    const reviews = (await DB(c).prepare(`SELECT ra.stars, ra.note, ra.created_at, COALESCE(co.name, p.name) who FROM ratings ra JOIN relationships r ON r.id = ra.relationship_id
+      JOIN offers o ON o.id = r.offer_id JOIN products p ON p.id = o.product_id LEFT JOIN companies co ON co.id = p.company_id
+      WHERE ra.marketer_id = ? ORDER BY ra.created_at DESC LIMIT 5`).bind(m.id).all()).results;
+    return c.json({ marketer: marketerOut(m), user: publicUser(u), socials: socials.map(socialOut), verified_deliveries: stats.approved_results, stats, reviews, member_since: m.created_at });
   });
 
   // ======================================================================================================
@@ -394,7 +415,21 @@ export function squadRoutes(app, h) {
   app.get('/api/squad/socials', async (c) => {
     const { m } = await asMarketer(c);
     const rows = (await DB(c).prepare('SELECT * FROM socials WHERE marketer_id = ? AND is_deleted = 0 ORDER BY created_at').bind(m.id).all()).results;
-    return c.json({ socials: rows.map(socialOut) });
+    return c.json({ socials: rows.map((r) => ({ ...socialOut(r), verify_code: r.verify_code || null })) });
+  });
+
+  // proving an account is yours: put the code in your bio, then ask us to check
+  app.post('/api/squad/socials/:id/verify', async (c) => {
+    const { m } = await asMarketer(c), b = await body(c), id = c.req.param('id'), t = now();
+    const s = await DB(c).prepare('SELECT * FROM socials WHERE id = ? AND marketer_id = ? AND is_deleted = 0').bind(id, m.id).first();
+    if (!s) no(404, 'no such account of yours', 'not_found');
+    if (s.is_blocked) no(403, 'this account is blocked', 'blocked');
+    if (s.is_verified) return c.json({ social: { ...socialOut(s), verify_code: s.verify_code }, status: 'verified' });
+    let code = s.verify_code;
+    if (!code) { code = 'gs-' + String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000); await DB(c).prepare('UPDATE socials SET verify_code = ?, updated_at = ? WHERE id = ?').bind(code, t, id).run(); }
+    if (b.placed) await DB(c).prepare('UPDATE socials SET verify_requested_at = ?, verification_note = ?, updated_at = ? WHERE id = ?').bind(t, 'says the code is in the bio', t, id).run();
+    const row = await DB(c).prepare('SELECT * FROM socials WHERE id = ?').bind(id).first();
+    return c.json({ social: { ...socialOut(row), verify_code: code }, status: row.verify_requested_at ? 'requested' : 'code' });
   });
 
   app.post('/api/squad/socials', async (c) => {
@@ -958,6 +993,18 @@ export function squadRoutes(app, h) {
       social: r.social_id ? { id: r.social_id, platform: r.so_platform, handle: r.so_handle, followers: r.so_followers, is_verified: !!r.so_verified } : null })) });
   });
 
+  app.get('/api/squad/interests/:id', async (c) => {
+    const u = me(c), i = await DB(c).prepare(`SELECT i.*, o.title offer_title, o.terms offer_terms, o.requirements offer_requirements, o.currency, o.budget_cents, o.funded_cents, t.slug type_slug,
+        s.user_id seller_user_id, m.user_id marketer_user_id, so.platform so_platform, so.handle so_handle, so.followers so_followers, so.is_verified so_verified, so.verified_followers so_vf,
+        (SELECT r.id FROM relationships r WHERE r.offer_id = i.offer_id AND r.marketer_id = i.marketer_id ORDER BY r.created_at DESC LIMIT 1) relationship_id
+      FROM interests i JOIN offers o ON o.id = i.offer_id JOIN offer_types t ON t.id = o.offer_type_id JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id
+      JOIN marketers m ON m.id = i.marketer_id LEFT JOIN socials so ON so.id = i.social_id WHERE i.id = ?`).bind(c.req.param('id')).first();
+    if (!i || (i.seller_user_id !== u.id && i.marketer_user_id !== u.id && u.role !== 'admin')) no(404, 'no such application', 'not_found');
+    return c.json({ interest: { ...interestOut(i), relationship_id: i.relationship_id || null,
+      offer: { id: i.offer_id, title: i.offer_title, type: i.type_slug, terms: json(i.offer_terms, {}), requirements: json(i.offer_requirements, {}) },
+      social: i.social_id ? { id: i.social_id, platform: i.so_platform, handle: i.so_handle, followers: i.so_followers, is_verified: !!i.so_verified, verified_followers: i.so_vf ?? null } : null } });
+  });
+
   // the marketer's own interests
   app.get('/api/squad/interests', async (c) => {
     const { m } = await asMarketer(c);
@@ -1076,6 +1123,21 @@ export function squadRoutes(app, h) {
   // ======================================================================================================
   // deliveries: the marketer reports what they did; the seller or an admin verifies it
   // ======================================================================================================
+  // the seller rates the creator on a deal: one rating per deal, which they can change
+  app.get('/api/squad/relationships/:id/rating', async (c) => {
+    const { r } = await relParty(c, c.req.param('id'));
+    const row = await DB(c).prepare('SELECT stars, note, updated_at FROM ratings WHERE relationship_id = ?').bind(r.id).first();
+    return c.json({ rating: row || null });
+  });
+  app.put('/api/squad/relationships/:id/rating', async (c) => {
+    const { u, r, side } = await relParty(c, c.req.param('id')), b = await body(c), t = now();
+    if (side !== 'seller') no(403, 'only the seller rates a deal', 'forbidden');
+    const stars = intIn(b.stars, 'stars', 1, 5, true), note = text(b.note, 'note', { max: 500 });
+    await DB(c).prepare(`INSERT INTO ratings (id, relationship_id, marketer_id, rater_user_id, stars, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(relationship_id) DO UPDATE SET stars = excluded.stars, note = excluded.note, updated_at = excluded.updated_at`).bind(uid('rt'), r.id, r.marketer_id, u.id, stars, note ?? null, t, t).run();
+    return c.json({ rating: await DB(c).prepare('SELECT stars, note, updated_at FROM ratings WHERE relationship_id = ?').bind(r.id).first() });
+  });
+
   app.get('/api/squad/relationships/:id/deliveries', async (c) => {
     const { r } = await relParty(c, c.req.param('id'));
     const rows = (await DB(c).prepare(`SELECT d.*, t.slug type_slug, t.name type_name, so.platform so_platform, so.handle so_handle
@@ -1236,8 +1298,8 @@ export function squadRoutes(app, h) {
     const hasVerifiedBy = ['sellers', 'marketers', 'socials', 'deliveries'].includes(spec.table);
     const sets = {
       verify: spec.table === 'deliveries' ? { status: 'verified', is_verified: 1, verified_by: a.id, verified_at: t, verification_note: note }
-        : { is_verified: 1, ...(hasVerifiedBy ? { verified_by: a.id, verified_at: t } : {}), ...(spec.table === 'users' ? { verified_at: t } : {}), ...(spec.table === 'socials' ? { verification_note: note } : {}) },
-      unverify: { is_verified: 0 },
+        : { is_verified: 1, ...(hasVerifiedBy ? { verified_by: a.id, verified_at: t } : {}), ...(spec.table === 'users' ? { verified_at: t } : {}), ...(spec.table === 'socials' ? { verification_note: note, verified_followers: row.followers, verify_requested_at: null } : {}) },
+      unverify: { is_verified: 0, ...(spec.table === 'socials' ? { verified_followers: null } : {}) },
       reject: { status: 'rejected', is_verified: 0, verified_by: a.id, verified_at: t, verification_note: note },
       block: { is_blocked: 1 }, unblock: { is_blocked: 0 },
       delete: { is_deleted: 1, ...(['users', 'companies'].includes(spec.table) ? { deleted_at: t } : {}) },
