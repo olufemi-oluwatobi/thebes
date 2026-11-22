@@ -17,6 +17,7 @@ export default function TopUp() {
   const submit = async () => {
     if (cents < 100) return a.toast('Top up at least ' + money(100));
     setBusy(true); const r = await a.run(() => api('/squad/wallet/topups', { method: 'POST', body: { amount_cents: cents, currency: 'USD' } })); setBusy(false);
+    if (r?.checkout_url) { setBusy(true); location.href = r.checkout_url; return; } // pay on the Bachs page, then come back
     if (r) { setDone(r.topup); a.loadWallet(); }
   };
   if (done) return (

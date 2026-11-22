@@ -24,6 +24,13 @@ export default function App() {
   useEffect(() => { if (r.n === 'signin') { if (S.auth === 'out') a.openSignin(); else if (S.auth === 'in') go('feed'); } if (r.n === 'sell') go('plus'); if (r.n === 'board') go('feed'); }, [r.n, S.auth]);
   useEffect(() => { if (S.auth === 'in' && !S.deals) a.loadDeals(); }, [S.auth, S.role, !!S.deals]);
   // after the email link signs someone in, take them back to what they were doing
+  // back from the Bachs checkout: the webhook credits the wallet, so just say where it stands and refresh
+  useEffect(() => {
+    if (S.auth !== 'in') return; const q = new URLSearchParams(location.search), ok = q.get('topup'), no = q.get('topup_cancel');
+    if (!ok && !no) return; history.replaceState(null, '', location.pathname + '#wallet');
+    a.toast(ok ? 'Payment received. Your wallet updates in a moment.' : 'Top-up cancelled'); go('wallet');
+    if (ok) { a.loadWallet(); setTimeout(() => a.loadWallet(), 4000); }
+  }, [S.auth]);
   useEffect(() => { if (S.auth !== 'in') return; let n = null; try { n = localStorage.getItem('gs_next'); localStorage.removeItem('gs_next'); } catch {} if (n && n !== location.hash) location.hash = n; }, [S.auth]);
   if (S.auth === 'loading') return <div className="grid h-full place-items-center"><span className="animate-pulse"><LogoMark size={48} /></span></div>;
   const tab = tabOf(r.n);

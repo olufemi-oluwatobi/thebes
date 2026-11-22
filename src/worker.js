@@ -24,7 +24,7 @@ const isClosed = (k) => k.status === 'ended' || (k.status === 'live' && k.ends_a
 app.use('*', async (c, next) => {
   const sid = getCookie(c, 'ts');
   if (sid) {
-    const row = await c.env.DB.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id_hash = ? AND s.expires_at > ? AND u.deleted_at IS NULL')
+    const row = await c.env.DB.prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id_hash = ? AND s.expires_at > ? AND u.deleted_at IS NULL AND COALESCE(u.is_blocked, 0) = 0')
       .bind(await sha(sid), now()).first();
     if (row) c.set('user', row);
   }
@@ -32,8 +32,15 @@ app.use('*', async (c, next) => {
 });
 const user = (c) => c.get('user') || null;
 const needUser = (c) => { const u = user(c); if (!u) throw new HttpError(401, 'sign in first', 'signin'); return u; };
-const needAdmin = (c) => { const u = needUser(c); if (u.role !== 'admin') throw new HttpError(403, 'admins only'); return u; };
+const needAdmin = (c) => { const u = needUser(c); if (u.role !== 'admin') throw new HttpError(403, 'admins only', 'forbidden'); return u; };
 class HttpError extends Error { constructor(status, msg, code) { super(msg); this.status = status; this.code = code; } }
+// every admin route is checked here first, whatever the route itself does
+app.use('/api/admin/*', async (c, next) => {
+  const u = user(c);
+  if (!u) return c.json({ error: 'sign in first', code: 'signin' }, 401);
+  if (u.role !== 'admin') return c.json({ error: 'admins only', code: 'forbidden' }, 403);
+  await next();
+});
 app.onError((e, c) => e instanceof HttpError ? fail(c, e.status, e.message, e.code) : (console.error(e), fail(c, 500, 'something went wrong')));
 
 // the player: the signed-in user's, or this device's until they sign in

@@ -4,6 +4,7 @@
 // Every main row has is_verified, is_deleted and is_blocked. Deleted rows are never shown; blocked rows cannot act.
 // Mounted on the Thebes Worker; the games engine is untouched. Helpers come from worker.js.
 
+import { bachs, bachsOn, toDecimal, toCents, verifyWebhook } from './bachs.js';
 export const PLATFORMS = ['x', 'instagram', 'tiktok', 'youtube', 'linkedin', 'facebook', 'whatsapp', 'telegram', 'substack', 'newsletter', 'reddit', 'discord', 'twitch', 'website', 'other'];
 export const CATEGORIES = ['physical', 'digital', 'software', 'service', 'content', 'other'];
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR'];
@@ -1340,7 +1341,23 @@ export function squadRoutes(app, h) {
     if (pending >= 5) no(409, 'you have 5 top-ups waiting already', 'limit');
     const id = uid('tp'), ref = 'GS-' + String(crypto.getRandomValues(new Uint32Array(1))[0] % 90000000 + 10000000);
     await DB(c).prepare('INSERT INTO topups (id, user_id, currency, amount_cents, reference, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, u.id, cur, amount, ref, t).run();
-    return c.json({ topup: { id, currency: cur, amount_cents: amount, reference: ref, status: 'pending', created_at: t } }, 201);
+    let checkout_url = null, checkout_id = null;
+    if (bachsOn(c.env)) {
+      // the hosted checkout; the wallet is credited only when Bachs confirms the payment by webhook
+      const app = String(c.env.APP_URL || '').replace(/\/$/, '');
+      try {
+        const ch = await bachs(c.env, 'POST', '/v1/checkout-sessions', {
+          pricing: { currency: cur, amount: toDecimal(amount) }, reference: id, customer: { email: u.email },
+          metadata: { topup_id: id, user_id: u.id }, success_url: `${app}/app/?topup=${id}`, cancel_url: `${app}/app/?topup_cancel=${id}`, expires_in_minutes: 120,
+        }, { idem: 'topup-' + id });
+        checkout_url = ch.checkout_url; checkout_id = ch.checkout_id;
+        await DB(c).prepare(`UPDATE topups SET provider = 'bachs', provider_ref = ?, checkout_url = ? WHERE id = ?`).bind(ch.checkout_id, checkout_url, id).run();
+      } catch (err) {
+        await DB(c).prepare(`UPDATE topups SET status = 'cancelled', note = ? WHERE id = ?`).bind('checkout failed: ' + String(err.message).slice(0, 200), id).run();
+        console.error('bachs checkout', err.message, err.provider); no(502, 'Payments are having a moment. Try again shortly.', 'provider_error');
+      }
+    }
+    return c.json({ topup: { id, currency: cur, amount_cents: amount, reference: ref, status: 'pending', created_at: t, checkout_id }, checkout_url }, 201);
   });
   app.post('/api/squad/wallet/topups/:id/cancel', async (c) => {
     const u = needUser(c);
@@ -1386,7 +1403,8 @@ export function squadRoutes(app, h) {
     const tp = await DB(c).prepare(`SELECT * FROM topups WHERE id = ? AND status = 'pending'`).bind(c.req.param('id')).first();
     if (!tp) no(404, 'no such pending top-up', 'not_found');
     const q = [DB(c).prepare(`UPDATE topups SET status = ?, decided_by = ?, decided_at = ? WHERE id = ? AND status = 'pending'`).bind(act === 'credit' ? 'credited' : 'cancelled', a.id, t, tp.id)];
-    if (act === 'credit') q.push(entry(c, tp.user_id, tp.currency, tp.amount_cents, 'topup', tp.id, 'Top-up ' + tp.reference, a.id, t));
+    if (act === 'credit') q.push(DB(c).prepare(`INSERT OR IGNORE INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) VALUES (?, ?, ?, ?, 'topup', ?, ?, ?, ?)`)
+      .bind(uid('we'), tp.user_id, tp.currency, tp.amount_cents, tp.id, 'Top-up ' + tp.reference, a.id, t));
     await DB(c).batch(q);
     return c.json({ ok: true });
   });
@@ -1412,6 +1430,52 @@ export function squadRoutes(app, h) {
     if (act === 'cancel') q.push(entry(c, po.user_id, po.currency, po.amount_cents, 'payout_return', po.id, 'Withdrawal cancelled', a.id, t));
     await DB(c).batch(q);
     return c.json({ ok: true });
+  });
+
+  // local only: a stand-in for the Bachs checkout API so the flow can be tested without the network
+  app.post('/api/__bachs/v1/checkout-sessions', async (c) => {
+    if (c.env.EMAIL_MODE !== 'show') return c.json({ error: 'not found' }, 404);
+    const b = await c.req.json().catch(() => ({}));
+    if (!/^\d+\.\d{2}$/.test(String(b?.pricing?.amount)) || !b.reference) return c.json({ error: { message: 'bad request' } }, 400);
+    const id = 'chk_' + String(b.reference).replace(/\W/g, '');
+    return c.json({ checkout_id: id, checkout_url: `${String(c.env.APP_URL).replace(/\/$/, '')}/api/__bachs/pay/${id}`, status: 'open' }, 201);
+  });
+
+  // ======================================================================================================
+  // Bachs webhooks: the only thing that credits a paid top-up. Signed, deduplicated, never trusted blindly.
+  // ======================================================================================================
+  app.post('/api/webhooks/bachs', async (c) => {
+    const raw = await c.req.text();
+    if (!c.env.BACHS_WEBHOOK_SECRET) return c.json({ error: 'webhooks are not set up' }, 503);
+    if (!(await verifyWebhook(c.env, raw, c.req.raw.headers))) return c.json({ error: 'bad signature' }, 400);
+    let ev; try { ev = JSON.parse(raw); } catch { return c.json({ error: 'bad body' }, 400); }
+    if (!ev?.id || !ev?.type) return c.json({ error: 'bad event' }, 400);
+    const t = now();
+    const seen = await DB(c).prepare('INSERT OR IGNORE INTO provider_events (id, provider, type, payload, received_at) VALUES (?, ?, ?, ?, ?)').bind(ev.id, 'bachs', ev.type, raw.slice(0, 20000), t).run();
+    if (!seen.meta?.changes) return c.json({ ok: true, duplicate: true });
+    const d = ev.data || {}, done = (result) => DB(c).prepare('UPDATE provider_events SET result = ? WHERE id = ?').bind(result, ev.id).run();
+    const tp = d.checkout_id ? await DB(c).prepare(`SELECT * FROM topups WHERE provider = 'bachs' AND provider_ref = ?`).bind(d.checkout_id).first() : null;
+    if (ev.type === 'collection.succeeded') {
+      if (!tp) { await done('no matching top-up'); return c.json({ ok: true }); }
+      const paid = toCents(d.amount), cur = String(d.currency || '').toUpperCase();
+      if (cur !== tp.currency || !(paid > 0)) {
+        await DB(c).prepare(`UPDATE topups SET note = ? WHERE id = ?`).bind(`paid ${d.amount} ${cur}: needs an admin`, tp.id).run();
+        await done('currency or amount mismatch'); return c.json({ ok: true });
+      }
+      // credit what was actually collected, once (the unique index on wallet_entries makes a second credit impossible)
+      await DB(c).batch([
+        DB(c).prepare(`INSERT OR IGNORE INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) VALUES (?, ?, ?, ?, 'topup', ?, ?, NULL, ?)`)
+          .bind(uid('we'), tp.user_id, tp.currency, paid, tp.id, 'Top-up ' + tp.reference, t),
+        DB(c).prepare(`UPDATE topups SET status = 'credited', paid_cents = ?, decided_at = ?, note = ? WHERE id = ? AND status <> 'credited'`)
+          .bind(paid, t, paid !== tp.amount_cents ? `asked ${tp.amount_cents}, paid ${paid}` : null, tp.id),
+      ]);
+      await done('credited ' + paid); return c.json({ ok: true });
+    }
+    if (ev.type === 'checkout.expired' && tp) {
+      await DB(c).prepare(`UPDATE topups SET status = 'cancelled', decided_at = ?, note = 'checkout expired' WHERE id = ? AND status = 'pending'`).bind(t, tp.id).run();
+      await done('expired'); return c.json({ ok: true });
+    }
+    await done('ignored'); return c.json({ ok: true });
   });
 
   // ======================================================================================================
