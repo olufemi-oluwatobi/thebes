@@ -21,8 +21,13 @@ a{color:inherit;text-decoration:none}
 .wrap{width:min(1080px,calc(100% - 40px));margin-inline:auto}
 .on-army{background:var(--army);color:#fff}
 .on-cream{background:var(--cream);color:var(--ink)}
-section{padding:clamp(64px,9vw,108px) 0;overflow:hidden}
-.hero{padding-top:clamp(26px,4vw,40px);padding-bottom:0}
+section{position:relative;isolation:isolate;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:clamp(64px,9vw,108px) 0;overflow:hidden}
+section::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-position:center;background-size:cover;background-repeat:no-repeat}
+section:nth-of-type(even)::before{transform:scaleX(-1)}
+.on-army::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1440 900%22 preserveAspectRatio=%22xMidYMid slice%22%3E%3Cg fill=%22none%22 stroke=%22%23CBD6A8%22 stroke-width=%221.2%22%3E%3Cpath d=%22M-20 -38 20 -35 60 -35 100 -37 140 -42 180 -51 220 -60 260 -70 300 -80 340 -86 380 -90 420 -90 460 -88 500 -83 540 -78 580 -74 620 -71 660 -71 700 -72 740 -75 780 -79 820 -81 860 -82 900 -79 940 -74 980 -66 1020 -56 1060 -46 1100 -37 1140 -31 1180 -27 1220 -27 1260 -30 1300 -35 1340 -41 1380 -46 1420 -50 1460 -51%22/%3E%3Cpath d=%22M-20 30 20 25 60 20 100 15 140 12 180 12 220 13 260 14 300 15 340 13 380 9 420 2 460 -5 500 -12 540 -17 580 -19 620 -18 660 -14 700 -8 740 -1 780 4 820 7 860 7 900 7 940 6 980 5 1020 7 1060 11 1100 17 1140 24 1180 30 1220 34 1260 35 1300 32 1340 27 1380 20 1420 13 1460 8%22/%3E%3Cpath d=%22M-20 39 20 37 60 37 100 39 140 40 180 42 220 42 260 42 300 42 340 42 380 43 420 45 460 49 500 56 540 64 580 74 620 84 660 94 700 102 740 108 780 112 820 113 860 113 900 112 940 111 980 109 1020 109 1060 109 1100 109 1140 109 1180 108 1220 106 1260 102 1300 95 1340 87 1380 77 1420 67 1460 57%22/%3E%3Cpath d=%22M-20 102 20 96 60 93 100 92 140 94 180 99 220 105 260 111 300 118 340 123 380 128 420 131 460 134 500 137 540 141 580 145 620 150 660 156 700 162 740 166 780 169 820 170 860 167 900 162 940 155 980 147 1020 139 1060 131 1100 125 1140 121 1180 117 1220 115 1260 113 1300 111 1340 109 1380 105 1420 102 1460 99%22/%3E%3Cpath d=%22M-20 168 20 174 60 182 100 190 140 196 180 201 220 203 260 202 300 200 340 197 380 194 420 194 460 196 500 201 540 208 580 216 620 224 660 229 700 232 740 232 780 230 820 225 860 220 900 216 940 214 980 214 1020 217 1060 221 1100 225 1140 229 1180 231 1220 230 1260 226 1300 220 1340 212 1380 204 1420 197 1460 193%22/%3E%3Cpath d=%22M-20 284 20 284 60 283 100 281 140 278 180 272 220 263 260 253 300 242 340 231 380 222 420 216 460 214 500 216 540 223 580 233 620 246 660 260 700 273 740 285 780 294 820 299 860 301 900 301 940 298 980 295 1020 291 1060 288 1100 287 1140 286 1180 286 1220 286 1260 285 1300 283 1340 278 1380 270 1420 260 1460 249%22/%3E%3Cpath d=%22M-20 358 20 357 60 355 100 354 140 354 180 357 220 361 260 365 300 370 340 372 380 371 420 367 460 361 500 354 540 347 580 341 620 337 660 335 700 335 740 335 780 334 820 331 860 325 900 318 940 308 980 300 1020 292 1060 287 1100 285 1140 286 1180 288 1220 290 1260 291 1300 289 1340 286 1380 282 1420 277 1460 274%22/%3E%3Cpath d=%22M-20 388 20 379 60 372 100 366 140 363 180 361 220 361 260 362 300 364 340 365 380 366 420 365 460 364 500 362 540 359 580 357 620 355 660 355 700 357 740 360 780 366 820 373 860 382 900 391 940 400 980 408 1020 414 1060 418 1100 420 1140 421 1180 420 1220 418 1260 416 1300 415 1340 415 1380 416 1420 418 1460 420%22/%3E%3Cpath d=%22M-20 423 20 429 60 435 100 440 140 442 180 441 220 437 260 434 300 432 340 434 380 441 420 452 460 466 500 481 540 495 580 504 620 507 660 505 700 497 740 487 780 476 820 468 860 462 900 461 940 462 980 463 1020 464 1060 462 1100 455 1140 446 1180 433 1220 421 1260 412 1300 407 1340 408 1380 415 1420 427 1460 441%22/%3E%3Cpath d=%22M-20 481 20 476 60 473 100 476 140 484 180 496 220 510 260 522 300 531 340 536 380 535 420 531 460 526 500 522 540 521 580 525 620 533 660 544 700 555 740 564 780 568 820 566 860 560 900 550 940 540 980 531 1020 527 1060 526 1100 530 1140 535 1180 541 1220 543 1260 541 1300 533 1340 521 1380 508 1420 495 1460 485%22/%3E%3Cpath d=%22M-20 550 20 557 60 563 100 568 140 572 180 574 220 575 260 575 300 575 340 575 380 576 420 579 460 583 500 589 540 596 580 604 620 613 660 620 700 626 740 630 780 632 820 631 860 627 900 622 940 616 980 610 1020 604 1060 599 1100 595 1140 592 1180 591 1220 591 1260 592 1300 592 1340 591 1380 589 1420 585 1460 579%22/%3E%3Cpath d=%22M-20 678 20 689 60 697 100 701 140 700 180 696 220 689 260 680 300 671 340 662 380 654 420 649 460 644 500 641 540 639 580 636 620 633 660 629 700 624 740 618 780 612 820 608 860 606 900 606 940 611 980 619 1020 630 1060 644 1100 659 1140 674 1180 687 1220 697 1260 703 1300 705 1340 702 1380 695 1420 685 1460 674%22/%3E%3Cpath d=%22M-20 685 20 691 60 698 100 703 140 708 180 711 220 713 260 715 300 717 340 719 380 721 420 724 460 727 500 730 540 733 580 734 620 733 660 730 700 725 740 718 780 710 820 702 860 695 900 689 940 684 980 682 1020 681 1060 682 1100 683 1140 684 1180 686 1220 686 1260 687 1300 687 1340 688 1380 689 1420 692 1460 697%22/%3E%3Cpath d=%22M-20 741 20 752 60 764 100 774 140 781 180 784 220 785 260 784 300 781 340 779 380 778 420 780 460 785 500 792 540 801 580 811 620 820 660 826 700 828 740 827 780 821 820 812 860 801 900 790 940 780 980 773 1020 768 1060 766 1100 767 1140 769 1180 772 1220 773 1260 771 1300 767 1340 760 1380 751 1420 740 1460 730%22/%3E%3Cpath d=%22M-20 831 20 826 60 822 100 818 140 814 180 811 220 809 260 808 300 809 340 810 380 812 420 815 460 818 500 821 540 823 580 825 620 827 660 828 700 828 740 828 780 829 820 829 860 831 900 833 940 836 980 839 1020 844 1060 849 1100 854 1140 858 1180 863 1220 866 1260 868 1300 869 1340 870 1380 869 1420 867 1460 865%22/%3E%3Cpath d=%22M-20 896 20 906 60 917 100 926 140 933 180 938 220 940 260 939 300 935 340 931 380 925 420 920 460 916 500 914 540 914 580 916 620 920 660 924 700 927 740 930 780 930 820 928 860 923 900 915 940 906 980 895 1020 885 1060 875 1100 868 1140 863 1180 861 1220 861 1260 863 1300 867 1340 872 1380 875 1420 877 1460 878%22/%3E%3C/g%3E%3C/svg%3E");opacity:.13}
+.on-cream::before{background-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1440 900%22 preserveAspectRatio=%22xMidYMid slice%22%3E%3Cg fill=%22none%22 stroke=%22%2326331F%22 stroke-width=%221.2%22%3E%3Cpath d=%22M-20 -75 20 -79 60 -83 100 -87 140 -91 180 -93 220 -94 260 -93 300 -90 340 -86 380 -82 420 -78 460 -74 500 -71 540 -69 580 -69 620 -68 660 -68 700 -68 740 -67 780 -64 820 -60 860 -55 900 -49 940 -43 980 -38 1020 -34 1060 -31 1100 -30 1140 -31 1180 -33 1220 -35 1260 -37 1300 -39 1340 -40 1380 -40 1420 -39 1460 -38%22/%3E%3Cpath d=%22M-20 15 20 21 60 27 100 30 140 33 180 34 220 33 260 31 300 28 340 24 380 20 420 17 460 14 500 12 540 11 580 10 620 10 660 11 700 12 740 12 780 12 820 11 860 9 900 6 940 2 980 -3 1020 -8 1060 -12 1100 -16 1140 -19 1180 -21 1220 -21 1260 -20 1300 -16 1340 -12 1380 -6 1420 1 1460 8%22/%3E%3Cpath d=%22M-20 90 20 98 60 105 100 111 140 114 180 114 220 111 260 105 300 98 340 90 380 82 420 75 460 70 500 66 540 64 580 62 620 61 660 60 700 57 740 54 780 50 820 47 860 44 900 44 940 45 980 50 1020 56 1060 65 1100 75 1140 85 1180 94 1220 100 1260 104 1300 106 1340 105 1380 103 1420 100 1460 97%22/%3E%3Cpath d=%22M-20 130 20 134 60 137 100 139 140 140 180 142 220 146 260 150 300 156 340 162 380 167 420 171 460 172 500 171 540 167 580 162 620 157 660 151 700 147 740 144 780 142 820 141 860 139 900 136 940 132 980 126 1020 119 1060 111 1100 104 1140 98 1180 95 1220 94 1260 95 1300 98 1340 101 1380 104 1420 106 1460 107%22/%3E%3Cpath d=%22M-20 215 20 209 60 204 100 201 140 199 180 200 220 202 260 205 300 208 340 211 380 213 420 214 460 212 500 209 540 204 580 197 620 189 660 182 700 175 740 169 780 165 820 163 860 164 900 167 940 171 980 177 1020 183 1060 188 1100 192 1140 195 1180 196 1220 195 1260 193 1300 190 1340 186 1380 183 1420 181 1460 180%22/%3E%3Cpath d=%22M-20 265 20 260 60 256 100 250 140 245 180 240 220 235 260 231 300 227 340 225 380 224 420 225 460 227 500 231 540 236 580 241 620 248 660 254 700 261 740 267 780 273 820 278 860 282 900 285 940 288 980 290 1020 291 1060 292 1100 293 1140 294 1180 296 1220 297 1260 298 1300 298 1340 299 1380 299 1420 297 1460 295%22/%3E%3Cpath d=%22M-20 371 20 367 60 360 100 351 140 341 180 332 220 323 260 316 300 312 340 309 380 308 420 309 460 309 500 309 540 307 580 303 620 298 660 292 700 286 740 281 780 277 820 276 860 277 900 282 940 290 980 299 1020 310 1060 320 1100 329 1140 336 1180 340 1220 342 1260 343 1300 342 1340 341 1380 341 1420 342 1460 345%22/%3E%3Cpath d=%22M-20 419 20 424 60 428 100 431 140 432 180 431 220 426 260 417 300 407 340 394 380 381 420 369 460 359 500 352 540 348 580 348 620 350 660 354 700 359 740 363 780 366 820 368 860 369 900 369 940 370 980 372 1020 376 1060 382 1100 391 1140 401 1180 413 1220 424 1260 433 1300 440 1340 443 1380 442 1420 438 1460 430%22/%3E%3Cpath d=%22M-20 443 20 448 60 455 100 463 140 471 180 478 220 485 260 491 300 495 340 497 380 498 420 497 460 495 500 492 540 490 580 488 620 486 660 486 700 485 740 485 780 484 820 482 860 479 900 475 940 469 980 461 1020 454 1060 445 1100 438 1140 431 1180 426 1220 422 1260 421 1300 421 1340 422 1380 423 1420 425 1460 427%22/%3E%3Cpath d=%22M-20 515 20 512 60 511 100 513 140 519 180 526 220 535 260 543 300 548 340 550 380 548 420 542 460 534 500 525 540 517 580 512 620 510 660 511 700 514 740 518 780 520 820 520 860 516 900 510 940 501 980 492 1020 484 1060 479 1100 478 1140 481 1180 487 1220 495 1260 503 1300 509 1340 513 1380 514 1420 512 1460 509%22/%3E%3Cpath d=%22M-20 549 20 541 60 534 100 529 140 527 180 528 220 532 260 540 300 549 340 559 380 568 420 575 460 580 500 583 540 584 580 584 620 584 660 585 700 589 740 594 780 602 820 611 860 620 900 629 940 634 980 637 1020 636 1060 632 1100 625 1140 617 1180 609 1220 602 1260 596 1300 594 1340 592 1380 593 1420 593 1460 592%22/%3E%3Cpath d=%22M-20 648 20 638 60 629 100 622 140 617 180 615 220 614 260 614 300 616 340 619 380 623 420 627 460 631 500 635 540 639 580 643 620 647 660 651 700 656 740 661 780 667 820 672 860 678 900 682 940 686 980 689 1020 689 1060 688 1100 684 1140 678 1180 669 1220 659 1260 648 1300 636 1340 624 1380 613 1420 604 1460 598%22/%3E%3Cpath d=%22M-20 664 20 665 60 670 100 677 140 687 180 698 220 710 260 721 300 731 340 739 380 744 420 746 460 745 500 742 540 737 580 730 620 724 660 717 700 711 740 706 780 702 820 698 860 694 900 690 940 686 980 682 1020 678 1060 674 1100 671 1140 670 1180 670 1220 673 1260 678 1300 686 1340 696 1380 707 1420 718 1460 729%22/%3E%3Cpath d=%22M-20 781 20 783 60 785 100 787 140 789 180 791 220 793 260 794 300 794 340 793 380 791 420 788 460 783 500 778 540 773 580 768 620 763 660 758 700 755 740 752 780 751 820 750 860 751 900 753 940 755 980 758 1020 760 1060 763 1100 765 1140 767 1180 768 1220 769 1260 769 1300 770 1340 770 1380 771 1420 772 1460 774%22/%3E%3Cpath d=%22M-20 863 20 856 60 848 100 840 140 833 180 827 220 823 260 821 300 821 340 823 380 825 420 829 460 832 500 835 540 836 580 837 620 836 660 833 700 829 740 824 780 819 820 815 860 811 900 809 940 809 980 811 1020 815 1060 821 1100 828 1140 836 1180 845 1220 853 1260 859 1300 864 1340 868 1380 869 1420 868 1460 865%22/%3E%3Cpath d=%22M-20 876 20 873 60 871 100 870 140 871 180 874 220 880 260 888 300 898 340 909 380 921 420 931 460 939 500 944 540 946 580 944 620 938 660 929 700 918 740 906 780 894 820 883 860 875 900 869 940 866 980 865 1020 867 1060 870 1100 874 1140 877 1180 880 1220 882 1260 882 1300 882 1340 882 1380 882 1420 883 1460 886%22/%3E%3C/g%3E%3C/svg%3E");opacity:.09}
+
+.hero{justify-content:flex-start;padding-top:clamp(26px,4vw,40px);padding-bottom:clamp(40px,6vw,72px)}
 .hero .wrap{display:flex;flex-direction:column;align-items:center;text-align:center}
 
 nav{display:flex;justify-content:space-between;align-items:center;width:100%;padding-bottom:clamp(48px,7vw,80px)}
@@ -106,89 +111,148 @@ h2{font-size:clamp(29px,4.4vw,54px);max-width:16ch}
 .checks svg{flex:none;width:22px;height:22px;margin-top:1px;color:var(--sage)}
 .split .phone{margin-top:0;justify-self:center}
 
-/* ── phone mockups ──────────────────────────────────────────────────── */
-.phone{position:relative;width:min(330px,82vw);aspect-ratio:390/790;margin-top:clamp(40px,6vw,64px);border:9px solid #0F170C;border-radius:44px;background:#0F170C;box-shadow:0 30px 80px rgba(0,0,0,.30);overflow:hidden;flex:none}
-.phone.mid{aspect-ratio:390/710}
-.phone.short{aspect-ratio:390/680}
-.on-cream .phone{border-color:var(--army)}
-.screen{width:100%;height:100%;border-radius:35px;overflow:hidden;background:var(--cream);container-type:inline-size;font-family:Inter,system-ui,sans-serif}
-.app{height:100%;display:flex;flex-direction:column;font-size:3.5cqw;line-height:1.4;overflow:hidden}
+/* ── hero layout ───────────────────────────────────────────────────── */
+.hero-grid{flex:1;width:100%;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(32px,5vw,72px);align-items:center}
+.hero-copy{text-align:left}
+.hero-copy h1{max-width:16ch;font-size:clamp(34px,4.3vw,60px)}
+.hero-copy h1 .sub{font-size:.78em}
+.hero-copy .lead{margin-inline:0;max-width:46ch}
+.hero-copy .cta{justify-content:flex-start}
+.hero-phone{display:flex;flex-direction:column;align-items:center}
+.hero .phone{margin-top:0}
+.split.flip>div:first-child{order:2}
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;text-align:center}
+  .hero-copy{text-align:center}
+  .hero-copy h1,.hero-copy .lead{margin-inline:auto}
+  .hero-copy .cta{justify-content:center}
+  .split.flip>div:first-child{order:0}
+}
 
-.board{background:var(--army);color:#fff;padding:4.5cqw;gap:3.2cqw}
-.board-top{display:flex;justify-content:space-between;align-items:center}
-.slides{position:relative;flex:1;min-height:0;display:grid}
-.slide{grid-area:1/1;display:flex;flex-direction:column;gap:3.2cqw;opacity:0;visibility:hidden;transition:opacity .5s ease,visibility .5s ease}
-.slide.is-on{opacity:1;visibility:visible;z-index:1}
+/* ── iPhone ────────────────────────────────────────────────────────── */
+.phone{position:relative;width:min(300px,76vw);aspect-ratio:393/852;margin-top:clamp(36px,5vw,56px);padding:10px;border-radius:54px;background:linear-gradient(150deg,#4a4e48,#151714 30%,#0c0d0b 70%,#3a3d38);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 0 0 4px #0b0c0a,0 50px 90px -40px rgba(0,0,0,.6),0 18px 40px -20px rgba(0,0,0,.4);flex:none}
+.phone::before,.phone::after{content:"";position:absolute;width:3px;border-radius:2px;background:#2a2c28}
+.phone::before{left:-3px;top:24%;height:11%}
+.phone::after{right:-3px;top:28%;height:14%}
+.split .phone{margin-top:0;justify-self:center}
+.screen{position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:#F8F7F0;container-type:inline-size;font-family:Inter,system-ui,sans-serif;color:#1F2A19;-webkit-user-select:none;user-select:none}
+.island{position:absolute;z-index:30;top:3cqw;left:50%;transform:translateX(-50%);width:31cqw;height:9cqw;border-radius:99px;background:#000}
+.status{position:absolute;z-index:29;top:0;left:0;right:0;height:15cqw;display:flex;justify-content:space-between;align-items:center;padding:0 7cqw 0 10cqw;font:600 4cqw/1 Inter,sans-serif;color:#fff}
+.status.dark{color:#1F2A19}
+.sbi{display:flex;gap:1.4cqw;align-items:center}
+.sbi svg{height:3.1cqw;width:auto;fill:currentColor}
+.screen svg{display:block}
+
+/* feed */
+.feed{background:#0d0f0b;color:#fff}
+.fslides{position:absolute;inset:0}
+.fslide{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 18%,var(--tint),#0d0f0b 78%);transform:translateY(100%);transition:transform .7s cubic-bezier(.65,0,.25,1)}
+.fslide::before{content:"";position:absolute;inset:0;opacity:.12;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:5.6cqw 5.6cqw}
+.fslide.is-on{transform:translateY(0)}
+.fslide.is-prev{transform:translateY(-100%)}
+.ftabs{position:absolute;z-index:5;top:15cqw;left:4cqw;right:0;display:flex;gap:1.2cqw;font:600 3.6cqw/1 Inter,sans-serif;white-space:nowrap;overflow:hidden}
+.ftabs span{padding:2.4cqw 3.6cqw;border-radius:99px;color:rgba(255,255,255,.72)}
+.ftabs .on{background:#fff;color:#26331F}
+.fimg{position:absolute;top:40cqw;left:5cqw;right:5cqw;aspect-ratio:4/3;border-radius:6.5cqw;overflow:hidden;box-shadow:0 6cqw 14cqw -4cqw rgba(0,0,0,.6)}
+.fimg svg{width:100%;height:100%}
+.finfo{position:absolute;left:5cqw;right:24cqw;bottom:27cqw;display:flex;flex-direction:column;gap:2cqw}
+.fseller{display:flex;align-items:center;gap:2cqw;font-size:3.4cqw}
+.fseller i{font-style:normal;width:7.6cqw;height:7.6cqw;border-radius:50%;display:grid;place-items:center;background:#3A5A3A;border:.5cqw solid rgba(255,255,255,.85);font-weight:700;font-size:2.6cqw}
+.fseller span{color:rgba(255,255,255,.55)}
+.ftitle{font:700 5.6cqw/1.2 Inter,sans-serif;letter-spacing:-.01em}
+.fprice{display:flex;align-items:baseline;gap:2cqw}
+.fprice b{font:400 10cqw/1 "Libre Baskerville",Georgia,serif}
+.fprice span{font-size:3.3cqw;color:rgba(255,255,255,.75)}
+.fchips{display:flex;gap:1.6cqw;font:600 3.2cqw/1 Inter,sans-serif}
+.fchips span{padding:2.2cqw 3cqw;border-radius:99px;border:1px solid rgba(255,255,255,.3)}
+.fchips .g{background:#CBD6A8;color:#26331F;border-color:transparent}
+.fstack{position:absolute;z-index:6;right:3.5cqw;bottom:26cqw;display:flex;flex-direction:column;gap:2.6cqw}
+.fa{display:flex;flex-direction:column;align-items:center;gap:1.1cqw}
+.fa span{width:12.4cqw;height:12.4cqw;border-radius:50%;display:grid;place-items:center;transition:transform .25s}
+.fa span svg{width:5.4cqw;height:5.4cqw}
+.fa small{font:600 2.9cqw/1 Inter,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.fa.apply span{background:#6E9A2F;box-shadow:0 2cqw 5cqw -1.5cqw rgba(110,154,47,.8)}
+.fa.visit span{background:#2F6FA3;box-shadow:0 2cqw 5cqw -1.5cqw rgba(47,111,163,.8)}
+.fa.details span{background:#E0B06A;color:#26331F;box-shadow:0 2cqw 5cqw -1.5cqw rgba(224,176,106,.7)}
+.fa.share span{background:#fff;color:#26331F}
+.fa.apply.tap span{animation:tap .9s ease}
+@keyframes tap{0%{transform:scale(1)}25%{transform:scale(.84)}55%{transform:scale(1.08);box-shadow:0 0 0 3cqw rgba(110,154,47,.25)}100%{transform:scale(1)}}
+.ftoast{position:absolute;z-index:7;left:50%;top:28.5cqw;transform:translate(-50%,-4cqw);opacity:0;display:flex;align-items:center;gap:2cqw;white-space:nowrap;background:#fff;color:#26331F;font:500 3.3cqw/1 Inter,sans-serif;padding:2.6cqw 4cqw;border-radius:99px;box-shadow:0 3cqw 8cqw -2cqw rgba(0,0,0,.45);transition:opacity .3s,transform .3s}
+.ftoast svg{width:4cqw;height:4cqw;color:#6E9A2F}
+.ftoast.show{opacity:1;transform:translate(-50%,0)}
+.gnav{position:absolute;z-index:8;left:50%;bottom:4.5cqw;transform:translateX(-50%);display:flex;gap:3.4cqw;padding:2cqw 3cqw;border-radius:99px;background:rgba(16,20,13,.88);border:1px solid rgba(255,255,255,.08);box-shadow:0 0 9cqw -2cqw rgba(203,214,168,.4),0 4cqw 10cqw -4cqw rgba(0,0,0,.6)}
+.gnav span{width:11cqw;height:11cqw;border-radius:50%;display:grid;place-items:center;color:rgba(255,255,255,.62)}
+.gnav span svg{width:5.4cqw;height:5.4cqw}
+.gnav .on{background:rgba(203,214,168,.16);color:#CBD6A8;box-shadow:0 0 6cqw rgba(203,214,168,.35)}
 .board-dots{display:flex;gap:8px;justify-content:center;margin-top:22px}
 .board-dots button{width:9px;height:9px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.28);cursor:pointer;transition:width .25s,background .25s}
 .board-dots button[aria-current="true"]{width:24px;border-radius:999px;background:var(--sage)}
 .board-dots button:focus-visible{outline:3px solid var(--sage);outline-offset:4px}
-.seg{display:flex;background:#3B4A30;border-radius:999px;padding:.9cqw;font-size:3.2cqw}
-.seg span{padding:1.5cqw 4.2cqw;border-radius:999px;color:rgba(255,255,255,.8)}
-.seg .on{background:#fff;color:var(--army);font-weight:600}
-.loc{background:#3B4A30;border-radius:999px;padding:1.5cqw 3.6cqw;font-size:3.1cqw;color:var(--sage)}
-.flyer{flex:1;background:var(--gold);color:var(--army);border-radius:2.4cqw;padding:5.5cqw 4.5cqw;display:flex;flex-direction:column;min-height:0}
-.flyer.tech{background:var(--army-deep);color:var(--cream)}
-.flyer.tech .brand{color:var(--sage);opacity:1}
-.flyer.tech .fine{color:rgba(255,255,255,.62)}
-.flyer.playlist{background:var(--sage);color:var(--army)}
-.flyer .brand{font-weight:700;font-size:3.2cqw;letter-spacing:.14em;text-transform:uppercase;opacity:.72}
-.flyer .name{font-family:"Libre Baskerville",Georgia,serif;font-weight:700;font-size:8cqw;line-height:1.12;margin-top:auto}
-.flyer .fine{font-size:3cqw;opacity:.7;margin-top:2.4cqw}
-.deal{display:flex;flex-direction:column;gap:2cqw}
-.deal-top{display:flex;justify-content:space-between;align-items:center;font-size:3cqw}
-.reward{background:var(--sage);color:var(--army);border-radius:999px;padding:1.4cqw 3cqw;font-weight:700}
-.left{color:rgba(255,255,255,.6)}
-.deal-title{font-family:"Libre Baskerville",Georgia,serif;font-size:5.6cqw;line-height:1.15}
-.deal-sub{font-size:3cqw;color:var(--sage)}
-.pitch{font-size:3.2cqw;color:rgba(255,255,255,.84);line-height:1.45}
-.chips{display:flex;gap:2cqw;flex-wrap:wrap}
-.chip{border-radius:999px;padding:2.2cqw 3.4cqw;font-size:3.1cqw;font-weight:600;white-space:nowrap}
-.chip.solid{background:var(--sage);color:var(--army)}
-.chip.line{border:1px solid rgba(255,255,255,.34);color:#fff}
-.tabs{margin:2cqw -4.5cqw -4.5cqw;padding:2.6cqw 3.4cqw 3.4cqw;background:var(--army-deep);display:flex;justify-content:space-between;font-size:2.9cqw;color:rgba(255,255,255,.55)}
-.tabs .on{background:var(--sage);color:var(--army);border-radius:999px;padding:.8cqw 2.6cqw;margin:-.8cqw -1.4cqw;font-weight:700}
 
-.form,.qr,.dash{background:var(--cream);padding:5cqw;gap:4cqw}
-.app-head{font-family:"Libre Baskerville",Georgia,serif;font-size:5.8cqw;line-height:1.2;color:var(--army)}
-.app-sub{font-size:3.2cqw;color:var(--muted);margin-top:-2.6cqw}
-.field{display:flex;flex-direction:column;gap:1.6cqw}
-.field label{font-size:3cqw;color:var(--muted)}
-.seg3{display:grid;grid-template-columns:repeat(3,1fr);background:#E5E3D6;border-radius:2.2cqw;padding:.9cqw;font-size:3cqw;text-align:center}
-.seg3 span{padding:2cqw 1cqw;border-radius:1.6cqw;color:#6B6E60}
-.seg3 .on{background:var(--army);color:#fff;font-weight:600}
-.input{border:1px solid #D8D6C8;background:#fff;border-radius:2.2cqw;padding:2.6cqw 3cqw;font-size:3.6cqw;color:var(--army)}
-.rows{display:grid;gap:0;border:1px solid #D8D6C8;border-radius:2.4cqw;background:#fff;overflow:hidden;font-size:3.1cqw;color:var(--army)}
-.rows div{padding:2.6cqw 3cqw;display:flex;justify-content:space-between;align-items:center}
-.rows div+div{border-top:1px solid #EDEBDD}
-.rows b{color:#4C7A3F;font-weight:700}
-.save{margin-top:auto;background:var(--army);color:#fff;border:0;border-radius:999px;padding:3.2cqw;font:700 3.5cqw Inter,sans-serif}
-.hint{font-size:2.9cqw;line-height:1.4;color:var(--muted)}
-.receipt{border:1px solid #DFDDCE;background:#fff;border-radius:2.4cqw;overflow:hidden;font-size:2.9cqw}
-.receipt div{display:flex;justify-content:space-between;gap:2cqw;padding:2.3cqw 3cqw}
-.receipt div+div{border-top:1px solid #EDEBDD}
-.receipt span{color:var(--muted)}
-.receipt b{color:var(--army);text-align:right}
-
-.qr-card{background:#fff;border:1px solid #DFDDCE;border-radius:3cqw;padding:4.5cqw;display:flex;flex-direction:column;align-items:center;gap:2.6cqw;text-align:center}
-.qr-name{font-weight:700;font-size:3.4cqw;color:var(--army)}
-.qr-card svg{width:78%;height:auto;border-radius:1cqw}
-.qr-code{font-size:3cqw;color:var(--muted);word-break:break-all}
-.stat-line{display:flex;justify-content:space-between;font-size:3.1cqw;color:var(--muted);padding:0 1cqw}
-.stat-line b{color:var(--army)}
-
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2cqw}
-.stats div{background:#fff;border:1px solid #E0DED0;border-radius:2.4cqw;padding:3cqw 2cqw;text-align:center}
-.stats b{display:block;font-size:5.2cqw;font-family:"Libre Baskerville",Georgia,serif;color:var(--army)}
-.stats span{font-size:2.7cqw;color:var(--muted)}
-.list{background:#fff;border:1px solid #E0DED0;border-radius:2.4cqw;overflow:hidden}
-.list .row{display:flex;align-items:center;gap:2cqw;padding:3cqw;font-size:3.1cqw;color:var(--army)}
-.list .row+.row{border-top:1px solid #EDEBDD}
-.list .row span{flex:1}
-.list .row b{font-size:3.3cqw}
-.list .row i{font-style:normal;width:4.4cqw;height:4.4cqw;border-radius:50%;background:var(--sage);color:var(--army);display:grid;place-items:center;font-size:2.8cqw;font-weight:700}
-.payout{display:flex;justify-content:space-between;align-items:center;background:var(--army);color:#fff;border-radius:2.4cqw;padding:3.4cqw;font-size:3.2cqw}
-.payout b{font-size:4.6cqw;font-family:"Libre Baskerville",Georgia,serif;color:var(--sage)}
+/* light app screens */
+.lapp{position:absolute;inset:0;padding:16cqw 5cqw 6cqw;display:flex;flex-direction:column;gap:3.2cqw;font-size:3.5cqw;line-height:1.35}
+.lback{display:flex;align-items:center;gap:1cqw;font-weight:600;font-size:3.4cqw;color:#646B5A}
+.lback svg{width:4.4cqw;height:4.4cqw}
+.steps{display:flex;gap:1.4cqw}
+.steps i{flex:1;height:1.2cqw;border-radius:99px;background:#E6E4D3}
+.steps i.d{background:#CBD6A8}
+.steps i.c{background:#26331F}
+.lh{font:700 6.2cqw/1.2 "Libre Baskerville",Georgia,serif;color:#1F2A19;margin-top:1cqw}
+.ls{font-size:3.4cqw;color:#646B5A;margin-top:-2cqw}
+.opts{display:flex;flex-direction:column;gap:2cqw}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:2cqw;background:#fff;border-radius:4.4cqw;padding:3.2cqw 3.6cqw;box-shadow:0 1px 2px rgba(31,42,25,.05),0 2cqw 6cqw -3cqw rgba(31,42,25,.18)}
+.opt b{display:block;font-size:3.7cqw}
+.opt span{font-size:3cqw;color:#646B5A}
+.opt i{flex:none;width:5cqw;height:5cqw;border-radius:50%;border:.6cqw solid #D6D3BE}
+.opt.on{box-shadow:inset 0 0 0 .5cqw #26331F}
+.opt.on i{border:1.6cqw solid #26331F}
+.lcard{background:#fff;border-radius:4.4cqw;box-shadow:0 1px 2px rgba(31,42,25,.05),0 2cqw 6cqw -3cqw rgba(31,42,25,.18);overflow:hidden}
+.lrow{display:flex;align-items:center;justify-content:space-between;gap:2cqw;padding:2.8cqw 3.6cqw;font-size:3.3cqw}
+.lrow+.lrow{border-top:1px solid #EFEDE2}
+.lrow span{color:#646B5A}
+.lrow b{font-weight:600}
+.lrow b.ok{color:#5E7A2E}
+.lsec{font-weight:600;font-size:3.2cqw;color:#646B5A;margin-top:1cqw}
+.feedl .lrow span{font-size:3cqw}
+.lhint{display:flex;gap:1.8cqw;align-items:center;font-size:3cqw;color:#646B5A}
+.lhint svg{flex:none;width:4.2cqw;height:4.2cqw;color:#5E7A2E}
+.lbar{margin-top:auto;display:flex;gap:2.4cqw}
+.lbar span,.qb span{flex:1;display:flex;align-items:center;justify-content:center;gap:1.6cqw;border-radius:99px;padding:3.2cqw;font-weight:600;font-size:3.5cqw}
+.lbar .sec,.qb .sec{background:#fff;box-shadow:inset 0 0 0 1px #D6D3BE}
+.lbar .pri,.qb .pri{background:#26331F;color:#fff}
+.qb{display:flex;gap:2cqw;width:100%}
+.qb svg{width:4cqw;height:4cqw}
+.qrc{background:#fff;border-radius:5cqw;padding:4cqw;display:flex;flex-direction:column;align-items:center;gap:3cqw;box-shadow:0 1px 2px rgba(31,42,25,.05),0 2cqw 6cqw -3cqw rgba(31,42,25,.18)}
+.qrc>svg{width:52%;height:auto}
+.qn{align-self:stretch;display:flex;gap:2.4cqw;align-items:center}
+.qn i,.lrow i,.lme i{font-style:normal;flex:none;width:8.6cqw;height:8.6cqw;border-radius:50%;display:grid;place-items:center;background:#E9C46A;color:#26331F;font-weight:700;font-size:2.8cqw}
+.qn b{display:block;font-size:3.5cqw}
+.qn span{font-size:3cqw;color:#646B5A}
+.qu{font-size:3cqw;color:#646B5A}
+.lme{display:flex;gap:3cqw;align-items:center}
+.lme i{width:13cqw;height:13cqw;font-size:4.4cqw;background:#6E5A2F;color:#F1F0E4}
+.lme b{display:block;font:700 5cqw/1.2 "Libre Baskerville",Georgia,serif}
+.lme span{display:flex;align-items:center;gap:1.2cqw;font-size:3cqw;color:#5E7A2E}
+.lme span svg{width:3.6cqw;height:3.6cqw}
+.lstats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border-radius:4.4cqw;padding:3.4cqw 1cqw;box-shadow:0 1px 2px rgba(31,42,25,.05),0 2cqw 6cqw -3cqw rgba(31,42,25,.18)}
+.lstats div{padding:0 2.6cqw}
+.lstats div+div{border-left:1px solid #EFEDE2}
+.lstats b{display:block;font-size:4.6cqw}
+.lstats span{font-size:2.8cqw;color:#646B5A}
+.ltabs{display:flex;gap:1.4cqw;font-weight:600;font-size:3.2cqw}
+.ltabs span{padding:2cqw 3.2cqw;border-radius:99px;color:#646B5A}
+.ltabs .on{background:#26331F;color:#fff}
+.list .lrow{justify-content:flex-start}
+.list .lrow i{width:7.6cqw;height:7.6cqw;font-size:2.5cqw}
+.list .lrow span{flex:1;color:#1F2A19;display:flex;flex-direction:column}
+.list .lrow small{font-size:2.8cqw;color:#646B5A}
+.list .lrow em{font-style:normal;display:flex;align-items:center;gap:.8cqw;font-size:2.7cqw;font-weight:600;color:#5E7A2E;background:#E9EED8;padding:1.2cqw 2.2cqw;border-radius:99px}
+.list .lrow em svg{width:3cqw;height:3cqw}
+.lpay{display:flex;align-items:center;gap:2.4cqw;background:#26331F;color:#fff;border-radius:4.4cqw;padding:3.4cqw 3.8cqw;font-size:3.3cqw;margin-bottom:17cqw}
+.lpay svg{width:4.6cqw;height:4.6cqw;color:#CBD6A8}
+.lpay span{flex:1}
+.lpay b{font:700 4.8cqw/1 "Libre Baskerville",Georgia,serif;color:#CBD6A8}
+@media(prefers-reduced-motion:reduce){.fslide,.ftoast{transition:none}.fa.apply.tap span{animation:none}}
 
 footer{background:var(--army);color:rgba(255,255,255,.6);padding:36px 0;font-size:14px}
 footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
@@ -218,79 +282,66 @@ footer a:hover{color:#fff}
       <a class="word" href="/" aria-label="Gorilla Squad home">Gorilla Squad</a>
       <a class="in" href="/app/#signin">Sign in</a>
     </nav>
+    <div class="hero-grid">
+    <div class="hero-copy">
     <h1>Get your assets in front of the right people. <span class="sub">Without ads. Without waiting.</span></h1>
     <p class="lead">Gorilla Squad is a community of builders, creators, and sellers who help each other distribute digital and physical products. Real recommendations. Real channels. Real results.</p>
     <div class="cta">
       <a class="btn solid" href="/app/#signin">Join the Squad</a>
       <a class="btn line" href="#how">See how it works</a>
     </div>
+    </div>
+    <div class="hero-phone">
 
-    <div class="phone" role="img" aria-label="The Gorilla Squad board cycling through campaigns for a tech product, a candle brand and a playlist">
-      <div class="screen">
-        <div class="app board">
-          <div class="board-top">
-            <div class="seg"><span class="on" data-scope="local">Local</span><span data-scope="global">Global</span></div>
-            <div class="loc">Austin, US</div>
-          </div>
-
-          <div class="slides">
-            <div class="slide is-on" data-loc="Austin, US" data-scope="local">
-              <div class="flyer tech">
-                <div class="brand">Nimbus Audio</div>
-                <div class="name">Quiet earbuds for the whole day</div>
-                <div class="fine">40-hour battery · USB-C</div>
-              </div>
-              <div class="deal">
-                <div class="deal-top"><span class="reward">$4.00 per purchase</span><span class="left">$248.00 left</span></div>
-                <div class="deal-title">Nimbus Air earbuds</div>
-                <div class="deal-sub">Nimbus Audio · Austin, US</div>
-                <p class="pitch">Wireless earbuds with noise cancelling, 40 hours of play time and USB-C.</p>
-                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
-                <div class="chips"><span class="chip line">Details and QR</span></div>
+    <div class="phone" role="img" aria-label="The Gorilla Squad feed on an iPhone, scrolling through listings for earbuds, candles and a playlist, with Apply, Visit, Details and Share buttons">
+      <div class="screen feed">
+        <div class="island"></div><div class="status "><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="2"/><rect x="24" y="4" width="1.6" height="4" rx=".8" opacity=".5"/></svg></span></div>
+        <div class="ftabs"><span class="on">For you</span><span>Software</span><span>Digital</span><span>Physical</span></div>
+        <div class="fslides">
+            <div class="fslide is-on" style="--tint:#1f2e3b" data-who="Nimbus Audio">
+              <div class="fimg"><svg viewBox="0 0 400 300" aria-hidden="true"><rect width="400" height="300" fill="#DCE5BD"/><circle cx="320" cy="60" r="90" fill="#E9EED8"/><rect x="128" y="132" width="144" height="104" rx="46" fill="#fff"/><path d="M128 176h144" stroke="#D6D3BE" stroke-width="3"/><circle cx="200" cy="200" r="5" fill="#26331F"/><g fill="#26331F"><circle cx="168" cy="98" r="26"/><rect x="160" y="110" width="16" height="44" rx="8"/><circle cx="236" cy="104" r="26"/><rect x="228" y="116" width="16" height="44" rx="8"/></g><g fill="#5E7A2E"><circle cx="164" cy="94" r="8"/><circle cx="232" cy="100" r="8"/></g></svg></div>
+              <div class="finfo">
+                <div class="fseller"><i>NA</i><b>Nimbus Audio</b><span>· Physical</span></div>
+                <div class="ftitle">Get Nimbus Air earbuds in front of commuters</div>
+                <div class="fprice"><b>$4.00</b><span>per purchase</span></div>
+                <div class="fchips"><span class="g">Commission</span><span>$248 left</span></div>
               </div>
             </div>
-
-            <div class="slide" data-loc="Austin, US" data-scope="local">
-              <div class="flyer">
-                <div class="brand">Ember &amp; Wick</div>
-                <div class="name">Hand-poured candles, made in Austin</div>
-                <div class="fine">Small batches · Gift boxes</div>
-              </div>
-              <div class="deal">
-                <div class="deal-top"><span class="reward">$3.00 per sign-up</span><span class="left">$181.50 left</span></div>
-                <div class="deal-title">Ember &amp; Wick candles</div>
-                <div class="deal-sub">Austin Makers · Austin, US</div>
-                <p class="pitch">Hand-poured soy candles made in Austin. Gift boxes from $12.</p>
-                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
-                <div class="chips"><span class="chip line">Details and QR</span></div>
+            <div class="fslide" style="--tint:#4a2a17" data-who="Ember &amp; Wick">
+              <div class="fimg"><svg viewBox="0 0 400 300" aria-hidden="true"><rect width="400" height="300" fill="#E9C46A"/><circle cx="80" cy="250" r="110" fill="#EFD08A"/><rect x="146" y="120" width="108" height="136" rx="20" fill="#F1F0E4"/><rect x="146" y="120" width="108" height="22" rx="11" fill="#E6E4D3"/><rect x="162" y="170" width="76" height="46" rx="8" fill="#26331F"/><text x="200" y="199" font-family="Georgia,serif" font-size="15" font-weight="700" fill="#E9C46A" text-anchor="middle" letter-spacing="2">EMBER</text><path d="M200 120v-14" stroke="#26331F" stroke-width="3" stroke-linecap="round"/><path d="M200 58c14 16 20 28 20 38a20 20 0 0 1-40 0c0-10 6-22 20-38z" fill="#D9693B"/><path d="M200 78c6 8 9 13 9 18a9 9 0 0 1-18 0c0-5 3-10 9-18z" fill="#F6D58A"/></svg></div>
+              <div class="finfo">
+                <div class="fseller"><i>EW</i><b>Ember &amp; Wick</b><span>· Physical</span></div>
+                <div class="ftitle">Share our hand-poured candles before the holidays</div>
+                <div class="fprice"><b>$3.00</b><span>per sign-up</span></div>
+                <div class="fchips"><span class="g">Introduction</span><span>$181 left</span></div>
               </div>
             </div>
-
-            <div class="slide" data-loc="Global" data-scope="global">
-              <div class="flyer playlist">
-                <div class="brand">Studio Bloom</div>
-                <div class="name">A playlist for slow mornings</div>
-                <div class="fine">30 tracks · Curated weekly</div>
-              </div>
-              <div class="deal">
-                <div class="deal-top"><span class="reward">$1.50 per click</span><span class="left">$96.00 left</span></div>
-                <div class="deal-title">Sunday Slow playlist</div>
-                <div class="deal-sub">Studio Bloom · Global</div>
-                <p class="pitch">A curated Afrobeats and soul playlist, refreshed every week. Share it anywhere.</p>
-                <div class="chips"><span class="chip solid">Copy snippet and link</span><span class="chip line">Flyer</span></div>
-                <div class="chips"><span class="chip line">Details and QR</span></div>
+            <div class="fslide" style="--tint:#2b3a22" data-who="Studio Bloom">
+              <div class="fimg"><svg viewBox="0 0 400 300" aria-hidden="true"><rect width="400" height="300" fill="#CBD6A8"/><rect x="70" y="58" width="170" height="184" rx="14" fill="#F1F0E4"/><text x="92" y="200" font-family="Georgia,serif" font-size="22" font-weight="700" fill="#26331F">Sunday</text><text x="92" y="226" font-family="Georgia,serif" font-size="22" font-weight="700" fill="#26331F">Slow</text><rect x="92" y="84" width="60" height="6" rx="3" fill="#5E7A2E"/><circle cx="252" cy="150" r="94" fill="#1D2A16"/><g fill="none" stroke="#33422B" stroke-width="2"><circle cx="252" cy="150" r="78"/><circle cx="252" cy="150" r="64"/><circle cx="252" cy="150" r="50"/></g><circle cx="252" cy="150" r="30" fill="#D9693B"/><circle cx="252" cy="150" r="5" fill="#1D2A16"/></svg></div>
+              <div class="finfo">
+                <div class="fseller"><i>SB</i><b>Studio Bloom</b><span>· Playlist</span></div>
+                <div class="ftitle">Put Sunday Slow on your stories</div>
+                <div class="fprice"><b>$0.10</b><span>per click</span></div>
+                <div class="fchips"><span class="g">Attention</span><span>Open budget</span></div>
               </div>
             </div>
-          </div>
-
-          <div class="tabs"><span class="on">Board</span><span>Links</span><span>Sell</span><span>Wallet</span><span>Me</span></div>
         </div>
+        <div class="fstack">
+          <div class="fa apply"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><small>Apply</small></div>
+          <div class="fa visit"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span><small>Visit</small></div>
+          <div class="fa details"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span><small>Details</small></div>
+          <div class="fa share"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 17 5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg></span><small>Share</small></div>
+        </div>
+        <div class="ftoast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Applied to <b>Nimbus Audio</b></span></div>
+        <div class="gnav"><span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></svg></span><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span></div>
       </div>
     </div>
-    <div class="board-dots" role="group" aria-label="Show a product on the board">
-      <button type="button" aria-label="Show Nimbus earbuds" aria-current="true"></button>
+    <div class="board-dots" role="group" aria-label="Show a listing in the feed">
+      <button type="button" aria-label="Show Nimbus Air earbuds" aria-current="true"></button>
       <button type="button" aria-label="Show Ember &amp; Wick candles"></button>
       <button type="button" aria-label="Show Sunday Slow playlist"></button>
+    </div>
+    </div>
     </div>
   </div>
 </section>
@@ -336,35 +387,36 @@ footer a:hover{color:#fff}
 </section>
 
 <section class="on-army">
-  <div class="wrap center">
-    <h2>Control rewards</h2>
-    <p class="lead">Choose what you pay for, and how much.</p>
-    <div class="rules">
-      <div class="rule"><b>Per click</b><span>A real visit</span></div>
-      <div class="rule"><b>Per sign-up</b><span>A new account</span></div>
-      <div class="rule"><b>Per purchase</b><span>A paid order</span></div>
+  <div class="wrap split">
+    <div>
+      <h2>Control rewards</h2>
+      <p class="lead">Choose what you pay for, and how much.</p>
+      <div class="rules">
+        <div class="rule"><b>Per click</b><span>A real visit</span></div>
+        <div class="rule"><b>Per sign-up</b><span>A new account</span></div>
+        <div class="rule"><b>Per purchase</b><span>A paid order</span></div>
+      </div>
     </div>
-
-    <div class="phone mid" role="img" aria-label="Reward settings for the Ember &amp; Wick campaign: pay per sign-up, $3.00 reward, $200.00 budget, Austin, US">
-      <div class="screen">
-        <div class="app form">
-          <div class="app-head">Reward settings</div>
-          <div class="app-sub">Ember &amp; Wick candles</div>
-          <div class="field">
-            <label>Pay per</label>
-            <div class="seg3"><span>Click</span><span class="on">Sign-up</span><span>Purchase</span></div>
+    <div class="phone" role="img" aria-label="Creating a listing in Gorilla Squad: choosing to pay $3.00 per sign-up with a $200 budget">
+      <div class="screen light">
+        <div class="island"></div><div class="status dark"><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="2"/><rect x="24" y="4" width="1.6" height="4" rx=".8" opacity=".5"/></svg></span></div>
+        <div class="lapp">
+          <div class="lback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>Create</span></div>
+          <div class="steps"><i class="d"></i><i class="d"></i><i class="c"></i><i></i><i></i></div>
+          <div class="lh">How do you reward creators?</div>
+          <div class="ls">Ember &amp; Wick candles</div>
+          <div class="opts">
+            <div class="opt on"><div><b>Per sign-up</b><span>Each new account</span></div><i></i></div>
+            <div class="opt"><div><b>Per click</b><span>Each real visit</span></div><i></i></div>
+            <div class="opt"><div><b>Per purchase</b><span>A share of each paid order</span></div><i></i></div>
           </div>
-          <div class="field"><label>Reward</label><div class="input">$3.00</div></div>
-          <div class="field"><label>Budget</label><div class="input">$200.00</div></div>
-          <div class="field"><label>Where</label><div class="input">Austin, US</div></div>
-          <div class="field"><label>Limit per person</label><div class="input">1 reward</div></div>
-          <div class="rows">
-            <div>One reward per person <b>On</b></div>
-            <div>Verified results only <b>Always</b></div>
-            <div>Stop when budget ends <b>On</b></div>
+          <div class="lcard">
+            <div class="lrow"><span>Reward</span><b>$3.00 per sign-up</b></div>
+            <div class="lrow"><span>Budget</span><b>$200.00</b></div>
+            <div class="lrow"><span>Where</span><b>Austin, US</b></div>
           </div>
-          <p class="hint">Nothing is charged until a result is verified.</p>
-          <button class="save" type="button" tabindex="-1">Save reward</button>
+          <div class="lhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span>Nothing is charged until a result is verified.</span></div>
+          <div class="lbar"><span class="sec">Back</span><span class="pri">Continue</span></div>
         </div>
       </div>
     </div>
@@ -372,26 +424,34 @@ footer a:hover{color:#fff}
 </section>
 
 <section class="on-cream">
-  <div class="wrap center">
-    <h2>Share receipts</h2>
-    <p class="lead">Every share gets its own link and QR code. Receipts show what came from where.</p>
-
-    <div class="phone short" role="img" aria-label="A share receipt for the Ember &amp; Wick campaign with a QR code for the marketer's personal link">
-      <div class="screen">
-        <div class="app qr">
-          <div class="app-head">Share receipt</div>
-          <div class="app-sub">Every share has its own link</div>
-          <div class="qr-card">
-            <div class="qr-name">Ember &amp; Wick candles</div>
+  <div class="wrap split flip">
+    <div>
+      <h2>Share receipts</h2>
+      <p class="lead">Every share gets its own link and QR code. Receipts show what came from where.</p>
+    </div>
+    <div class="phone" role="img" aria-label="A creator's share link for Ember &amp; Wick with its QR code, scans and verified results">
+      <div class="screen light">
+        <div class="island"></div><div class="status dark"><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="2"/><rect x="24" y="4" width="1.6" height="4" rx=".8" opacity=".5"/></svg></span></div>
+        <div class="lapp">
+          <div class="lback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>Deal</span></div>
+          <div class="lh">Your share link</div>
+          <div class="ls">Every share gets its own link</div>
+          <div class="qrc">
+            <div class="qn"><i>EW</i><div><b>Ember &amp; Wick candles</b><span>$3.00 per sign-up</span></div></div>
             <svg viewBox="0 0 33 33" shape-rendering="crispEdges" role="img" aria-label="QR code for the campaign link"><rect width="33" height="33" fill="#fff"/><path fill="#1D2A16" d="M2 2h7v1h-7zM11 2h7v1h-7zM20 2h1v1h-1zM24 2h7v1h-7zM2 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM13 3h2v1h-2zM17 3h1v1h-1zM19 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM30 3h1v1h-1zM2 4h1v1h-1zM4 4h3v1h-3zM8 4h1v1h-1zM10 4h4v1h-4zM16 4h1v1h-1zM18 4h1v1h-1zM21 4h1v1h-1zM24 4h1v1h-1zM26 4h3v1h-3zM30 4h1v1h-1zM2 5h1v1h-1zM4 5h3v1h-3zM8 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM16 5h2v1h-2zM19 5h2v1h-2zM22 5h1v1h-1zM24 5h1v1h-1zM26 5h3v1h-3zM30 5h1v1h-1zM2 6h1v1h-1zM4 6h3v1h-3zM8 6h1v1h-1zM12 6h6v1h-6zM19 6h4v1h-4zM24 6h1v1h-1zM26 6h3v1h-3zM30 6h1v1h-1zM2 7h1v1h-1zM8 7h1v1h-1zM15 7h2v1h-2zM18 7h2v1h-2zM24 7h1v1h-1zM30 7h1v1h-1zM2 8h7v1h-7zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1zM24 8h7v1h-7zM10 9h1v1h-1zM12 9h4v1h-4zM21 9h2v1h-2zM2 10h1v1h-1zM8 10h1v1h-1zM10 10h2v1h-2zM16 10h2v1h-2zM19 10h1v1h-1zM21 10h1v1h-1zM23 10h2v1h-2zM27 10h3v1h-3zM2 11h4v1h-4zM7 11h1v1h-1zM11 11h4v1h-4zM16 11h1v1h-1zM21 11h2v1h-2zM25 11h2v1h-2zM28 11h2v1h-2zM3 12h2v1h-2zM6 12h3v1h-3zM11 12h1v1h-1zM19 12h2v1h-2zM24 12h3v1h-3zM2 13h1v1h-1zM4 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h2v1h-2zM16 13h3v1h-3zM22 13h1v1h-1zM27 13h1v1h-1zM3 14h2v1h-2zM8 14h4v1h-4zM15 14h2v1h-2zM18 14h1v1h-1zM20 14h3v1h-3zM24 14h2v1h-2zM30 14h1v1h-1zM3 15h1v1h-1zM5 15h2v1h-2zM11 15h2v1h-2zM15 15h2v1h-2zM19 15h4v1h-4zM24 15h3v1h-3zM29 15h2v1h-2zM2 16h1v1h-1zM5 16h2v1h-2zM8 16h1v1h-1zM11 16h9v1h-9zM22 16h1v1h-1zM24 16h1v1h-1zM27 16h2v1h-2zM3 17h5v1h-5zM10 17h1v1h-1zM13 17h1v1h-1zM15 17h4v1h-4zM22 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM28 17h1v1h-1zM30 17h1v1h-1zM6 18h3v1h-3zM12 18h3v1h-3zM16 18h1v1h-1zM19 18h1v1h-1zM25 18h1v1h-1zM27 18h2v1h-2zM2 19h1v1h-1zM4 19h1v1h-1zM6 19h1v1h-1zM9 19h3v1h-3zM13 19h1v1h-1zM17 19h2v1h-2zM20 19h3v1h-3zM24 19h3v1h-3zM28 19h3v1h-3zM2 20h2v1h-2zM6 20h1v1h-1zM8 20h4v1h-4zM15 20h3v1h-3zM19 20h1v1h-1zM21 20h1v1h-1zM23 20h2v1h-2zM27 20h1v1h-1zM30 20h1v1h-1zM2 21h1v1h-1zM4 21h2v1h-2zM7 21h1v1h-1zM9 21h1v1h-1zM16 21h2v1h-2zM22 21h2v1h-2zM25 21h1v1h-1zM2 22h1v1h-1zM4 22h8v1h-8zM13 22h2v1h-2zM17 22h3v1h-3zM22 22h5v1h-5zM28 22h3v1h-3zM10 23h4v1h-4zM15 23h1v1h-1zM17 23h6v1h-6zM26 23h2v1h-2zM2 24h7v1h-7zM12 24h2v1h-2zM15 24h3v1h-3zM21 24h2v1h-2zM24 24h1v1h-1zM26 24h3v1h-3zM2 25h1v1h-1zM8 25h1v1h-1zM12 25h1v1h-1zM15 25h1v1h-1zM17 25h1v1h-1zM21 25h2v1h-2zM26 25h1v1h-1zM29 25h1v1h-1zM2 26h1v1h-1zM4 26h3v1h-3zM8 26h1v1h-1zM13 26h3v1h-3zM17 26h1v1h-1zM21 26h7v1h-7zM29 26h2v1h-2zM2 27h1v1h-1zM4 27h3v1h-3zM8 27h1v1h-1zM12 27h2v1h-2zM17 27h2v1h-2zM20 27h2v1h-2zM23 27h1v1h-1zM27 27h2v1h-2zM30 27h1v1h-1zM2 28h1v1h-1zM4 28h3v1h-3zM8 28h1v1h-1zM11 28h2v1h-2zM14 28h1v1h-1zM16 28h5v1h-5zM24 28h6v1h-6zM2 29h1v1h-1zM8 29h1v1h-1zM11 29h2v1h-2zM14 29h3v1h-3zM20 29h2v1h-2zM24 29h2v1h-2zM27 29h2v1h-2zM30 29h1v1h-1zM2 30h7v1h-7zM10 30h1v1h-1zM13 30h5v1h-5zM19 30h1v1h-1zM21 30h1v1h-1zM24 30h3v1h-3zM28 30h1v1h-1z"/></svg>
-            <div class="qr-code">gorillasquad.xyz/s/ember3k</div>
+            <div class="qu">gorillasquad.xyz/s/ember3k</div>
+            <div class="qb"><span class="pri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Copy link</span><span class="sec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 17 5-5-5-5"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>Share</span></div>
           </div>
-          <div class="chips"><span class="chip solid">Copy link</span><span class="chip line">Share</span></div>
-          <div class="stat-line"><span>Scanned 128 times</span><b>112 verified</b></div>
-          <div class="receipt">
-            <div><span>Link created</span><b>12 Nov</b></div>
-            <div><span>Owner</span><b>Ama · Austin</b></div>
-            <div><span>Proof</span><b>Saved per result</b></div>
+          <div class="lcard">
+            <div class="lrow"><span>Scanned</span><b>128 times</b></div>
+            <div class="lrow"><span>Verified</span><b class="ok">112 sign-ups</b></div>
+            <div class="lrow"><span>Earned</span><b>$336.00</b></div>
+          </div>
+          <div class="lsec">Latest</div>
+          <div class="lcard feedl">
+            <div class="lrow"><span>Sign-up · via QR at Mozart's</span><b class="ok">+$3.00</b></div>
+            <div class="lrow"><span>Sign-up · via Instagram story</span><b class="ok">+$3.00</b></div>
+            <div class="lrow"><span>Scan · not counted (repeat)</span><b>$0.00</b></div>
           </div>
         </div>
       </div>
@@ -411,26 +471,19 @@ footer a:hover{color:#fff}
       </ul>
     </div>
 
-    <div class="phone short" role="img" aria-label="A results dashboard with clicks, verified results and not-counted traffic, plus the cleared payout">
-      <div class="screen">
-        <div class="app dash">
-          <div class="app-head">Your results</div>
-          <div class="app-sub">Last 7 days</div>
-          <div class="stats">
-            <div><b>1,284</b><span>Clicks</span></div>
-            <div><b>1,106</b><span>Verified</span></div>
-            <div><b>178</b><span>Not counted</span></div>
+    <div class="phone" role="img" aria-label="A creator's profile with $184.50 paid out, 1,106 verified results and none waiting for review">
+      <div class="screen light">
+        <div class="island"></div><div class="status dark"><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="2"/><rect x="24" y="4" width="1.6" height="4" rx=".8" opacity=".5"/></svg></span></div>
+        <div class="lapp">
+          <div class="lme"><i>AO</i><div><b>Ama Owusu</b><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>Verified creator · Austin</span></div></div>
+          <div class="lstats"><div><b>$184.50</b><span>Paid out</span></div><div><b>1,106</b><span>Verified</span></div><div><b>0</b><span>To review</span></div></div>
+          <div class="ltabs"><span class="on">Deals</span><span>Applications</span><span>Earnings</span></div>
+          <div class="lcard list">
+            <div class="lrow"><i>EW</i><span><b>Ember &amp; Wick</b><small>612 sign-ups</small></span><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Verified</em></div><div class="lrow"><i>SA</i><span><b>Strings Academy</b><small>318 clicks</small></span><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Verified</em></div><div class="lrow"><i>RS</i><span><b>Ritual Skin</b><small>176 orders</small></span><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Verified</em></div><div class="lrow"><i>HC</i><span><b>Harbor Coffee</b><small>94 clicks</small></span><em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Verified</em></div>
           </div>
-          <div class="list">
-            <div class="row"><span>Ember &amp; Wick</span><b>612</b><i>✓</i></div>
-            <div class="row"><span>Strings Academy</span><b>318</b><i>✓</i></div>
-            <div class="row"><span>Ritual Skin</span><b>176</b><i>✓</i></div>
-            <div class="row"><span>Harbor Coffee</span><b>94</b><i>✓</i></div>
-            <div class="row"><span>Bloom Studio</span><b>52</b><i>✓</i></div>
-          </div>
-          <div class="stat-line"><span>Flagged for review</span><b>0</b></div>
-          <div class="payout"><span>Payout cleared</span><b>$184.50</b></div>
+          <div class="lpay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span>Payout cleared</span><b>$184.50</b></div>
         </div>
+        <div class="gnav"><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></svg></span><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></span><span class=""><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></span><span class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg></span></div>
       </div>
     </div>
   </div>
@@ -440,8 +493,8 @@ footer a:hover{color:#fff}
   <div class="wrap center">
     <h2>Start with one product</h2>
     <div class="cta">
-      <a class="btn solid" href="/app/#sell">Get started</a>
-      <a class="btn line" href="/app/#board">Browse campaigns</a>
+      <a class="btn solid" href="/app/#signin">Join the Squad</a>
+      <a class="btn line" href="/app/#feed">Browse listings</a>
     </div>
   </div>
 </section>
@@ -455,65 +508,42 @@ footer a:hover{color:#fff}
 
 <script>
 (() => {
-  const board = document.querySelector('.board');
-  if (!board) return;
-  const slides = [...board.querySelectorAll('.slide')];
+  const feed = document.querySelector('.screen.feed');
+  if (!feed) return;
+  const phone = feed.closest('.phone');
+  const slides = [...feed.querySelectorAll('.fslide')];
   const dots = [...document.querySelectorAll('.board-dots button')];
-  const segs = [...board.querySelectorAll('.seg [data-scope]')];
-  const loc = board.querySelector('.loc');
-  const phone = board.closest('.phone');
+  const apply = feed.querySelector('.fa.apply');
+  const toast = feed.querySelector('.ftoast');
+  const who = toast.querySelector('b');
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let at = 0;
-  let timer;
+  let at = 0, timers = [];
 
-  function go(next) {
+  const clear = () => { timers.forEach(clearTimeout); timers = []; apply.classList.remove('tap'); toast.classList.remove('show'); };
+  function show(next) {
+    const from = at;
     at = (next + slides.length) % slides.length;
-    slides.forEach((slide, i) => slide.classList.toggle('is-on', i === at));
-    dots.forEach((dot, i) => dot.setAttribute('aria-current', i === at ? 'true' : 'false'));
-    loc.textContent = slides[at].dataset.loc;
-    segs.forEach((seg) => seg.classList.toggle('on', seg.dataset.scope === slides[at].dataset.scope));
+    slides.forEach((el, i) => { el.classList.toggle('is-on', i === at); el.classList.toggle('is-prev', i === from && i !== at); });
+    dots.forEach((d, i) => d.setAttribute('aria-current', i === at ? 'true' : 'false'));
   }
-
-  function stop() {
-    window.clearInterval(timer);
-    timer = undefined;
+  // demo: land on a listing, tap Apply, see the confirmation, scroll to the next one
+  function play() {
+    clear();
+    if (reduce.matches || document.hidden) return;
+    timers.push(setTimeout(() => { apply.classList.add('tap'); }, 1900));
+    timers.push(setTimeout(() => { who.textContent = slides[at].dataset.who; toast.classList.add('show'); }, 2250));
+    timers.push(setTimeout(() => { toast.classList.remove('show'); apply.classList.remove('tap'); }, 3700));
+    timers.push(setTimeout(() => { show(at + 1); play(); }, 4400));
   }
-
-  function start() {
-    stop();
-    if (reduce.matches) return;
-    timer = window.setInterval(() => go(at + 1), 5500);
-  }
-
-  dots.forEach((dot, i) => dot.addEventListener('click', () => {
-    go(i);
-    start();
-  }));
-
-  phone.addEventListener('mouseenter', stop);
-  phone.addEventListener('mouseleave', start);
-  phone.addEventListener('focusin', stop);
-  phone.addEventListener('focusout', start);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop();
-    else start();
-  });
-
-  let from = null;
-  phone.addEventListener('pointerdown', (event) => { from = event.clientX; });
-  phone.addEventListener('pointerup', (event) => {
-    if (from === null) return;
-    const dx = event.clientX - from;
-    from = null;
-    if (Math.abs(dx) > 40) {
-      go(at + (dx < 0 ? 1 : -1));
-      start();
-    }
-  });
-
-  reduce.addEventListener('change', start);
-  go(0);
-  start();
+  dots.forEach((d, i) => d.addEventListener('click', () => { show(i); play(); }));
+  let y = null;
+  phone.addEventListener('pointerdown', (e) => { y = e.clientY; });
+  phone.addEventListener('pointerup', (e) => { if (y === null) return; const dy = e.clientY - y; y = null; if (Math.abs(dy) > 30) { show(at + (dy < 0 ? 1 : -1)); play(); } });
+  phone.addEventListener('mouseenter', clear);
+  phone.addEventListener('mouseleave', play);
+  document.addEventListener('visibilitychange', play);
+  reduce.addEventListener('change', play);
+  show(0); play();
 })();
 </script>
 </body>
