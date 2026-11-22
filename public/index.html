@@ -113,6 +113,23 @@ h2{font-size:clamp(29px,4.4vw,54px);max-width:16ch}
 .i-brown .st{animation:steam 2.4s ease-in-out infinite;opacity:0}
 .i-brown .s2{animation-delay:.8s}.i-brown .s3{animation-delay:1.6s}
 @keyframes steam{0%{transform:translateY(4px);opacity:0}40%{opacity:1}100%{transform:translateY(-6px);opacity:0}}
+.kinds.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kind b small{display:block;margin-top:4px;font:500 clamp(12px,1vw,13.5px)/1.35 Inter,sans-serif;opacity:.62}
+.mirror .kind{background:var(--army);box-shadow:none}
+.results{display:flex;align-items:center;gap:14px;max-width:880px;width:100%;margin-top:clamp(12px,1.6vw,18px);padding:18px 22px;border-radius:22px;background:var(--army);color:var(--cream);text-align:left}
+.results svg{flex:none;width:28px;height:28px;color:var(--sage)}
+.results p{margin:0;font-size:clamp(14px,1.3vw,17px);line-height:1.5;color:rgba(241,240,228,.78)}
+.results b{color:var(--sage);font-family:"Libre Baskerville",Georgia,serif}
+.r-blue .ripple{transform-origin:50% 50%;animation:ripple 2s ease-out infinite}
+@keyframes ripple{0%{transform:scale(.35);opacity:1}80%,100%{transform:scale(1.25);opacity:0}}
+.r-blue .cursor{animation:press 2s ease-in-out infinite}
+@keyframes press{0%,100%{transform:translate(4px,4px)}12%{transform:translate(0,0)}22%{transform:translate(1.5px,1.5px)}}
+.r-purple .badge{transform-origin:50% 50%;animation:pop 2.2s cubic-bezier(.3,1.6,.5,1) infinite}
+@keyframes pop{0%,15%{transform:scale(0)}35%,85%{transform:scale(1)}100%{transform:scale(0)}}
+.r-gold .coin{animation:drop 2.2s ease-in infinite}
+@keyframes drop{0%{transform:translateY(-6px);opacity:0}20%{opacity:1}60%{transform:translateY(18px);opacity:1}75%,100%{transform:translateY(22px);opacity:0}}
+.r-teal .spark{animation:hop 2.4s ease-in-out infinite}
+@keyframes hop{0%,10%{transform:translateX(0)}50%,60%{transform:translateX(24px)}100%{transform:translateX(0)}}
 @media(prefers-reduced-motion:reduce){.kic *{animation:none!important;opacity:1}}
 
 /* ── network ───────────────────────────────────────────────────────── */
@@ -317,6 +334,8 @@ footer a:hover{color:#fff}
   .split.wide{grid-template-columns:1fr}
   .kinds{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .kind{gap:12px;border-radius:20px;padding:12px}
+  .kinds.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .results{padding:16px;gap:12px}
   .kic{width:min(72px,22vw)}
   .net{margin-top:28px}
 }
@@ -451,51 +470,19 @@ footer a:hover{color:#fff}
   </div>
 </section>
 
-<section class="on-cream">
+<section class="on-cream mirror">
   <div class="wrap center">
-    <h2>Pay for results, not impressions</h2>
-    <p class="lead">Set the reward once. Nothing is charged until a real click, sign-up or purchase is checked.</p>
+    <h2>Control rewards</h2>
+    <p class="lead">Choose what you pay for, and how much.</p>
+    <div class="kinds four"><div class="kind"><svg class="kic r-blue" viewBox="0 0 64 64" aria-hidden="true"><circle class="ripple" cx="25" cy="25" r="13" fill="none" stroke="#7FB0D9" stroke-width="2.5"/><circle cx="25" cy="25" r="5" fill="#7FB0D9"/><g class="cursor"><path d="M27 27 29.5 53 36 46 41.5 57 47 54.5 41.5 43.5 51 43Z" fill="#DCEAF6" stroke="#2F6FA3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><b>Per click<small>A real visit</small></b></div><div class="kind"><svg class="kic r-purple" viewBox="0 0 64 64" aria-hidden="true"><circle cx="27" cy="22" r="9" fill="#E6DEF7" stroke="#6B4FB8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 52c0-10 7.6-16 17-16s17 6 17 16Z" fill="#E6DEF7" stroke="#6B4FB8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><g class="badge"><circle cx="47" cy="43" r="10" fill="#6B4FB8"/><path d="M47 38v10M42 43h10" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></g></svg><b>Per sign-up<small>A new account</small></b></div><div class="kind"><svg class="kic r-gold" viewBox="0 0 64 64" aria-hidden="true"><g class="coin"><circle cx="32" cy="12" r="7" fill="#E9C46A" stroke="#B9800A" stroke-width="2.2"/><path d="M32 8.5v7" stroke="#B9800A" stroke-width="2.2" stroke-linecap="round"/></g><path d="M14 24h36l-3 30a3 3 0 0 1-3 2.7H20a3 3 0 0 1-3-2.7Z" fill="#F8E7B5" stroke="#B9800A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 30v-3a8 8 0 0 1 16 0v3" fill="none" stroke="#B9800A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Per sale<small>A cut of each order</small></b></div><div class="kind"><svg class="kic r-teal" viewBox="0 0 64 64" aria-hidden="true"><path d="M16 40h32" stroke="#8FD0B4" stroke-width="2.5" stroke-dasharray="2 5" stroke-linecap="round"/><circle cx="14" cy="26" r="7" fill="#D3EEE5" stroke="#1F7A63" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 50c0-7 5-11 11-11s11 4 11 11Z" fill="#D3EEE5" stroke="#1F7A63" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="26" r="7" fill="#D3EEE5" stroke="#1F7A63" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M39 50c0-7 5-11 11-11s11 4 11 11Z" fill="#D3EEE5" stroke="#1F7A63" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle class="spark" cx="20" cy="40" r="4" fill="#1F7A63"/></svg><b>Per introduction<small>A share of a signed deal</small></b></div></div>
+    <div class="results">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+      <p><b>Pay for results.</b> Set the reward once. Nothing is charged until a real click, sign-up or purchase is checked.</p>
+    </div>
   </div>
 </section>
 
 <section class="on-army">
-  <div class="wrap split">
-    <div>
-      <h2>Control rewards</h2>
-      <p class="lead">Choose what you pay for, and how much.</p>
-      <div class="rules">
-        <div class="rule"><b>Per click</b><span>A real visit</span></div>
-        <div class="rule"><b>Per sign-up</b><span>A new account</span></div>
-        <div class="rule"><b>Per purchase</b><span>A paid order</span></div>
-      </div>
-    </div>
-    <div class="phone" role="img" aria-label="Creating a listing in Gorilla Squad: choosing to pay $3.00 per sign-up with a $200 budget">
-      <div class="screen light">
-        <div class="island"></div><div class="status dark"><span>9:41</span><span class="sbi"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.5" y="2.5" width="16" height="7" rx="2"/><rect x="24" y="4" width="1.6" height="4" rx=".8" opacity=".5"/></svg></span></div>
-        <div class="lapp">
-          <div class="lback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span>Create</span></div>
-          <div class="steps"><i class="d"></i><i class="d"></i><i class="c"></i><i></i><i></i></div>
-          <div class="lh">How do you reward creators?</div>
-          <div class="ls">Ember &amp; Wick candles</div>
-          <div class="opts">
-            <div class="opt on"><div><b>Per sign-up</b><span>Each new account</span></div><i></i></div>
-            <div class="opt"><div><b>Per click</b><span>Each real visit</span></div><i></i></div>
-            <div class="opt"><div><b>Per purchase</b><span>A share of each paid order</span></div><i></i></div>
-          </div>
-          <div class="lcard">
-            <div class="lrow"><span>Reward</span><b>$3.00 per sign-up</b></div>
-            <div class="lrow"><span>Budget</span><b>$200.00</b></div>
-            <div class="lrow"><span>Where</span><b>Austin, US</b></div>
-          </div>
-          <div class="lhint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span>Nothing is charged until a result is verified.</span></div>
-          <div class="lbar"><span class="sec">Back</span><span class="pri">Continue</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="on-cream">
   <div class="wrap split flip">
     <div>
       <h2>Share receipts</h2>
@@ -531,7 +518,7 @@ footer a:hover{color:#fff}
   </div>
 </section>
 
-<section class="on-army">
+<section class="on-cream">
   <div class="wrap split">
     <div>
       <h2>Every result is verified</h2>
@@ -561,7 +548,7 @@ footer a:hover{color:#fff}
   </div>
 </section>
 
-<section class="on-cream">
+<section class="on-army">
   <div class="wrap center">
     <h2>Start with one product</h2>
     <div class="cta">
