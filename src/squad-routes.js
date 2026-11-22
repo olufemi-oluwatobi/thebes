@@ -1414,6 +1414,104 @@ export function squadRoutes(app, h) {
     return c.json({ ok: true });
   });
 
+  // ======================================================================================================
+  // admin console: overview, searchable tables, one user in full, roles and wallet adjustments
+  // ======================================================================================================
+  app.get('/api/admin/squad/overview', async (c) => {
+    needAdmin(c);
+    const one = (sql) => DB(c).prepare(sql).first();
+    const [users, sellers, creators, offers, apps, deals, held, wallets, topups, payouts, checks, admins] = await Promise.all([
+      one('SELECT COUNT(*) n, SUM(is_blocked) blocked, SUM(created_at > (unixepoch() - 7 * 86400) * 1000) week FROM users WHERE is_deleted = 0'),
+      one('SELECT COUNT(*) n FROM sellers WHERE is_deleted = 0'), one('SELECT COUNT(*) n, SUM(is_verified) verified FROM marketers WHERE is_deleted = 0'),
+      one(`SELECT COUNT(*) n, SUM(status = 'open') open FROM offers WHERE is_deleted = 0`), one(`SELECT COUNT(*) n FROM interests WHERE status = 'pending'`),
+      one(`SELECT COUNT(*) n, SUM(status = 'active') active FROM relationships`), one(`SELECT COUNT(*) n, COALESCE(SUM(amount_cents), 0) cents FROM holds WHERE status = 'held'`),
+      one('SELECT COALESCE(SUM(amount_cents), 0) cents FROM wallet_entries'), one(`SELECT COUNT(*) n, COALESCE(SUM(amount_cents), 0) cents FROM topups WHERE status = 'pending'`),
+      one(`SELECT COUNT(*) n, COALESCE(SUM(amount_cents), 0) cents FROM payouts WHERE status = 'requested'`),
+      one('SELECT COUNT(*) n FROM socials WHERE verify_requested_at IS NOT NULL AND is_verified = 0 AND is_deleted = 0'), one(`SELECT COUNT(*) n FROM users WHERE role = 'admin'`)]);
+    return c.json({ users, sellers, creators, offers, applications: apps, deals, held, in_wallets: wallets.cents, topups, payouts, checks, admins });
+  });
+
+  // searchable tables. ?q= &status= &before= &limit=
+  const TABLES = {
+    users: { from: `users u LEFT JOIN sellers s ON s.user_id = u.id AND s.is_deleted = 0 LEFT JOIN marketers m ON m.user_id = u.id AND m.is_deleted = 0`,
+      cols: `u.id, u.email, u.display_name, u.role, u.is_blocked, u.is_deleted, u.is_verified, u.created_at, s.id seller_id, m.id marketer_id, m.country,
+        (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_entries w WHERE w.user_id = u.id) balance_cents`,
+      search: ['u.email', 'u.display_name', 'u.id'], at: 'u.created_at',
+      status: { admin: `u.role = 'admin'`, blocked: 'u.is_blocked = 1', deleted: 'u.is_deleted = 1', sellers: 's.id IS NOT NULL', creators: 'm.id IS NOT NULL' } },
+    offers: { from: `offers o JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id JOIN users u ON u.id = s.user_id JOIN offer_types t ON t.id = o.offer_type_id`,
+      cols: `o.id, o.title, o.status, o.is_blocked, o.is_deleted, o.job_budget_cents, o.currency, o.created_at, t.name type, p.name product, u.email seller, u.id seller_user_id,
+        (SELECT COUNT(*) FROM interests i WHERE i.offer_id = o.id AND i.status = 'pending') pending, (SELECT COUNT(*) FROM relationships r WHERE r.offer_id = o.id) deals`,
+      search: ['o.title', 'p.name', 'u.email', 'o.id'], at: 'o.created_at',
+      status: { open: `o.status = 'open' AND o.is_blocked = 0 AND o.is_deleted = 0`, paused: `o.status = 'paused'`, closed: `o.status = 'closed'`, blocked: 'o.is_blocked = 1', deleted: 'o.is_deleted = 1' } },
+    socials: { from: `socials so JOIN marketers m ON m.id = so.marketer_id JOIN users u ON u.id = m.user_id`,
+      cols: `so.id, so.platform, so.handle, so.url, so.followers, so.verified_followers, so.is_verified, so.is_blocked, so.is_deleted, so.verify_code, so.verify_requested_at, so.created_at, u.email owner, u.id owner_user_id`,
+      search: ['so.handle', 'u.email'], at: 'so.created_at',
+      status: { waiting: 'so.verify_requested_at IS NOT NULL AND so.is_verified = 0', verified: 'so.is_verified = 1', unverified: 'so.is_verified = 0', blocked: 'so.is_blocked = 1' } },
+    deals: { from: `relationships r JOIN offers o ON o.id = r.offer_id JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id JOIN users su ON su.id = s.user_id
+        JOIN marketers m ON m.id = r.marketer_id JOIN users mu ON mu.id = m.user_id LEFT JOIN holds h ON h.relationship_id = r.id`,
+      cols: `r.id, r.status, r.created_at, o.title offer, su.email seller, mu.email creator, h.id hold_id, h.status hold_status, h.amount_cents hold_cents, h.currency`,
+      search: ['o.title', 'su.email', 'mu.email', 'r.id'], at: 'r.created_at',
+      status: { active: `r.status = 'active'`, ended: `r.status = 'ended'`, held: `h.status = 'held'` } },
+    transactions: { from: `wallet_entries w JOIN users u ON u.id = w.user_id`,
+      cols: `w.id, w.kind, w.amount_cents, w.currency, w.note, w.ref_id, w.created_at, u.email, u.id user_id`,
+      search: ['u.email', 'w.note', 'w.ref_id'], at: 'w.created_at',
+      status: { topup: `w.kind = 'topup'`, hold: `w.kind IN ('hold', 'fee')`, earning: `w.kind = 'earning'`, payout: `w.kind IN ('payout', 'payout_return')`, refund: `w.kind = 'refund'`, adjust: `w.kind = 'adjust'` } },
+  };
+  app.get('/api/admin/squad/table/:name', async (c) => {
+    needAdmin(c);
+    const T = TABLES[c.req.param('name')];
+    if (!T) no(404, 'unknown table', 'not_found');
+    const { limit, before } = page(c);
+    const q = (c.req.query('q') || '').trim().slice(0, 80), st = c.req.query('status');
+    const where = [], args = [];
+    if (q) { where.push('(' + T.search.map((f) => `${f} LIKE ?`).join(' OR ') + ')'); args.push(...T.search.map(() => `%${q}%`)); }
+    if (st) { if (!T.status[st]) no(400, 'unknown status', 'invalid'); where.push(T.status[st]); }
+    if (before) { where.push(`${T.at} < ?`); args.push(before); }
+    const rows = (await DB(c).prepare(`SELECT ${T.cols} FROM ${T.from} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${T.at} DESC LIMIT ?`).bind(...args, limit).all()).results;
+    return c.json({ rows, next: rows.length === limit ? rows[rows.length - 1].created_at : null });
+  });
+
+  // one person, everything about them
+  app.get('/api/admin/squad/users/:id', async (c) => {
+    needAdmin(c);
+    const id = c.req.param('id'), all = (sql) => DB(c).prepare(sql).bind(id).all().then((r) => r.results);
+    const u = await DB(c).prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+    if (!u) no(404, 'no such user', 'not_found');
+    const [seller, marketer, companies, socials, offers, deals, entries, bal] = await Promise.all([
+      DB(c).prepare('SELECT * FROM sellers WHERE user_id = ?').bind(id).first(), DB(c).prepare('SELECT * FROM marketers WHERE user_id = ?').bind(id).first(),
+      all('SELECT co.* FROM company_members cm JOIN companies co ON co.id = cm.company_id WHERE cm.user_id = ?'),
+      all('SELECT so.* FROM socials so JOIN marketers m ON m.id = so.marketer_id WHERE m.user_id = ? ORDER BY so.created_at'),
+      all(`SELECT o.id, o.title, o.status, o.is_blocked, o.is_deleted, o.created_at FROM offers o JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id WHERE s.user_id = ? ORDER BY o.created_at DESC LIMIT 50`),
+      all(`SELECT r.id, r.status, r.created_at, o.title offer FROM relationships r JOIN offers o ON o.id = r.offer_id JOIN products p ON p.id = o.product_id JOIN sellers s ON s.id = p.seller_id JOIN marketers m ON m.id = r.marketer_id
+        WHERE s.user_id = ?1 OR m.user_id = ?1 ORDER BY r.created_at DESC LIMIT 50`),
+      all('SELECT * FROM wallet_entries WHERE user_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 100'), balanceOf(c, id)]);
+    return c.json({ user: { ...userOut(u), created_at: u.created_at }, seller: sellerOut(seller), marketer: marketerOut(marketer), companies: companies.map(companyOut), socials: socials.map((r) => ({ ...socialOut(r), verify_code: r.verify_code })),
+      offers, deals, balance: bal, entries: entries.map(entryOut) });
+  });
+
+  app.post('/api/admin/squad/users/:id/role', async (c) => {
+    const a = needAdmin(c), b = await body(c), id = c.req.param('id');
+    if (!['user', 'admin'].includes(b.role)) no(400, 'role is user or admin', 'invalid');
+    if (id === a.id && b.role !== 'admin') no(409, 'you cannot remove your own admin role', 'self');
+    const r = await DB(c).prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').bind(b.role, now(), id).run();
+    if (!r.meta?.changes) no(404, 'no such user', 'not_found');
+    return c.json({ ok: true, role: b.role });
+  });
+
+  // a correction to someone's wallet: always a new entry with a reason, never an edit. Cannot take a wallet below zero.
+  app.post('/api/admin/squad/users/:id/adjust', async (c) => {
+    const a = needAdmin(c), b = await body(c), id = c.req.param('id'), t = now();
+    const amount = Number(b.amount_cents);
+    if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 1e10) no(400, 'amount_cents is a whole number of cents, not zero', 'invalid');
+    const cur = walletCur(b.currency), note = text(b.note, 'reason', { min: 3, max: 300, required: true }), eid = uid('we');
+    if (!(await DB(c).prepare('SELECT 1 FROM users WHERE id = ?').bind(id).first())) no(404, 'no such user', 'not_found');
+    await DB(c).prepare(`INSERT INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at)
+      SELECT ?, ?, ?, ?, 'adjust', NULL, ?, ?, ? WHERE (SELECT COALESCE(SUM(amount_cents), 0) FROM wallet_entries WHERE user_id = ? AND currency = ?) + ? >= 0`)
+      .bind(eid, id, cur, amount, note, a.id, t, id, cur, amount).run();
+    if (!(await DB(c).prepare('SELECT 1 FROM wallet_entries WHERE id = ?').bind(eid).first())) no(409, 'that would take the wallet below zero', 'insufficient_funds');
+    return c.json({ balance: await balanceOf(c, id) });
+  });
+
   app.post('/api/admin/squad/:kind/:id', async (c) => {
     const a = needAdmin(c), b = await body(c), t = now();
     const spec = ADMIN[c.req.param('kind')];
