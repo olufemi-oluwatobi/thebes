@@ -28,22 +28,24 @@ function Start() {
   return (
     <Page crumb="Create">
       <PageTitle h="What do you want to list?" p="Start with the product. Then create a listing that tells creators what you want them to do." />
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        <button onClick={newProduct} className="group flex flex-col overflow-hidden rounded-card bg-army text-left text-white transition hover:shadow-lift">
-          <span className="grid aspect-[4/3] w-full place-items-center"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-sage text-army transition group-hover:scale-105"><Ic.Plus width="26" height="26" /></span></span>
-          <span className="p-4"><span className="block font-semibold">New product</span><span className="text-small text-white/65">Add something to list</span></span>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <button onClick={newProduct} className="group flex items-center gap-3.5 rounded-card bg-army p-3 pr-4 text-left text-white">
+          <span className="grid h-12 w-16 shrink-0 place-items-center rounded-xl bg-sage text-army transition group-hover:scale-105"><Ic.Plus width="22" height="22" /></span>
+          <span className="min-w-0 flex-1"><span className="block font-semibold">New product</span><span className="block truncate text-small text-white/65">Add something to list</span></span>
+          <Ic.Chev width="18" height="18" className="text-white/50" />
         </button>
         {products.map(p => { const n = offersOn(p.id); return (
-          <button key={p.id} onClick={() => go('plus/' + p.id)} className="group flex flex-col overflow-hidden rounded-card bg-white text-left transition hover:shadow-lift">
-            <ProductArt p={p} fit="70%" className="aspect-[4/3] w-full" />
-            <span className="flex flex-1 flex-col p-4"><span className="line-clamp-1 font-semibold">{p.name}</span><span className="text-small text-ink-soft">{kindOf(p.kind)[1]}</span>
-              <span className="mt-3 inline-flex items-center gap-1 text-small font-semibold text-sage-700">{n ? n + ' listing' + (n > 1 ? 's' : '') + ' · add another' : 'Create a listing'}<Ic.Chev width="16" height="16" /></span></span>
+          <button key={p.id} onClick={() => go('plus/' + p.id)} className="group flex items-center gap-3.5 rounded-card bg-white p-3 pr-4 text-left">
+            <ProductArt p={p} fit="76%" className="h-12 w-16 shrink-0 rounded-xl" />
+            <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{p.name}</span>
+              <span className="block truncate text-small text-sage-700">{n ? n + ' listing' + (n > 1 ? 's' : '') + ' · add another' : 'Create a listing'}</span></span>
+            <Ic.Chev width="18" height="18" className="text-ink-faint transition group-hover:translate-x-0.5" />
           </button>); })}
       </div>
       {S.auth === 'in' && a.hasSeller && !S.myProductIds && <div className="mt-6 h-8 w-8 animate-spin rounded-full border-2 border-cream-200 border-t-army" />}
-      <button onClick={() => go('plus/social')} className="mt-10 flex w-full items-center gap-4 rounded-card bg-white p-5 text-left transition hover:shadow-lift">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cream-100 text-army"><Ic.At /></span>
-        <span className="flex-1"><span className="block font-semibold">Promoting instead?</span><span className="text-small text-ink-soft">Add your social accounts to qualify for listings</span></span><Ic.Chev className="text-ink-faint" />
+      <button onClick={() => go('plus/social')} className="mt-6 flex w-full items-center gap-3.5 rounded-card bg-white p-3 pr-4 text-left sm:max-w-md">
+        <span className="grid h-12 w-16 shrink-0 place-items-center rounded-xl bg-cream-100 text-army"><Ic.At width="22" height="22" /></span>
+        <span className="min-w-0 flex-1"><span className="block font-semibold">Promoting instead?</span><span className="block truncate text-small text-ink-soft">Add your socials to qualify for listings</span></span><Ic.Chev width="18" height="18" className="text-ink-faint" />
       </button>
     </Page>
   );
