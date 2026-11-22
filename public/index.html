@@ -56,6 +56,33 @@ h2{font-size:clamp(29px,4.4vw,54px);max-width:16ch}
 .eyebrow{font:700 clamp(12px,1.1vw,14px)/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
 .on-army .eyebrow{color:var(--sage)}
 
+/* ── the loop ───────────────────────────────────────────────────────── */
+.loop-wrap{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,20px);width:100%;max-width:980px;margin-top:clamp(28px,4vw,48px)}
+.loop{width:min(100%,520px);height:auto;flex:0 1 520px;overflow:visible}
+.loop .arc{fill:none;stroke:var(--army);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:2 9;animation:loop-flow 1.1s linear infinite}
+@keyframes loop-flow{to{stroke-dashoffset:-22}}
+.loop .ring{transform-origin:260px 215px}
+.loop .node rect{fill:#fff;stroke:rgba(38,51,31,.14)}
+.loop .node text{font:600 17px Inter,sans-serif;fill:var(--army);text-anchor:middle}
+.loop .node.bad rect{fill:var(--army)}
+.loop .node.bad text{fill:var(--cream)}
+.loop .mid{font:700 30px "Libre Baskerville",Georgia,serif;fill:var(--army);text-anchor:middle;opacity:.9}
+.loop .mid.sm{font:500 15px Inter,sans-serif;fill:var(--muted);opacity:1}
+.escape{display:flex;align-items:center;gap:12px;flex:0 1 300px;text-align:left}
+.escape .exit{position:relative;flex:0 0 56px;height:2.5px;background:var(--army);border-radius:2px}
+.escape .exit::after{content:"";position:absolute;right:-1px;top:50%;width:11px;height:11px;border-top:2.5px solid var(--army);border-right:2.5px solid var(--army);transform:translateY(-50%) rotate(45deg)}
+.squad-pill{background:var(--army);color:#fff;border-radius:22px;padding:18px 22px;display:grid;gap:6px;box-shadow:0 18px 40px -18px rgba(29,42,22,.55)}
+.squad-pill b{font:700 18px/1.2 "Libre Baskerville",Georgia,serif;color:var(--sage)}
+.squad-pill span{font-size:15px;line-height:1.5;color:rgba(255,255,255,.8)}
+@media(max-width:760px){
+  .loop-wrap{flex-direction:column}
+  .loop{flex:none;width:100%}
+  .escape{flex-direction:column;flex-basis:auto;text-align:center;max-width:340px}
+  .escape .exit{flex:0 0 40px;width:2.5px;height:40px}
+  .escape .exit::after{right:50%;top:auto;bottom:-1px;transform:translateX(50%) rotate(135deg)}
+}
+@media(prefers-reduced-motion:reduce){.loop .arc{animation:none}}
+
 /* ── product categories ─────────────────────────────────────────────── */
 .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,16px);width:100%;max-width:900px;margin-top:clamp(30px,4vw,46px)}
 .card{background:var(--sage-light);color:var(--army);border-radius:14px;padding:clamp(14px,2.4vw,26px) clamp(10px,1.6vw,18px);display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:clamp(104px,15vw,150px)}
@@ -270,9 +297,21 @@ footer a:hover{color:#fff}
 
 <section class="on-cream" id="how">
   <div class="wrap center">
-    <p class="eyebrow">Escape the loop</p>
-    <h2>You build it. They don't come.</h2>
-    <p class="lead">Skip the ads. People hear about it from someone they already trust.</p>
+    <h2>Escape the loop</h2>
+    <p class="lead">You build it. You put it out. Nothing happens. So you build it again.</p>
+    <div class="loop-wrap">
+    <svg class="loop" viewBox="0 0 520 430" role="img" aria-labelledby="loop-t">
+      <title id="loop-t">The loop: you build it, you put it out, nothing happens, you build it again.</title>
+      <defs><marker id="lp-head" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L8 5L1 9" fill="none" stroke="#26331F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+      <g class="ring"><path class="arc" d="M342.4 77.9A160 160 0 0 1 415.9 179.0" marker-end="url(#lp-head)"/><path class="arc" d="M415.9 251.0A160 160 0 0 1 356.3 342.8" marker-end="url(#lp-head)"/><path class="arc" d="M163.7 342.8A160 160 0 0 1 104.1 251.0" marker-end="url(#lp-head)"/><path class="arc" d="M104.1 179.0A160 160 0 0 1 177.6 77.9" marker-end="url(#lp-head)"/></g>
+      <text class="mid" x="260" y="211">again</text><text class="mid sm" x="260" y="235">and again</text>
+      <g class="node"><rect x="190" y="32" width="140" height="46" rx="23"/><text x="260" y="60">You build it</text></g><g class="node"><rect x="345" y="192" width="150" height="46" rx="23"/><text x="420" y="220">You put it out</text></g><g class="node bad"><rect x="176" y="352" width="168" height="46" rx="23"/><text x="260" y="380">Nothing happens</text></g><g class="node"><rect x="7" y="192" width="186" height="46" rx="23"/><text x="100" y="221">You build it again</text></g>
+    </svg>
+      <div class="escape">
+        <span class="exit" aria-hidden="true"></span>
+        <div class="squad-pill"><b>Gorilla Squad breaks it</b><span>Skip the ads. People hear about it from someone they already trust.</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
