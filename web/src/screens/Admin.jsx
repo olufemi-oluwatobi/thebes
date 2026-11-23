@@ -59,6 +59,26 @@ export default function Admin() {
   );
 }
 
+/* which provider takes top-ups. Only providers with a key on the server can be picked; new top-ups use the switch at once. */
+const PNAME = { stripe: 'Stripe', bachs: 'Bachs', manual: 'Manual (admin credits)' };
+function Payments() {
+  const { a } = useStore();
+  const [d, setD] = useState(null);
+  const load = () => api('/admin/squad/settings/payments').then(setD).catch(() => {});
+  useEffect(() => { load(); }, []);
+  if (!d) return null;
+  const pick = async (k) => { if (k !== d.active && await a.run(() => api('/admin/squad/settings/payments', { method: 'POST', body: { provider: k } }))) { a.toast('Top-ups now use ' + PNAME[k]); load(); } };
+  return (
+    <Card title="Payments" sub="Which provider takes wallet top-ups. Switching affects new top-ups only.">
+      <ul className="-my-2">{d.available.map((p, i) => (
+        <li key={p.key} className={cx('flex items-center gap-3 py-3', i && 'border-t border-cream-100')}>
+          <div className="min-w-0 flex-1"><b>{PNAME[p.key]}</b><div className="text-caption text-ink-soft">{p.key === 'manual' ? 'A reference to pay; an admin credits it' : !p.ready ? 'No API key on the server' : p.webhooks ? 'Ready' : 'Key set, webhook secret missing'}</div></div>
+          {d.active === p.key ? <Tag tone="good">Active</Tag> : <Button size="sm" tone="secondary" disabled={!p.ready} onClick={() => pick(p.key)}>Use</Button>}
+        </li>))}</ul>
+    </Card>
+  );
+}
+
 function Overview({ go: to }) {
   const [d, setD] = useState(null);
   useEffect(() => { api('/admin/squad/overview').then(setD).catch(() => {}); }, []);
@@ -69,7 +89,10 @@ function Overview({ go: to }) {
     ['In wallets', money(d.in_wallets), null, 'transactions'], ['Held in jobs', money(d.held.cents), d.held.n + ' jobs', 'queues'],
     ['Top-ups waiting', d.topups.n, money(d.topups.cents), 'queues'], ['Payouts waiting', d.payouts.n, money(d.payouts.cents), 'queues'], ['Account checks', d.checks.n, null, 'queues'], ['Admins', d.admins.n, null, 'users'],
   ];
-  return <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{tiles.map(([l, v, sub, sec]) => <button key={l} onClick={() => to(sec)} className="rounded-card bg-paper p-4 text-left transition hover:bg-cream-100"><div className="text-caption font-semibold uppercase tracking-wider text-ink-faint">{l}</div><div className="tnum mt-2 text-title">{v}</div>{sub && <div className="mt-1 text-caption text-ink-soft">{sub}</div>}</button>)}</div>;
+  return <div className="flex flex-col gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{tiles.map(([l, v, sub, sec]) => <button key={l} onClick={() => to(sec)} className="rounded-card bg-paper p-4 text-left transition hover:bg-cream-100"><div className="text-caption font-semibold uppercase tracking-wider text-ink-faint">{l}</div><div className="tnum mt-2 text-title">{v}</div>{sub && <div className="mt-1 text-caption text-ink-soft">{sub}</div>}</button>)}</div>
+    <Payments />
+  </div>;
 }
 
 /* a searchable, filterable table. On a phone each row is a card. */

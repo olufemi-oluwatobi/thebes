@@ -5,6 +5,7 @@
 // Mounted on the Thebes Worker; the games engine is untouched. Helpers come from worker.js.
 
 import { bachs, bachsOn, toDecimal, toCents, verifyWebhook } from './bachs.js';
+import { stripe, stripeOn, verifyStripe } from './stripe.js';
 export const PLATFORMS = ['x', 'instagram', 'tiktok', 'youtube', 'linkedin', 'facebook', 'whatsapp', 'telegram', 'substack', 'newsletter', 'reddit', 'discord', 'twitch', 'website', 'other'];
 export const CATEGORIES = ['physical', 'digital', 'software', 'service', 'content', 'other'];
 export const CURRENCIES = ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR'];
@@ -1342,19 +1343,29 @@ export function squadRoutes(app, h) {
     const id = uid('tp'), ref = 'GS-' + String(crypto.getRandomValues(new Uint32Array(1))[0] % 90000000 + 10000000);
     await DB(c).prepare('INSERT INTO topups (id, user_id, currency, amount_cents, reference, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(id, u.id, cur, amount, ref, t).run();
     let checkout_url = null, checkout_id = null;
-    if (bachsOn(c.env)) {
-      // the hosted checkout; the wallet is credited only when Bachs confirms the payment by webhook
-      const app = String(c.env.APP_URL || '').replace(/\/$/, '');
+    const provider = await payProvider(c);
+    if (provider !== 'manual') {
+      // a hosted checkout; the wallet is credited only when the provider confirms the payment by signed webhook
+      const app = String(c.env.APP_URL || '').replace(/\/$/, ''), back = { ok: `${app}/app/?topup=${id}`, no: `${app}/app/?topup_cancel=${id}` };
       try {
-        const ch = await bachs(c.env, 'POST', '/v1/checkout-sessions', {
-          pricing: { currency: cur, amount: toDecimal(amount) }, reference: id, customer: { email: u.email },
-          metadata: { topup_id: id, user_id: u.id }, success_url: `${app}/app/?topup=${id}`, cancel_url: `${app}/app/?topup_cancel=${id}`, expires_in_minutes: 120,
-        }, { idem: 'topup-' + id });
-        checkout_url = ch.checkout_url; checkout_id = ch.checkout_id;
-        await DB(c).prepare(`UPDATE topups SET provider = 'bachs', provider_ref = ?, checkout_url = ? WHERE id = ?`).bind(ch.checkout_id, checkout_url, id).run();
+        if (provider === 'stripe') {
+          const ss = await stripe(c.env, 'POST', '/v1/checkout/sessions', {
+            mode: 'payment', client_reference_id: id, customer_email: u.email, success_url: back.ok, cancel_url: back.no,
+            expires_at: t + 2 * 3600, metadata: { topup_id: id, user_id: u.id }, payment_intent_data: { metadata: { topup_id: id, user_id: u.id }, description: 'Gorilla Squad top-up ' + ref },
+            line_items: [{ quantity: 1, price_data: { currency: cur.toLowerCase(), unit_amount: amount, product_data: { name: 'Gorilla Squad wallet top-up' } } }],
+          }, { idem: 'topup-' + id });
+          checkout_id = ss.id; checkout_url = ss.url;
+        } else {
+          const ch = await bachs(c.env, 'POST', '/v1/checkout-sessions', {
+            pricing: { currency: cur, amount: toDecimal(amount) }, reference: id, customer: { email: u.email },
+            metadata: { topup_id: id, user_id: u.id }, success_url: back.ok, cancel_url: back.no, expires_in_minutes: 120,
+          }, { idem: 'topup-' + id });
+          checkout_id = ch.checkout_id; checkout_url = ch.checkout_url;
+        }
+        await DB(c).prepare(`UPDATE topups SET provider = ?, provider_ref = ?, checkout_url = ? WHERE id = ?`).bind(provider, checkout_id, checkout_url, id).run();
       } catch (err) {
-        await DB(c).prepare(`UPDATE topups SET status = 'cancelled', note = ? WHERE id = ?`).bind('checkout failed: ' + String(err.message).slice(0, 200), id).run();
-        console.error('bachs checkout', err.message, err.provider); no(502, 'Payments are having a moment. Try again shortly.', 'provider_error');
+        await DB(c).prepare(`UPDATE topups SET status = 'cancelled', note = ? WHERE id = ?`).bind(`${provider} checkout failed: ` + String(err.message).slice(0, 200), id).run();
+        console.error(provider + ' checkout', err.message, err.provider); no(502, 'Payments are having a moment. Try again shortly.', 'provider_error');
       }
     }
     return c.json({ topup: { id, currency: cur, amount_cents: amount, reference: ref, status: 'pending', created_at: t, checkout_id }, checkout_url }, 201);
@@ -1442,40 +1453,95 @@ export function squadRoutes(app, h) {
   });
 
   // ======================================================================================================
-  // Bachs webhooks: the only thing that credits a paid top-up. Signed, deduplicated, never trusted blindly.
+  // payment webhooks (Bachs, Stripe): the only thing that credits a paid top-up. Signed, deduplicated, never trusted blindly.
   // ======================================================================================================
+  // record the event once; false if we have already handled it
+  const firstTime = async (c, provider, ev, raw) => (await DB(c).prepare('INSERT OR IGNORE INTO provider_events (id, provider, type, payload, received_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(ev.id, provider, ev.type, raw.slice(0, 20000), now()).run()).meta?.changes > 0;
+  const noteEvent = (c, id, result) => DB(c).prepare('UPDATE provider_events SET result = ? WHERE id = ?').bind(result, id).run();
+  // paid: credit what was actually collected, once (the unique index on wallet_entries makes a second credit impossible)
+  async function settlePaid(c, provider, ref, paid, currency) {
+    const tp = ref ? await DB(c).prepare(`SELECT * FROM topups WHERE provider = ? AND provider_ref = ?`).bind(provider, ref).first() : null;
+    if (!tp) return 'no matching top-up';
+    const cur = String(currency || '').toUpperCase(), t = now();
+    if (cur !== tp.currency || !(paid > 0)) {
+      await DB(c).prepare(`UPDATE topups SET note = ? WHERE id = ?`).bind(`paid ${paid} ${cur}: needs an admin`, tp.id).run();
+      return 'currency or amount mismatch';
+    }
+    await DB(c).batch([
+      DB(c).prepare(`INSERT OR IGNORE INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) VALUES (?, ?, ?, ?, 'topup', ?, ?, NULL, ?)`)
+        .bind(uid('we'), tp.user_id, tp.currency, paid, tp.id, 'Top-up ' + tp.reference, t),
+      DB(c).prepare(`UPDATE topups SET status = 'credited', paid_cents = ?, decided_at = ?, note = ? WHERE id = ? AND status <> 'credited'`)
+        .bind(paid, t, paid !== tp.amount_cents ? `asked ${tp.amount_cents}, paid ${paid}` : null, tp.id),
+    ]);
+    return 'credited ' + paid;
+  }
+  async function settleClosed(c, provider, ref, why) {
+    const r = await DB(c).prepare(`UPDATE topups SET status = 'cancelled', decided_at = ?, note = ? WHERE provider = ? AND provider_ref = ? AND status = 'pending'`).bind(now(), why, provider, ref || '').run();
+    return r.meta?.changes ? why : 'nothing pending';
+  }
+
   app.post('/api/webhooks/bachs', async (c) => {
     const raw = await c.req.text();
     if (!c.env.BACHS_WEBHOOK_SECRET) return c.json({ error: 'webhooks are not set up' }, 503);
     if (!(await verifyWebhook(c.env, raw, c.req.raw.headers))) return c.json({ error: 'bad signature' }, 400);
     let ev; try { ev = JSON.parse(raw); } catch { return c.json({ error: 'bad body' }, 400); }
     if (!ev?.id || !ev?.type) return c.json({ error: 'bad event' }, 400);
-    const t = now();
-    const seen = await DB(c).prepare('INSERT OR IGNORE INTO provider_events (id, provider, type, payload, received_at) VALUES (?, ?, ?, ?, ?)').bind(ev.id, 'bachs', ev.type, raw.slice(0, 20000), t).run();
-    if (!seen.meta?.changes) return c.json({ ok: true, duplicate: true });
-    const d = ev.data || {}, done = (result) => DB(c).prepare('UPDATE provider_events SET result = ? WHERE id = ?').bind(result, ev.id).run();
-    const tp = d.checkout_id ? await DB(c).prepare(`SELECT * FROM topups WHERE provider = 'bachs' AND provider_ref = ?`).bind(d.checkout_id).first() : null;
-    if (ev.type === 'collection.succeeded') {
-      if (!tp) { await done('no matching top-up'); return c.json({ ok: true }); }
-      const paid = toCents(d.amount), cur = String(d.currency || '').toUpperCase();
-      if (cur !== tp.currency || !(paid > 0)) {
-        await DB(c).prepare(`UPDATE topups SET note = ? WHERE id = ?`).bind(`paid ${d.amount} ${cur}: needs an admin`, tp.id).run();
-        await done('currency or amount mismatch'); return c.json({ ok: true });
-      }
-      // credit what was actually collected, once (the unique index on wallet_entries makes a second credit impossible)
-      await DB(c).batch([
-        DB(c).prepare(`INSERT OR IGNORE INTO wallet_entries (id, user_id, currency, amount_cents, kind, ref_id, note, created_by, created_at) VALUES (?, ?, ?, ?, 'topup', ?, ?, NULL, ?)`)
-          .bind(uid('we'), tp.user_id, tp.currency, paid, tp.id, 'Top-up ' + tp.reference, t),
-        DB(c).prepare(`UPDATE topups SET status = 'credited', paid_cents = ?, decided_at = ?, note = ? WHERE id = ? AND status <> 'credited'`)
-          .bind(paid, t, paid !== tp.amount_cents ? `asked ${tp.amount_cents}, paid ${paid}` : null, tp.id),
-      ]);
-      await done('credited ' + paid); return c.json({ ok: true });
-    }
-    if (ev.type === 'checkout.expired' && tp) {
-      await DB(c).prepare(`UPDATE topups SET status = 'cancelled', decided_at = ?, note = 'checkout expired' WHERE id = ? AND status = 'pending'`).bind(t, tp.id).run();
-      await done('expired'); return c.json({ ok: true });
-    }
-    await done('ignored'); return c.json({ ok: true });
+    if (!(await firstTime(c, 'bachs', ev, raw))) return c.json({ ok: true, duplicate: true });
+    const d = ev.data || {};
+    const result = ev.type === 'collection.succeeded' ? await settlePaid(c, 'bachs', d.checkout_id, toCents(d.amount), d.currency)
+      : ev.type === 'checkout.expired' ? await settleClosed(c, 'bachs', d.checkout_id, 'checkout expired') : 'ignored';
+    await noteEvent(c, ev.id, result); return c.json({ ok: true });
+  });
+
+  app.post('/api/webhooks/stripe', async (c) => {
+    const raw = await c.req.text();
+    if (!c.env.STRIPE_WEBHOOK_SECRET) return c.json({ error: 'webhooks are not set up' }, 503);
+    if (!(await verifyStripe(c.env, raw, c.req.raw.headers))) return c.json({ error: 'bad signature' }, 400);
+    let ev; try { ev = JSON.parse(raw); } catch { return c.json({ error: 'bad body' }, 400); }
+    if (!ev?.id || !ev?.type) return c.json({ error: 'bad event' }, 400);
+    if (!(await firstTime(c, 'stripe', ev, raw))) return c.json({ ok: true, duplicate: true });
+    const o = ev.data?.object || {};
+    let result = 'ignored';
+    // completed + paid: card payments. async_payment_succeeded: bank debits etc. that settle later
+    if ((ev.type === 'checkout.session.completed' && o.payment_status === 'paid') || ev.type === 'checkout.session.async_payment_succeeded')
+      result = await settlePaid(c, 'stripe', o.id, o.amount_total, o.currency);
+    else if (ev.type === 'checkout.session.completed') result = 'waiting for the payment to settle';
+    else if (ev.type === 'checkout.session.expired') result = await settleClosed(c, 'stripe', o.id, 'checkout expired');
+    else if (ev.type === 'checkout.session.async_payment_failed') result = await settleClosed(c, 'stripe', o.id, 'payment failed');
+    await noteEvent(c, ev.id, result); return c.json({ ok: true });
+  });
+
+  // ======================================================================================================
+  // which provider takes top-ups: an admin switch (app_settings), falling back to PAYMENTS_PROVIDER, then to whichever key is set
+  // ======================================================================================================
+  const PROVIDERS = { stripe: stripeOn, bachs: bachsOn, manual: () => true };
+  async function payProvider(c) {
+    const set = await DB(c).prepare(`SELECT value FROM app_settings WHERE key = 'payments_provider'`).first().catch(() => null);
+    for (const want of [set?.value, c.env.PAYMENTS_PROVIDER]) if (want && PROVIDERS[want]?.(c.env)) return want;
+    return stripeOn(c.env) ? 'stripe' : bachsOn(c.env) ? 'bachs' : 'manual';
+  }
+  app.get('/api/admin/squad/settings/payments', async (c) => {
+    needAdmin(c);
+    const set = await DB(c).prepare(`SELECT value, updated_at FROM app_settings WHERE key = 'payments_provider'`).first();
+    return c.json({ active: await payProvider(c), chosen: set?.value || null, updated_at: set?.updated_at || null,
+      available: Object.entries(PROVIDERS).map(([k, on]) => ({ key: k, ready: on(c.env), webhooks: k === 'manual' ? true : !!c.env[k.toUpperCase() + '_WEBHOOK_SECRET'] })) });
+  });
+  app.post('/api/admin/squad/settings/payments', async (c) => {
+    const a = needAdmin(c), b = await body(c), p = String(b.provider || '');
+    if (!PROVIDERS[p]) no(400, 'provider must be stripe, bachs or manual', 'bad_provider');
+    if (!PROVIDERS[p](c.env)) no(409, `${p} has no API key set on the server`, 'not_ready');
+    await DB(c).prepare(`INSERT INTO app_settings (key, value, updated_by, updated_at) VALUES ('payments_provider', ?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at`).bind(p, a.id, now()).run();
+    return c.json({ ok: true, active: await payProvider(c) });
+  });
+
+  // local only: a stand-in for Stripe Checkout
+  app.post('/api/__stripe/v1/checkout/sessions', async (c) => {
+    if (c.env.EMAIL_MODE !== 'show') return c.json({ error: 'not found' }, 404);
+    const f = await c.req.parseBody();
+    if (!f['line_items[0][price_data][unit_amount]'] || !f.client_reference_id || f.mode !== 'payment') return c.json({ error: { message: 'bad request' } }, 400);
+    const id = 'cs_test_' + String(f.client_reference_id).replace(/\W/g, '');
+    return c.json({ id, object: 'checkout.session', url: `${String(c.env.APP_URL).replace(/\/$/, '')}/api/__stripe/pay/${id}`, status: 'open' });
   });
 
   // ======================================================================================================

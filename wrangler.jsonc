@@ -36,7 +36,7 @@
     "local": {
       "d1_databases": [{ "binding": "DB", "database_name": "thebes", "database_id": "local", "migrations_dir": "db/migrations" }],
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "thebes-files" }],
-      "vars": { "APP_URL": "http://localhost:8787", "EMAIL_MODE": "show", "EMAIL_FROM": "Thebes <hello@localhost>", "ADMIN_EMAILS": "admin@thebes.local", "AI_MODE": "off", "BACHS_SECRET_KEY": "sk_sandbox_local_stub", "BACHS_WEBHOOK_SECRET": "whsec_local_stub", "BACHS_API_BASE": "http://127.0.0.1:8787/api/__bachs" }
+      "vars": { "APP_URL": "http://localhost:8787", "EMAIL_MODE": "show", "EMAIL_FROM": "Thebes <hello@localhost>", "ADMIN_EMAILS": "admin@thebes.local", "AI_MODE": "off", "BACHS_SECRET_KEY": "sk_sandbox_local_stub", "BACHS_WEBHOOK_SECRET": "whsec_local_stub", "BACHS_API_BASE": "http://127.0.0.1:8787/api/__bachs", "STRIPE_SECRET_KEY": "sk_test_local_stub", "STRIPE_WEBHOOK_SECRET": "whsec_stripe_local_stub", "STRIPE_API_BASE": "http://127.0.0.1:8787/api/__stripe", "PAYMENTS_PROVIDER": "bachs" }
     }
   }
 }

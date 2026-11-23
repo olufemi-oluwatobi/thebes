@@ -26,8 +26,9 @@ const hook = (ev, { secret = SECRET, t = Math.floor(Date.now() / 1000), v1 = tru
 };
 const paid = (chk, amount = '25.00', currency = 'USD', id = 'evt_' + Math.random().toString(36).slice(2)) => ({ id, type: 'collection.succeeded', created_at: new Date().toISOString(), organization_id: 'org_x', data: { checkout_id: chk, amount, currency, charge_id: 'ch_1' } });
 
-const sel = person();
-ok('sign in', await signIn(sel, `bx-${TAG}@ex.com`));
+const sel = person(), boss = person();
+ok('sign in', await signIn(sel, `bx-${TAG}@ex.com`) && await signIn(boss, 'admin@thebes.local'));
+ok('switch top-ups to Bachs', (await boss.post('/api/admin/squad/settings/payments', { provider: 'bachs' })).active === 'bachs');
 await sel.post('/api/squad/sellers', {});
 const bal = async () => ((await sel.get('/api/squad/wallet')).balance || {}).USD || 0;
 
